@@ -346,7 +346,7 @@ typedef struct { /*  class... */
 ** 使わないものは、0にして呼ぶ
 ** sstは、CHUNK_LINKの場合の#番号
 */
-char *create_link(int st, int to, int ls, int nf, int sst)
+const char *create_link(int st, int to, int ls, int nf, int sst)
 {
 	static char url_expr[128];
 	static char *url_p = NULL;
@@ -934,7 +934,7 @@ int BadAccess(void)
 /****************************************************************/
 /*	Log Out							*/
 /****************************************************************/
-int logOut(char *txt)
+int logOut(char const *txt)
 {
 #ifdef LOGLOGOUT
 	FILE *fp;
@@ -1287,7 +1287,7 @@ int getFileSize(char const *file)
 /****************************************************************/
 /*	Get file last-modified(getFileLastmod)			*/
 /****************************************************************/
-time_t getFileLastmod(char *file)
+time_t getFileLastmod(char const *file)
 {
 	struct stat CountStat;
 	time_t ccc;
@@ -2357,7 +2357,7 @@ void html_banner(void)
 /****************************************************************/
 /*	ERROR END(html_error999)				*/
 /****************************************************************/
-int html_error999(char *mes)
+int html_error999(char const *mes)
 {
 	char zz_soko[256];	/* 倉庫番号(3桁数字) */
 	char tmp[256];		/* ?スレ番号(9桁数字) */
@@ -2449,40 +2449,7 @@ char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 #endif
 	return	dst;
 }
-/****************************************************************/
-/*								*/
-/****************************************************************/
-int whatKanji(char *str)
-{
-	int val = 0;
-	unsigned char b1, b2, b3;
 
-	b1 = *str++;
-	b2 = *str++;
-	b3 = *str;
-	if (b1 == 0x1b) {
-		if (b2 == '$' && b3 == 'B')
-			return 16;
-		if (b2 == '$' && b3 == '@')
-			return 32;
-		if (b2 == '(' && b3 == 'J')
-			return 64;
-		if (b2 == '(' && b3 == 'B')
-			return 128;
-		return 0;
-	}
-	if (b1 >= 0xa0 && b1 <= 0xdf)
-		val |= 1;
-	if (((b1 >= 0x81 && b1 <= 0x9f) || (b1 >= 0xe0 && b1 <= 0xfc))
-	    && (b2 >= 0x40 && b2 <= 0xfc && b2 != 0x7f))
-		val |= 2;
-	if (b1 == 0x8e && (b2 >= 0xa0 && b2 <= 0xdf))
-		val |= 4;
-	if ((b1 >= 0xa1 && b1 <= 0xfe) && (b2 >= 0xa1 && b1 <= 0xfe))
-		val |= 8;
-
-	return val;
-}
 /****************************************************************/
 /*								*/
 /****************************************************************/
