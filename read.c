@@ -14,8 +14,10 @@
 #include	<sys/mman.h>
 #endif
 
+#ifdef USE_INDEX
 #include "datindex.h"
 #include "digest.h"
+#endif
 #include "read.h"
 
 #ifdef ZLIB
@@ -1137,7 +1139,12 @@ int dat_out(int level)
 	if ( !is_imode() )
 		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
-	if (!level && lineMax == line && lineMax <= RES_RED && !threadStopped) {
+	if (
+#ifdef USE_INDEX
+	    !level && 
+#endif
+	    lineMax == line && lineMax <= RES_RED && !threadStopped) {
+	
 		html_reload(line);	/*  Button: Reload */
 	}
 #endif
@@ -2448,12 +2455,14 @@ static int last_line()
 /****************************************************************/
 void html_head(int level, char const *title, int line)
 {
+#ifdef USE_INDEX
 	if (level) {
 		pPrintf(pStdout, R2CH_HTML_DIGEST_HEADER_2("%s"),
 			title);
 		/* ‚±‚ê‚¾‚¯o—Í‚µ‚Ä‚à‚Ç‚é */
 		return;
 	}
+#endif
 
 	pPrintf(pStdout, R2CH_HTML_HEADER_0);
 #ifdef ALWAYS_PATH
@@ -2662,9 +2671,11 @@ static void html_foot(int level, int line, int stopped)
 			zz_bs, zz_ky, currentTime);
 	}
 
+#ifdef USE_INDEX
 	if (level)
 		pPrintf(pStdout, R2CH_HTML_DIGEST_FOOTER);
 	else
+#endif
 		pPrintf(pStdout, R2CH_HTML_FOOTER);
 }
 /****************************************************************/

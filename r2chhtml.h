@@ -527,6 +527,7 @@
 #define ERRORMES_MAINTENANCE "調整中。。。"
 #define ERRORMES_LOGOUT "なんか不調です。"
 
+#ifdef USE_INDEX
 
 /* スレダイジェスト用HTML */
 #define R2CH_HTML_INDEX_HEADER(title1, title2) \
@@ -634,6 +635,8 @@ h1,.c{text-align:center}
 <a href=\"../test/read.cgi?bbs=hp&key=998774537\">全レス</a> <a href=\"../test/read.cgi?bbs=hp&key=998774537&ls=50\">最新50</a>
 </form></dl>
 </div>"
+
+#endif
 
 #define R2CH_HTML_INDEX_FOOTER \
 "<p class=c>
