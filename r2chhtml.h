@@ -392,6 +392,12 @@
 	"レス数が%dを超えています。%dを超えると表\示できなくなるよ。" \
 	"</td></tr></table>"
 
+/* ファイルサイズやばい: %d=超えた大きさ %d=表示できない大きさ %s=付加文字列 */ 
+#define R2CH_HTML_HEADER_SIZE_REDZONE(s1,s2,r) \
+	"<p><table><tr><td bgcolor=red>\n" \
+	"<font color=white>サイズが" s1 "を超えています。" s2 "を超えると" r "表\示できなくなるよ。</font>" \
+	"</td></tr></table>" 
+
 /* スレ名: %s=スレ名 */
 #define R2CH_HTML_HEADER_2 \
 	"<p><font size=+1 color=red>%s</font>" \

@@ -2147,6 +2147,19 @@ void html_head(int level, char const *title, int line)
 			RES_RED);
 	}
 
+#ifdef CAUTION_FILESIZE 
+	if (zz_fileSize > MAX_FILESIZE - CAUTION_FILESIZE * 1024) { 
+		pPrintf(pStdout, R2CH_HTML_HEADER_SIZE_REDZONE("%dKB", "%dKB", ""),
+			MAX_FILESIZE/1024 - CAUTION_FILESIZE, MAX_FILESIZE/1024); 
+	} 
+# ifdef MAX_FILESIZE_BUSY 
+	else if (zz_fileSize > MAX_FILESIZE_BUSY - CAUTION_FILESIZE * 1024) { 
+		pPrintf(pStdout, R2CH_HTML_HEADER_SIZE_REDZONE("%dKB", "%dKB", "ŽžŠÔ‘Ñ‚É‚æ‚Á‚Ä‚Í"), 
+			MAX_FILESIZE_BUSY/1024 - CAUTION_FILESIZE, MAX_FILESIZE_BUSY/1024 ); 
+	} 
+# endif 
+#endif 
+
 	if (is_imode())
 		pPrintf(pStdout, R2CH_HTML_HEADER_2_I, title);
 	else

@@ -103,4 +103,11 @@
 /* nofirst=trueを短縮形にする。bbs.cgiの出力と同一形式が望ましい */
 /* #define NO_FIRST "&n=t" */
 
+/* 「大きすぎます」の警告を出すまでのサイズ(KB単位) 
+　MAX_FILESIZE - CAUTION_FILESIZE*1024 を超えたら警告 
+　これが未定義なら、警告は出さない */ 
+#define CAUTION_FILESIZE 16 
+/* デバッグ用 
+#define MAX_FILESIZE_BUSY (MAX_FILESIZE - 64 * 1024) */ 
+
 #endif /* READ2CH_H__ */
