@@ -136,18 +136,16 @@
 	"<html><head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
 	"<title>%s</title>" \
-	"<style type=\"text/css\">" \
-	"<!--\n" \
-	"td.Type1 {" \
-	"color: #fff;" \
-	"text-align: left;" \
-	"}" \
-	"a.BigLine {" \
-	"color: #000;" \
-	"text-decoration: none;" \
+	"<style type=\"text/css\"><!--\n" \
+	"td.Type1{" \
+	"color:#fff; " \
+	"text-align:left;" \
+	"} " \
+	"a.BigLine{" \
+	"color:#000; " \
+	"text-decoration:none;" \
 	"}\n" \
-	"-->" \
-	"</style>" \
+	"--></style>" \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<p><font size=+1 color=red>%s</font></b><br>" \
@@ -194,7 +192,7 @@
 
 /* エラー(4/6): */
 #define R2CH_HTML_ERROR_4 \
-	"<br></center><HR><font size=-2>" CGIVER "</font><HR><p>"
+	"<br></center><hr><font size=-2>" CGIVER "</font><hr><p>"
 
 /* エラー(5a/6,HTML): %s=場所 %s=スレ番号 */
 #define R2CH_HTML_ERROR_5_HTML \
@@ -253,8 +251,7 @@
  */
 #ifndef COOKIE
 #define R2CH_HTML_COOKIE_SCRIPT \
-	"<script language=JavaScript>" \
-	"<!--\n" \
+	"<script language=JavaScript><!--\n" \
 	"N=g(\"NAME\");" \
 	"M=g(\"MAIL\");" \
 	"function g(key,tmp1,tmp2,xx1,xx2,xx3){" \
@@ -266,13 +263,12 @@
 	"tmp2=tmp1.substring(xx1+1,xx2);" \
 	"xx3=tmp2.indexOf(\"=\");" \
 	"if(tmp2.substring(0,xx3)==key){" \
-	"return(unescape(tmp2.substring(xx3+1,xx2-xx1-1)));" \
+	"return unescape(tmp2.substring(xx3+1,xx2-xx1-1));" \
 	"}" \
 	"xx1=xx2+1;" \
-	"}return(\"\");" \
+	"}return \"\";" \
 	"}\n" \
-	"// -->" \
-	"</script>" 
+	"//--></script>" 
 #else
 #define R2CH_HTML_COOKIE_SCRIPT ""
 #endif
@@ -358,7 +354,7 @@
 /* スレ名: %s=スレ名 */
 #define R2CH_HTML_HEADER_2 \
 	"<p><font size=+1 color=red>%s</font>" \
-	"<DL>"
+	"<dl>"
 
 #define R2CH_HTML_HEADER_2_I \
 	"<p><font size=+1 color=red>%s</font>"
@@ -385,17 +381,15 @@
 #ifndef COOKIE
 /* %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FORM(depth, bs, ky, tm) \
-	"<form method=post action=\"" depth "bbs.cgi\">" \
+	"<form method=POST action=\"" depth "bbs.cgi\">" \
 	"<input type=submit value=\"書き込む\" name=submit> 名前： " \
-	"<script language=JavaScript>" \
-	"<!--\n" \
-	"document.write(\"<input type=text name=FROM size=19 value=\",N,\"> E-mail<font size=1> (省略可) </font>: <input type=text name=mail size=19 value=\",M,\">\");\n" \
-	"// -->" \
-	"</script>" \
+	"<script language=JavaScript><!--\n" \
+	"document.write(\"<input name=FROM size=19 value=\",N,\"> E-mail<font size=1> (省略可) </font>: <input name=mail size=19 value=\",M,\">\");\n" \
+	"//--></script>" \
 	"<noscript>" \
-	"<input type=text name=FROM size=19>" \
+	"<input name=FROM size=19>" \
 	" E-mail<font size=1> (省略可) </font>: " \
-	"<input type=text name=mail size=19>" \
+	"<input name=mail size=19>" \
 	"</noscript>" \
 	"<br><textarea rows=5 cols=70 wrap=off name=MESSAGE></textarea>" \
 	"<input type=hidden name=bbs value=" bs ">" \
@@ -404,11 +398,11 @@
 	"</form>"
 #else
 #define R2CH_HTML_FORM \
-	"<form method=post action=\"bbs.cgi\">" \
+	"<form method=POST action=\"bbs.cgi\">" \
 	"<input type=submit value=\"書き込む\" name=submit> 名前： " \
-	"<input type=text name=FROM size=19 value=\"%s\">" \
+	"<input name=FROM size=19 value=\"%s\">" \
 	" E-mail<font size=1> (省略可) </font>: " \
-	"<input type=text name=mail size=19 value=\"%s\">" \
+	"<input name=mail size=19 value=\"%s\">" \
 	"<br><textarea rows=5 cols=70 wrap=off name=MESSAGE></textarea>" \
 	"<input type=hidden name=bbs value=%s>" \
 	"<input type=hidden name=key value=%s>" \
@@ -422,10 +416,10 @@
 
 /* i-MODEのときのFORM: %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FORM_IMODE \
-	"<form method=post action=\"./bbs.cgi\">\n" \
-	"<input type=submit balue=\"かきこむ\" name=submit> " \
-	"NAME：<input type=text name=FROM size=20 value=\"\">" \
-	"MAIL：<input type=text name=mail size=20 value=\"\">" \
+	"<form method=POST action=\"./bbs.cgi\">\n" \
+	"<input type=submit value=\"かきこむ\" name=submit> " \
+	"NAME：<input name=FROM size=20 value=\"\">" \
+	"MAIL：<input name=mail size=20 value=\"\">" \
 	"<br>" \
 	"<input type=hidden name=bbs value=%s>" \
 	"<input type=hidden name=key value=%s>" \
@@ -448,19 +442,19 @@
 /* スレダイジェスト用HTML */
 
 #define R2CH_HTML_INDEX_HEADER(title1, title2) \
-"<head><META http-equiv=Content-Type content=\"text/html; charset=shift_jis\">
+"<head><meta http-equiv=Content-Type content=\"text/html; charset=Shift_JIS\">
 
-<style type=\"text/css\">
-body{margin: 2%%;} 
-h3{color:red} 
-img{border:solid 0} 
-div{border:.5em ridge;margin:1em;padding:1em} 
-.m{border-color:#cfc;background:#cfc} 
-.r{border-color:#eee;background:#eee} 
-dt{margin:1em 0 0} 
-b{color:#080} 
-h1, .c{text-align:center} 
-</style>
+<style type=\"text/css\"><!--
+body{margin: 2%%;}
+h3{color:red}
+img{border:solid 0}
+div{border:.5em ridge;margin:1em;padding:1em}
+.m{border-color:#cfc;background:#cfc}
+.r{border-color:#eee;background:#eee}
+dt{margin:1em 0 0}
+b{color:#080}
+h1,.c{text-align:center}
+--></style>
 <title>" title1 "</title></head><body bgcolor=white>
 
 <h1><a href=\"http://www.2ch.net/info.html\"><img src=\"http://www.geocities.co.jp/SiliconValley-Cupertino/5657/img20010514210907.gif\" border=0></a></h1>
@@ -481,7 +475,7 @@ h1, .c{text-align:center}
 
 <input type=submit value=\"スレッド作成\" name=submit><input type=hidden name=bbs value=hp><input type=hidden name=time value=998848311>
 <a href=http://www.2ch.net/before.html>書き込む前に読んでね</a> ｜ <a href=http://www.2ch.net/guide/>2chガイド</a> ｜ <a href=\"http://www.2ch.net/guide/faq.html\">FAQ</a></form>
-<p><a href=http://210.150.210.150/sage/bbstable.html Target=_blank>■掲示板一覧■</a></p>
+<p><a href=http://210.150.210.150/sage/bbstable.html target=_blank>■掲示板一覧■</a></p>
 </div>
 
 <div class=m>
@@ -510,30 +504,30 @@ h1, .c{text-align:center}
 </div>
 
 
-<TABLE BORDER=1 cellspacing=0 cellpadding=0 WIDTH=95%%><TR bgcolor=black><TD colspan=2>
-<TABLE WIDTH=100%%><TR bgcolor=#FFCC44><TD>
-■ 2chは、<A HREF=\"http://www.maido3.com/server/usagi/news.html\" TARGET=\"_blank\"><FONT COLOR=NAVY SIZE=+1><B>ここのサーバ</B></FONT></A>を使ってるです。。。
-</TD></TR></TABLE>
-</TD></TR><TR><TD bgcolor=black>
+<table border=1 cellspacing=0 cellpadding=0 width=95%%><tr bgcolor=black><td colspan=2>
+<table width=100%%><tr bgcolor=#FFCC44><td>
+■ 2chは、<a href=\"http://www.maido3.com/server/usagi/news.html\" target=\"_blank\"><font color=navy size=+1><b>ここのサーバ</b></font></a>を使ってるです。。。
+</td></tr></table>
+</td></tr><tr><td bgcolor=black>
 <font color=#CCFFCC>
-　<FONT SIZE=+1 FACE=\"Arial\"><B>.jp</B></FONT> ドメインお持ちのお客様大歓迎。<A HREF=\"http://welcome.maido3.jp/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" COLOR=RED><B>maido3.jp</B></FONT></A><BR>
-　<FONT SIZE=+1 FACE=\"Arial\"><B>.com .net .org</B></FONT> 取得代行します。(US$10) <A HREF=\"http://www.maido3.com/server/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" color=cyan><B>maido3.com</B></FONT></A><BR>
-　<FONT SIZE=+1 FACE=\"Arial\" COLOR=WHITE><B>.cc .to .tv .fm .ca</B></FONT> 取得代行はじめました。<font color=white face=\"Arial\" size=-1><b>NEW</b></font><BR>
+　<font size=+1 face=\"Arial\"><b>.jp</b></font> ドメインお持ちのお客様大歓迎。<a href=\"http://welcome.maido3.jp/\" target=\"_blank\"><font size=+1 face=\"Arial\" color=red><b>maido3.jp</b></font></a><br>
+　<font size=+1 face=\"Arial\"><b>.com .net .org</b></font> 取得代行します。(US$10) <a href=\"http://www.maido3.com/server/\" target=\"_blank\"><font size=+1 face=\"Arial\" color=cyan><b>maido3.com</b></font></a><br>
+　<font size=+1 face=\"Arial\" color=white><b>.cc .to .tv .fm .ca</b></font> 取得代行はじめました。<font color=white face=\"Arial\" size=-1><b>NEW</b></font><br>
 </td><td align=center>
 無料ホームページスペース<P>
-<A HREF=\"http://space.kakiko.com/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" color=BLUE><B>Space.Kakiko.com</B></FONT></A><BR>
+<a href=\"http://space.kakiko.com/\" target=\"_blank\"><font size=+1 face=\"Arial\" color=blue><b>Space.Kakiko.com</b></font></a><br>
 </font>
-</TD></TR><TR bgcolor=black><TD colspan=2>
-<TABLE WIDTH=100%%><TR bgcolor=black><TD>
-<font color=#ccffcc>月々1,000円からの</font> <A HREF=\"http://www.binboserver.com/\" target=\"_blank\"><font color=cyan face=\"Arial\"><B>BinboServer.com</B></font></A>
-</TD><TD>
-<font color=#ccffcc>２ちゃんねるも使っている</font> <A HREF=\"http://www.maido3.com/server/\" target=\"_blank\"><font color=cyan face=\"Arial\"><B>Big-Server.com</B></font></A>
-</TD></TR></TABLE>
-</TD></TR><TR bgcolor=black><TD colspan=2>
-<TABLE WIDTH=100%%><TR bgcolor=#FFCC44><TD align=right>
-&gt;&gt; ２ちゃんねる、<A HREF=\"http://news.kakiko.com/mentai/\"><FONT COLOR=NAVY>サーバ監視所</FONT></A>
-</TD></TR></TABLE>
-</TD></TR></TABLE>"
+</td></tr><tr bgcolor=black><td colspan=2>
+<table width=100%%><tr bgcolor=black><td>
+<font color=#ccffcc>月々1,000円からの</font> <a href=\"http://www.binboserver.com/\" target=\"_blank\"><font color=cyan face=\"Arial\"><b>BinboServer.com</b></font></a>
+</td><td>
+<font color=#ccffcc>２ちゃんねるも使っている</font> <a href=\"http://www.maido3.com/server/\" target=\"_blank\"><font color=cyan face=\"Arial\"><b>Big-Server.com</b></font></a>
+</td></tr></table>
+</td></tr><tr bgcolor=black><td colspan=2>
+<table width=100%%><tr bgcolor=#FFCC44><td align=right>
+&gt;&gt; ２ちゃんねる、<a href=\"http://news.kakiko.com/mentai/\"><font color=NAVY>サーバ監視所</font></a>
+</td></tr></table>
+</td></tr></table>"
 
 #define R2CH_HTML_DIGEST_HEADER_1(label) \
 "<div class=r><a name=\"#" label "\">"
@@ -545,9 +539,9 @@ h1, .c{text-align:center}
 "<form method=POST action=\"../test/bbs.cgi\">
 <input type=hidden name=bbs value=hp><input type=hidden name=key value=998774537><input type=hidden name=time value=998848311>
 <input type=submit value=\"投稿\" name=submit> 名前：
-<INPUT TYPE=text NAME=FROM SIZE=19> E-mail：<INPUT TYPE=text NAME=mail SIZE=19>
+<input name=FROM size=19> E-mail：<input name=mail size=19>
 <ul>
-<textarea rows=5 cols=60 wrap=OFF name=MESSAGE></textarea>
+<textarea rows=5 cols=60 wrap=off name=MESSAGE></textarea>
 </ul>
 <a href=\"../test/read.cgi?bbs=hp&key=998774537\">全レス</a> <a href=\"../test/read.cgi?bbs=hp&key=998774537&ls=50\">最新50</a>
 </form></dl>
@@ -567,7 +561,7 @@ h1, .c{text-align:center}
 
 #define R2CH_HTML_SUBBACK_HEADER \
 	"<html><head>" \
-	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=x-sjis\">" \
+	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
 	"</head>" \
 	"<body target=\"body\">" \
 	"<font size=-1>\n"
@@ -576,4 +570,4 @@ h1, .c{text-align:center}
 	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_SUBBACK_FOOTER \
-	"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></font></body></html>"
+	"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></div></body></html>"
