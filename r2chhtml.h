@@ -159,10 +159,17 @@
 
 /* tail: npath=生成するURLその1 nst=次のxxxレス
 	lpath=生成するURLその2 ls=最新レスxxx */
+#ifdef PREV_NEXT_ANCHOR
+#define R2CH_HTML_IMODE_TAIL(path, next) \
+	" <a href=" path ">次" next "</a>"
+#define R2CH_HTML_IMODE_TAIL2(path, ls) \
+	" <a href=" path ">最新" ls "</a><br>\n"
+#else
 #define R2CH_HTML_IMODE_TAIL(path, next) \
 	" <a href=" path ">次の" next "レス</a>"
 #define R2CH_HTML_IMODE_TAIL2(path, ls) \
 	" <a href=" path ">最新レス" ls "</a><br>\n"
+#endif
 
 /* テストなので使っていないけど */
 #define CHUNKED_ANCHOR_SELECT_HEAD(bbs,key) \
@@ -389,6 +396,17 @@
 #endif
 
 /* </title>の前の空白は削除しないこと */
+#ifdef PREV_NEXT_ANCHOR
+#define R2CH_HTML_IMODE_HEADER_1(title, board, alllink) \
+	"<title>" title " </title>" \
+	"</head>" \
+	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
+	"<a href=\"" board "\">■掲示板に戻る■</a>" \
+	" <a href=" alllink ">1-</a>"
+
+#define R2CH_HTML_IMODE_HEADER_2(latestlink, ls) \
+	" <a href=" latestlink ">最新" ls "</a>"
+#else
 #define R2CH_HTML_IMODE_HEADER_1(title, board, alllink) \
 	"<title>" title " </title>" \
 	"</head>" \
@@ -398,6 +416,7 @@
 
 #define R2CH_HTML_IMODE_HEADER_2(latestlink, ls)  \
 	" <a href=" latestlink ">最新レス" ls "</a>"
+#endif
 
 /* レス数オーバー: %d=最大レス数 */
 #define R2CH_HTML_HEADER_RED(num) \

@@ -15,6 +15,8 @@ tag: HEAD
   path形式と旧形式でnofirst=の不整合を修正
   LATEST_ANCHORのcondition削除
 　ALWAYS_PATH condition追加
+　PREV_NEXT_ANCHOR有効時はi-mode版もリンクを「1-」「最新10」「次10」のように簡略化
+　i-mode版で不要な</dl>が出力されるバグを修正
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。

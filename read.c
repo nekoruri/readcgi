@@ -1138,7 +1138,8 @@ int dat_out(int level)
 		return 1; 
 	if( s[2]!=0 && (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" )) ) threadStopped=1;
 
-	pPrintf(pStdout, R2CH_HTML_PREFOOTER);
+	if ( !is_imode() )
+		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
 	if (!level && lineMax == line && lineMax <= RES_RED && !threadStopped) {
 		html_reload(line);	/*  Button: Reload */
@@ -1847,6 +1848,7 @@ int out_simplehtml(void)
 	}
 	
 	/* html_foot() */
+	/* i-mode時は来ないはずだが、もし来るようにするならPREFOOTERはimode時は出さないこと */
 	pPrintf(pStdout, R2CH_HTML_PREFOOTER R2CH_HTML_FOOTER);
 	return 0;
 }
