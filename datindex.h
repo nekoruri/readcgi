@@ -2,7 +2,7 @@
  *
  *  世界共通インデクスの定義
  *
- *  $Id: datindex.h,v 1.1 2001/08/31 18:36:11 2ch Exp $ */
+ *  $Id: datindex.h,v 1.2 2001/08/31 20:38:52 2ch Exp $ */
 
 #ifndef DATINDEX_H__
 #define DATINDEX_H__
@@ -131,5 +131,8 @@ typedef struct DATINDEX_OBJ
 			 "g"((idx)->version)); \
 		eax; \
 	 }) : 0)
+
+extern int read_index(DATINDEX_OBJ *dat,
+		      char const *bs, long ky);
 
 #endif /* DATINDEX_H__ */

@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.1 2001/08/31 18:36:11 2ch Exp $ */
+ *  $Id: datindex.c,v 1.2 2001/08/31 20:38:52 2ch Exp $ */
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -37,7 +37,8 @@ static int get_date(struct tm *datetime,
 	n = strspn(&p[ofs], "/0123456789");
 	if (n >= 20)
 		return 0;
-	strncpy(buf, &p[ofs], n);
+	memcpy(buf, &p[ofs], n);
+	buf[n] = 0;
 	ofs += n;
 	if (!(dp = strtok(buf, "/")))
 		return 0;
@@ -58,18 +59,19 @@ static int get_date(struct tm *datetime,
 	ofs += strcspn(&p[ofs], "<>\n0123456789");
 	if (!isdigit(p[ofs]))
 		return 0;
-	n = strspn(&p[ofs], "/0123456789");
+	n = strspn(&p[ofs], ":0123456789");
 	if (n >= 20)
 		return 0;
-	strncpy(buf, &p[ofs], n);
+	memcpy(buf, &p[ofs], n);
+	buf[n] = 0;
 	ofs += n;
-	if (!(dp = strtok(buf, "/")))
+	if (!(dp = strtok(buf, ":")))
 		return 0;
 	datetime->tm_hour = atoi(dp);
-	if (!(dp = strtok(NULL, "/")))
+	if (!(dp = strtok(NULL, ":")))
 		return 0;
 	datetime->tm_min = atoi(dp);
-	if ((dp = strtok(NULL, "/")) != NULL)
+	if ((dp = strtok(NULL, ":")) != NULL)
 		datetime->tm_sec = atoi(dp);
 
 	return ofs;
@@ -148,11 +150,14 @@ static int buildup_index(DATINDEX_OBJ *dat,
 			}
 			ofs += 2;
 		}
+		/* ここまで来れたらあぼーんではないと見なす */
+		n = DATINDEX_CHUNK_SIZE * chunk + linenum;
+		idx->valid_bitmap[n >> 5] |= 1 << (n & 31);
 		/* スレタイトル取得を試みる */
 		if (chunk == 0 && linenum == 0) {
 			idx->title_ofs = ofs;
 		}
-		ofs += strcspn(&p[ofs], "\n");
+		ofs += 1 + strcspn(&p[ofs], "\n");
 	can_not_parse:
 		;
 	}
@@ -165,7 +170,7 @@ static int buildup_index(DATINDEX_OBJ *dat,
  ****************************************************************/
 static int create_local_index(DATINDEX_OBJ *dat)
 {
-	DATINDEX *idx = malloc(sizeof(DATINDEX));
+	DATINDEX *idx = calloc(1, sizeof(DATINDEX));
 	if (!idx)
 		return 0;
 	/* private idxとshared idxは、
@@ -195,7 +200,8 @@ static int create_index(DATINDEX_OBJ *dat,
 	}
 
 	/* ファイル領域を作り出す */
-	if (lseek(fd, sizeof(DATINDEX), SEEK_SET) < 0) {
+	if (lseek(fd, sizeof(DATINDEX) - 1, SEEK_SET) < 0
+	    || write(fd, "", 1) <= 0) {
 		return create_local_index(dat);
 	}
 	dat->shared_idx = mmap(NULL,
