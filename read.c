@@ -330,7 +330,7 @@ typedef struct { /*  class... */
 ** 使わないものは、0にして呼ぶ
 ** sstは、CHUNK_LINKの場合の#番号
 */
-char *create_link(int st, int to, int ls, int nf, int sst)
+const char *create_link(int st, int to, int ls, int nf, int sst)
 {
 	static char url_expr[128];
 	static char *url_p = NULL;
@@ -338,101 +338,88 @@ char *create_link(int st, int to, int ls, int nf, int sst)
 
 #ifdef USE_PATH
 	if (path_depth) {
+		p = url_expr;
 #ifdef USE_INDEX
 		if (path_depth == 2) {
-			strncpy(url_expr,
-				zz_ky,
-				sizeof(url_expr) - 4);
-			url_expr[sizeof(url_expr) - 4] = 0;
-			p = url_expr;
-			while (*p) ++p;
-			*p++= '/';
-		} else
+			p += sprintf(p, "%.40s/", zz_ky );
+		}
 #endif
-			p = url_expr;
-		*p = '\0';
 		if (ls) {
-			sprintf(p,"l%d",ls);
+			p += sprintf(p,"l%d",ls);
 		} else if (to==0) {
 			if (st<=1) {
 #ifdef USE_INDEX
 				if(path_depth!=2)
 #endif
-					strcpy(p,"./");	/* 全部 */
+					p += sprintf(p, "./" ); /* 全部 */
 			} else
-				sprintf(p,"%d-",st);
-		} else if (st<=1) {
-			sprintf(p,"-%d",to);	/* 始点は不要 */
-		} else if (st==to) {
-			sprintf(p,"%d",st);	/* 単点呼び出しに */
+				p += sprintf(p,"%d-",st);
+			
 		} else {
-			sprintf(p,"%d-%d",st,to);
+			if ( st != to ) {
+				if ( st > 1 )
+					p += sprintf(p, "%d", st); /* 始点 */
+				*p++ = '-';
+			}
+			p += sprintf(p, "%d", to); /* 終点 */
 		}
 		if (nf && (st!=to || ls))	/* 単点は'n'不要 */
-			strcat(p,"n");
+			*p++ = 'n';
 		if (is_imode())
-			strcat(p,"i");
+			*p++ = 'i';
 #ifdef CREATE_NAME_ANCHOR
 		if (sst && sst!=st) {
-			while(*p) ++p;
-			sprintf(p,"#%d",sst);
+			p += sprintf(p,"#%d",sst);
 		}
 #endif
 	} else
 #endif	/* USE_PATH */
 	{
 		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
-			sprintf(url_expr, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, zz_ky);
 			url_p = url_expr;
-			while (*url_p) ++url_p;
+			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky);
 		}
 		p = url_p;
-		*p = '\0';
 		if (ls) {
-			sprintf(p,"&ls=%d",ls);
-		} else if (to==0) {
-			if (st>1)
-				sprintf(p,"&st=%d",st);
-		} else if (st<=1) {
-			sprintf(p,"&to=%d",to);		/* 始点は不要 */
+			p += sprintf(p,"&ls=%d",ls);
 		} else {
-			sprintf(p,"&st=%d&to=%d",st,to);
+			if ( st > 1 )
+				p += sprintf(p, "&st=%d", st);
+			if ( to )
+				p += sprintf(p, "&to=%d", to);
 		}
-		while (*p) ++p;
 		if (nf && (st>1 || ls) ) {		/* 1を含むときは不要 */
-			strcpy(p, NO_FIRST);
-			p += sizeof(NO_FIRST)-1;
+			p += sprintf(p, NO_FIRST );
 		}
 		if (is_imode()) {
-			strcat(p, "&imode=true");
-			p += sizeof("&imode=true")-1;
+			p += sprintf(p, "&imode=true" );
 		}
 #ifdef CREATE_NAME_ANCHOR
 		if (sst && sst!=st) {
-			sprintf(p,"#%d",sst);
-			while(*p) ++p;
+			p += sprintf(p,"#%d",sst);
 		}
 #endif
 		*p++ = '\"';
-		*p = '\0';
 	}
+	*p = '\0';
 	return url_expr;
 }
 
 /* 掲示板に戻るのLINK先作成 */
-char *create_parent_link(void)
+const char *create_parent_link(void)
 {
 	static char url_expr[128] = "";
+	char * p = url_expr;
 
 	if (url_expr[0]) return url_expr;	/* 既に作成済み */
 #ifdef USE_PATH
 	if (path_depth)
-		sprintf(url_expr,"../../../../%s/",zz_bs);
+		p += sprintf(p,"../../../../%.20s/",zz_bs);
 	else
 #endif
-		sprintf(url_expr,"../%s/",zz_bs);
+		p += sprintf(p,"../%.20s/",zz_bs);
 	if (is_imode() ) {
-		strcat(url_expr,"i/");
+		strcpy(p,"i/");
 		return url_expr;
 	}
 #ifdef CHECK_MOD_GZIP
@@ -442,10 +429,10 @@ char *create_parent_link(void)
 #endif
 #ifdef GZIP
 	if (!gzip_flag)
-		strcat(url_expr,"index.html");
+		strcpy(p,"index.html");
 	else
 #endif
-		strcat(url_expr,"index.htm");
+		strcpy(p,"index.htm");
 	return url_expr;
 }
 
