@@ -2194,14 +2194,14 @@ void html_error(enum html_error_t errorcode)
 		sprintf(doko, KAKO_DIR "%.50s/%.50s.html", zz_bs,
 			zz_soko, tmp);
 		if (!stat(doko, &CountStat)) {
-			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, doko,
-				tmp);
+			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, 
+				create_bbs_path(), doko, tmp);
 		} else {
 			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					doko, tmp);
+					create_bbs_path(), doko, tmp);
 			} else {
 				sprintf(doko, TEMP_DIR "%.50s.dat",
 					zz_bs, tmp);
@@ -2210,7 +2210,7 @@ void html_error(enum html_error_t errorcode)
 						tmp);
 				} else {
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
-						zz_bs);
+						create_bbs_path(), zz_bs);
 				}
 			}
 		}

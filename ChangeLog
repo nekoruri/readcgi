@@ -17,6 +17,7 @@ tag: HEAD
 　ALWAYS_PATH condition追加
 　PREV_NEXT_ANCHOR有効時はi-mode版もリンクを「1-」「最新10」「次10」のように簡略化
 　i-mode版で不要な</dl>が出力されるバグを修正
+　PATH時に過去落ち/過去ログ倉庫へのリンクがおかしかったバグを修正
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。
