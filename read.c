@@ -362,6 +362,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	s += n + 1;	/* まだdは進めないでおく */
 	if (!memcmp(s, "&gt;&gt;", 8)) {
 		int st, to;
+		int mst, mto;
 		char buf[8];
 		s += 8;
 		/* 1番目の数字を処理する */
@@ -392,17 +393,24 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		if (!s)
 			return 0;
 		s += 4;
+
+		/* chunk仕様を生かすためのkludgeは以下に。 */
+		mst = 1 + (st - 1) / CHUNK_NUM * CHUNK_NUM;
+		mto = (to + CHUNK_NUM - 1) / CHUNK_NUM * CHUNK_NUM;
+
 		/* 新しい表現をブチ込む */
 		if (st < to)
 			d += sprintf(d,
-				     "<a href=\"%s%d-%d\">&gt;&gt;%d-%d</a>",
+				     "<a href=\"%s%d-%d#%d\">&gt;&gt;%d-%d</a>",
 				     depth_expr,
-				     st, to, st, to);
+				     mst, mto, st,
+				     st, to);
 		else
 			d += sprintf(d,
-				     "<a href=\"%s%d\">&gt;&gt;%d</a>",
+				     "<a href=\"%s%d-%d#%d\">&gt;&gt;%d</a>",
 				     depth_expr,
-				     st, st);
+				     mst, mto, st,
+				     st);
 	}
 
 	/* あとしまつ */
@@ -923,18 +931,22 @@ static int out_html(int level, int line, int lineNo)
 		if (*r3 && strlen(r3) < 8192) {
 			if (r1 && strcmp(r1, "sage") == 0) {
 #ifdef SAGE_IS_PLAIN
-				pPrintf(pStdout, R2CH_HTML_RES_SAGE,
-					lineNo, r0, s[2], r3);
+				pPrintf(pStdout,
+					R2CH_HTML_RES_SAGE("%d", "%d", "%s", "%s", "%s"),
+					lineNo, lineNo, r0, s[2], r3);
 #else
-				pPrintf(pStdout, R2CH_HTML_RES_MAIL,
-					lineNo, r1, r0, s[2], r3);
+				pPrintf(pStdout,
+					R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
+					lineNo, lineNo, r1, r0, s[2], r3);
 #endif
 			} else if (*r1) {
-				pPrintf(pStdout, R2CH_HTML_RES_MAIL,
-					lineNo, r1, r0, s[2], r3);
+				pPrintf(pStdout,
+					R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
+					lineNo, lineNo, r1, r0, s[2], r3);
 			} else {
-				pPrintf(pStdout, R2CH_HTML_RES_NOMAIL,
-					lineNo, r0, s[2], r3);
+				pPrintf(pStdout,
+					R2CH_HTML_RES_NOMAIL("%d", "%d", "%s", "%s", "%s"),
+					lineNo, lineNo, r0, s[2], r3);
 			}
 		} else {
 			pPrintf(pStdout, R2CH_HTML_RES_BROKEN_HERE,

@@ -65,16 +65,16 @@
  * BROWSERでレスを表示。
  */
 /* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
-#define R2CH_HTML_RES_MAIL \
-	"<dt>%d 名前：<a href=\"mailto:%s \"><b>%s </b></a> 投稿日：%s<dd>%s<br><br>"
+#define R2CH_HTML_RES_MAIL(n, l, m, nm, d, t) \
+	"<dt>" n " 名前：<a name=" l " href=\"mailto:" m " \"><b>" nm " </b></a> 投稿日：" d "<dd>" t "<br><br>"
 
 /* レス(mailto無し): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
-#define R2CH_HTML_RES_NOMAIL \
-	"<dt>%d 名前：<font color=green><b>%s </b></font> 投稿日：%s<dd>%s<br><br>"
+#define R2CH_HTML_RES_NOMAIL(n, l, nm, d, t) \
+	"<dt>" n " <a name=" l ">名前：<font color=green><b>" nm " </b></font></a> 投稿日：" d "<dd>" t "<br><br>"
 
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
-#define R2CH_HTML_RES_SAGE \
-	"<dt>%d 名前：<font color=#0000c0><b>%s </b></font> 投稿日：%s<dd>%s<br><br>"
+#define R2CH_HTML_RES_SAGE(n, l, nm, d, t) \
+	"<dt>" n " <a name=" l ">名前：<font color=#0000c0><b>" nm " </b></font></a> 投稿日：" d "<dd>" t "<br><br>"
 
 /* レス(ここ壊れています): %d=レス番号 */
 #define R2CH_HTML_RES_BROKEN_HERE \
@@ -451,7 +451,7 @@
 "<head><META http-equiv=Content-Type content=\"text/html; charset=shift_jis\">
 
 <style type=\"text/css\">
-body{margin: 2%;} 
+body{margin: 2%%;} 
 h3{color:red} 
 img{border:solid 0} 
 div{border:.5em ridge;margin:1em;padding:1em} 
@@ -510,8 +510,8 @@ h1, .c{text-align:center}
 </div>
 
 
-<TABLE BORDER=1 cellspacing=0 cellpadding=0 WIDTH=95%><TR bgcolor=black><TD colspan=2>
-<TABLE WIDTH=100%><TR bgcolor=#FFCC44><TD>
+<TABLE BORDER=1 cellspacing=0 cellpadding=0 WIDTH=95%%><TR bgcolor=black><TD colspan=2>
+<TABLE WIDTH=100%%><TR bgcolor=#FFCC44><TD>
 ■ 2chは、<A HREF=\"http://www.maido3.com/server/usagi/news.html\" TARGET=\"_blank\"><FONT COLOR=NAVY SIZE=+1><B>ここのサーバ</B></FONT></A>を使ってるです。。。
 </TD></TR></TABLE>
 </TD></TR><TR><TD bgcolor=black>
@@ -524,13 +524,13 @@ h1, .c{text-align:center}
 <A HREF=\"http://space.kakiko.com/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" color=BLUE><B>Space.Kakiko.com</B></FONT></A><BR>
 </font>
 </TD></TR><TR bgcolor=black><TD colspan=2>
-<TABLE WIDTH=100%><TR bgcolor=black><TD>
+<TABLE WIDTH=100%%><TR bgcolor=black><TD>
 <font color=#ccffcc>月々1,000円からの</font> <A HREF=\"http://www.binboserver.com/\" target=\"_blank\"><font color=cyan face=\"Arial\"><B>BinboServer.com</B></font></A>
 </TD><TD>
 <font color=#ccffcc>２ちゃんねるも使っている</font> <A HREF=\"http://www.maido3.com/server/\" target=\"_blank\"><font color=cyan face=\"Arial\"><B>Big-Server.com</B></font></A>
 </TD></TR></TABLE>
 </TD></TR><TR bgcolor=black><TD colspan=2>
-<TABLE WIDTH=100%><TR bgcolor=#FFCC44><TD align=right>
+<TABLE WIDTH=100%%><TR bgcolor=#FFCC44><TD align=right>
 &gt;&gt; ２ちゃんねる、<A HREF=\"http://news.kakiko.com/mentai/\"><FONT COLOR=NAVY>サーバ監視所</FONT></A>
 </TD></TR></TABLE>
 </TD></TR></TABLE>"
