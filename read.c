@@ -486,6 +486,7 @@ void zz_init_parent_link(void)
 		strcpy(p,"i/");
 		return;
 	}
+#if	0
 #ifdef CHECK_MOD_GZIP
 	if (zz_server_software && strstr(zz_server_software,"mod_gzip/")!=NULL)
 		return;
@@ -493,6 +494,7 @@ void zz_init_parent_link(void)
 #ifdef GZIP
 	if (gzip_flag)
 		strcpy(p,"index.htm");
+#endif
 #endif
 }
 
