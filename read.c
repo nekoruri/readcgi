@@ -2124,13 +2124,24 @@ int main(void)
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
-#ifdef USE_INDEX
 	/* スレ一覧を取りに逝くモード */
-	if (1 <= path_depth && path_depth < 3) {
+	if (1 <= path_depth && path_depth < 3
+#ifndef USE_INDEX
+	&& rawmode
+	/* rawmodeに限り、subject.txtを返すことを可能とする。
+	   GZIP併用でトラフィック削減を狙う。
+
+	   ところで rawのパラメータは、通常末尾追加しか行われないことを前提とした仕組み
+	   であるため、毎回全体が更新される subject.txtには適切ではない。従って現状は
+	   raw=0.0 に限定して使うべきである。
+	   subject.txtを読み出すモードのときには、rawのパラメータルールを変更し、
+	   先頭から指定数のみを取得可能にすれば有用ではないか?
+	 */ 
+#endif
+	) {
 		sprintf(fname, "../%.256s/subject.txt", zz_bs);
 		zz_fileLastmod = getFileLastmod(fname);
 	}
-#endif
 
 	zz_fileLastmod = getFileLastmod(fname);
 #ifdef USE_INDEX
