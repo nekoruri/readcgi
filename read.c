@@ -1090,6 +1090,10 @@ int dat_read(char const *fname,
 {
 	int in;
 
+#ifdef	PUT_ETAG
+	if (BigBuffer)
+		return 0;
+#endif
 	zz_fileSize = getFileSize(fname);
 
 	if (zz_fileSize > MAX_FILESIZE)
@@ -1564,6 +1568,134 @@ void atexitfunc(void)
 #endif
 }
 
+#ifdef	PUT_ETAG
+/* とりあえず
+   ETag: "送信部のcrc32-全体のサイズ-全体のレス数-送信部のサイズ-送信部のレス数-flag"
+   を%xで出力するようにしてみた。
+*/
+typedef struct {
+	unsigned long crc;
+	int allsize;
+	int allres;
+	int size;
+	int res;
+	int flag;
+		/*	今のところ、
+			((isbusytime) 		<< 0)
+		  |	((nn_to > lineMax)	<< 1)
+		*/
+} etagval;
+
+static void etag_put(const etagval *v, char *buff)
+{
+	sprintf(buff, "\"%lx-%x-%x-%x-%x-%x\"",
+		v->crc, v->allsize, v->allres, v->size, v->res, v->flag);
+}
+static int etag_get(etagval *v, const char *s)
+{
+	return sscanf(s, "\"%lx-%x-%x-%x-%x-%x\"",
+		&v->crc, &v->allsize, &v->allres, &v->size, &v->res, &v->flag) == 6;
+}
+static void etag_calc(etagval *v)
+{
+	int line = nn_st;
+	int end = nn_to;
+	
+	if (end == 0 || end > lineMax)
+		end = lineMax;
+	if (line == 0)
+		line = 1;
+/*	if (line > lineMax)
+		line = lineMax;
+	これをつけると、本文の出力範囲と食い違いが出る。
+*/
+	memset(v, 0, sizeof(*v));
+	v->allsize = zz_fileSize;
+	v->allres = lineMax;
+	v->flag = (isbusytime << 0) | ((nn_to > lineMax) << 1);
+	v->crc = crc32(0, NULL, 0);
+	
+	if (!is_nofirst()) {
+		v->res++;
+		v->size += BigLine[1] - BigLine[0];
+		v->crc = crc32(v->crc, BigLine[0], BigLine[1] - BigLine[0]);
+		if (line == 1)
+			line++;
+	}
+	if (isbusytime) {
+		if (end - line + 1 + !is_nofirst() > RES_NORMAL)
+			end = line - 1 - !is_nofirst() + RES_NORMAL;
+	}
+	if (line <= end) {
+		v->res += end - line + 1;
+		v->size += BigLine[end] - BigLine[line-1];
+		v->crc = crc32(v->crc, BigLine[line-1], BigLine[end] - BigLine[line-1]);
+	}
+}
+
+int need_etag(int st, int to, int ls)
+{
+	if (BadAccess())	/* 「なんか変です」の場合のdatの読みこみを避けるため */
+		return false;
+	/* ここには、If-None-Matchを付加しないUAのリスト
+	   (又は付加するUAのリスト)を置き
+	   無意味な場合にfalseを返すのが望ましい。 */
+	
+	/* to=nnがある場合だけ */
+	if (!to)
+		return false;
+	return true;
+}
+
+void create_etag(char *buff)
+{
+	etagval val;
+	etag_calc(&val);
+	etag_put(&val, buff);
+}
+
+int match_etag(const char *etag)
+{
+	etagval val, qry;
+	const char *oldtag;
+	
+	/* CHUNKの変化等が考えられ、どこで不具合が出るかもわからないので
+	   当面、busytime以外は新しいものを返す */
+	if (!isbusytime)
+		return false;
+	oldtag = getenv("HTTP_IF_NONE_MATCH");
+	if (!oldtag || !*oldtag)
+		return false;
+	if (!etag_get(&val, etag) || !etag_get(&qry, oldtag))
+		return false;
+	
+	if (val.crc != qry.crc || val.res != qry.res || val.size != qry.size)
+		return false;
+	
+	/* 以下で、表示範囲外に追加レスがあった場合に
+	   更新すべきかどうかを決める */
+	
+	/* 追加が100レス以内なら、同一とみなしてよい・・と思う */
+	if (val.allres < qry.allres + 100)
+		return true;
+	
+	/* キャッシュがbusytime外ものならば、そちらを優先させるべき・・と思う */
+	if ((qry.flag & (1 << 0)) == 0)
+		return true;
+	
+	/* 表示範囲が狭い場合は、CHUNK等は気にしなくてよい・・と思う */
+	if (val.res < 40)
+		return true;
+	
+	/* スレの寿命が近付いたら、警告等を表示すべき・・と思う */
+	if (val.allres >= RES_YELLOW)
+		return false;
+	
+	/* その他、迷ったらとりあえず更新せずに動作報告を待ってみよう・・と思う */
+	return true;
+}
+#endif	/* PUT_ETAG */
+
 #ifdef	REFERDRES_SIMPLE
 int can_simplehtml(void)
 {
@@ -1779,6 +1911,21 @@ int main(void)
 	}
 #endif
 
+	/*  終了処理登録 */
+	atexit(atexitfunc);
+#ifdef	PUT_ETAG
+	if (need_etag(st, to, ls)) {
+		char etag[60];
+		dat_read(fname, st, to, ls);
+		create_etag(etag);
+		if (match_etag(etag)) {
+			puts("Status: 304 Not Modified\n");
+			return 0;
+		}
+		printf("ETag: %s\n", etag);
+	}
+#endif
+
 #ifdef GZIP
 	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
 		gzip_flag = compress_x_gzip;
@@ -1823,8 +1970,6 @@ int main(void)
 		}
 	}
 
-	/*  終了処理登録 */
-	atexit(atexitfunc);
 #ifdef GZIP
 	if (gzip_flag) {
 #ifndef ZLIB
