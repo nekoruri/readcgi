@@ -32,7 +32,12 @@
 static int pid;
 #endif
 
+#ifdef ENGLISH
+#include	"r2chhtml_en.h"
+#else
 #include	"r2chhtml.h"
+#endif
+
 #ifdef PREVENTRELOAD
 # ifndef FORCE_304_TIME
 #  define FORCE_304_TIME  30    /* 秒で指定 */
@@ -56,11 +61,6 @@ static int pid;
 #if !defined(READ_KAKO)
 # undef READ_TEMP
 #endif
-
-/* 非TERIタイプで','が置換されて格納される文字列 */
-#define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */
-#define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
-#define COMMA_SUBSTITUTE_LEN 4
 
 int zz_head_request; /* !0 = HEAD request */
 char const *zz_remote_addr;
@@ -707,8 +707,6 @@ int urlcopy(char *bufp, const char *url, int urllen)
 {
 	return sprintf(bufp,
 		"<a href=\"%.*s\" " TARGET_BLANK ">%.*s</a>", 
-		/* 小文字にしてすこーーーしだけ圧縮効果を期待したり */
-		/* "<A HREF=\"%.*s\" TARGET=\"_blank\">%.*s</A>", */
 		urllen, url, urllen, url);
 }
 
@@ -943,7 +941,11 @@ static int isthreadstopped()
 		return 1;
 	if (lineMax) {
 		splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
-		if (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" ))
+		if ( strstr( s[2], STOPPER_MARK1 ) 
+#ifdef STOPPER_MARK2
+		  || strstr( s[2], STOPPER_MARK2 )
+#endif
+		)
 			return 1;
 		return 0;
 	}
@@ -964,7 +966,6 @@ int BadAccess(void)
 		"WebFetch",
 		"origin",
 		"Nozilla",
-		"WWWD",
 	};
 	int i;
 
@@ -1593,7 +1594,9 @@ void zz_GetEnv(void)
 {
 	char const * request_method;
 	currentTime = (long) time(&t_now);
-	putenv("TZ=JST-9");
+#ifdef CONFIG_TIMEZONE
+	putenv("TZ=" CONFIG_TIMEZONE);
+#endif
 	tzset();
 	tm_now = *localtime(&t_now);
 

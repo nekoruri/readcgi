@@ -13,6 +13,10 @@
 #define	MAX_FILESIZE	(8192 * 64)
 #define	SIZE_BUF	0xa000
 
+/* 英語版にする(r2chhtml.h ではなく r2chhtml_en.h がインクルードされる) */ 
+/* #define ENGLISH */
+
+#define CONFIG_TIMEZONE "JST-9"
 #define	LIMIT_PM	23
 #define	LIMIT_AM	3
 

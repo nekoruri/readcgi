@@ -553,6 +553,15 @@
 #define ERRORMES_MAINTENANCE "調整中。。。"
 #define ERRORMES_LOGOUT "なんか不調です。"
 
+/* 非TERIタイプで','が置換されて格納される文字列 */
+#define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */
+#define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
+#define COMMA_SUBSTITUTE_LEN 4
+
+/* 投稿日欄に入るストッパー判定文字列 */
+#define STOPPER_MARK1 "ストッパー"
+#define STOPPER_MARK2 "停止"
+
 #ifdef USE_INDEX
 
 /* スレダイジェスト用HTML */
