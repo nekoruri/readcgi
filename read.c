@@ -492,11 +492,13 @@ const char *add_ranges_simple( struct range *range, const char *p )
 		while ( isdigit(*p) )
 			++p;
 		if (*p == '-') {
-			to = atoi(++p);
-			if ( to < 0 )
+			++p;
+			if ( !isdigit(*p) )
 				w_to[0] = '\0';
-			else
+			else {
+				to = atoi(p);
 				sprintf( w_to, "%d", to );
+			}
 			while (isdigit(*p))
 				++p;
 		}
@@ -540,7 +542,7 @@ char *create_link_head(char * url_expr)
 
 /* linkの中間部分の生成
  */
-char *create_link_mid(char * p, int st, int to, int ls, int nf)
+char *create_link_mid(char * p, int st, int to, int ls)
 {
 #ifdef	CREATE_OLD_LINK
 	if (path_depth) {
@@ -559,8 +561,6 @@ char *create_link_mid(char * p, int st, int to, int ls, int nf)
 			}
 			p += sprintf(p, "%d", to); /* 終点 */
 		}
-		if (nf && ((st!=to && st>1) || ls))	/* 単点と1を含むときはは'n'不要 */
-			*p++ = 'n';
 #ifdef	CREATE_OLD_LINK
 	} else {
 		if (ls) {
@@ -571,9 +571,6 @@ char *create_link_mid(char * p, int st, int to, int ls, int nf)
 			if ( to )
 				p += sprintf(p, "&to=%d", to);
 		}
-		if (nf && (st>1 || ls) ) {		/* 1を含むときは不要 */
-			p += sprintf(p, NO_FIRST );
-		}
 	}
 #endif
 	*p = '\0';
@@ -582,11 +579,13 @@ char *create_link_mid(char * p, int st, int to, int ls, int nf)
 
 /* linkの末尾部分の生成
  */
-char *create_link_tail(char * url_expr, char * p, int st, int sst)
+char *create_link_tail(char * url_expr, char * p, int st, int nf, int sst)
 {
 #ifdef	CREATE_OLD_LINK
 	if (path_depth) {
 #endif
+		if (nf)
+			*p++ = 'n';
 		if (is_imode())
 			*p++ = 'i';
 #ifdef CREATE_NAME_ANCHOR
@@ -598,6 +597,8 @@ char *create_link_tail(char * url_expr, char * p, int st, int sst)
 			p += sprintf(p, "./"); /* 全部 */
 #ifdef	CREATE_OLD_LINK
 	} else {
+		if (nf)
+			p += sprintf(p, NO_FIRST );
 		if (is_imode()) {
 			p += sprintf(p, "&imode=true" );
 		}
@@ -629,8 +630,11 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	p = mid_start;
 	if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
 		ls = 10;
-	p = create_link_mid(p, st, to, ls, nf);
-	create_link_tail(url_expr, p, st, sst);
+	if ( nf && ls == 0 )
+		if ( st == 1 || st == to )	/* 単点と1を含むときはは'n'不要 */
+			nf = 0;
+	p = create_link_mid(p, st, to, ls);
+	create_link_tail(url_expr, p, st, nf, sst);
 	return url_expr;
 }
 
@@ -647,10 +651,13 @@ int create_link_range(char * url_expr, const struct range * range, int nf, int s
 	get_range_minmax( range, &st, &to );
 
 	p = create_link_head(url_expr);
-	if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
-		p = create_link_mid(p, 0, 0, 10, nf);
-	else {
+	if (is_imode() && st==0 && to==0) {	/* imodeの0-0はls=10相当 */
+		p = create_link_mid(p, 0, 0, 10);
+  	} else {
+		if ( st <= 1 || st == to )	/* 単点と1を含むときはは'n'不要 */
+			nf = 0;
 		for ( i = 0 ; i < range->count ; ++i ) {
+			int i_to;
 #ifdef	CREATE_OLD_LINK
 			if (path_depth)
 #endif
@@ -659,10 +666,14 @@ int create_link_range(char * url_expr, const struct range * range, int nf, int s
 					*p++ = ',';
 				}
 			}
-			p = create_link_mid(p, range->array[i].from, range->array[i].to, 0, nf);
+			i_to = range->array[i].to;
+			if ( i_to >= RES_RED )
+				i_to = 0;
+			p = create_link_mid(p, range->array[i].from, i_to, 0);
 		}
 	}
-	p = create_link_tail(url_expr, p, st, sst);
+
+	p = create_link_tail(url_expr, p, st, nf, sst);
 	return p - url_expr;
 }
 
@@ -791,6 +802,10 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	st = to = -1;
  	if ( range.count > 0 )
 		get_range_minmax( &range, &st, &to );
+	if ( st < 1 )
+		st = 1;
+	if ( to < 1 )
+		to = lineMax;
 
 	copy_len = s - copy_start;
 	if (copy_len == 0 || memcmp(s, "</a>", 4) != 0)
