@@ -751,6 +751,10 @@ int BadAccess(void)
 	};
 	int i;
 
+#if defined(GZIP) && defined(RAWOUT)
+	if ( rawmode )
+		return !gzip_flag;
+#endif
 	if (!*zz_http_user_agent && !*zz_http_language)
 		return 1;
 
@@ -1612,7 +1616,7 @@ int main(void)
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
-#ifdef USE_PATH
+#if 0	/* #ifdef USE_PATH */
 	/* ƒXƒŒˆê——‚ğæ‚è‚ÉÀ‚­ƒ‚[ƒh */
 	if (1 <= path_depth && path_depth < 3) {
 		sprintf(fname, "../%.256s/subject.txt", zz_bs);
