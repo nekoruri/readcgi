@@ -1377,6 +1377,7 @@ int rawout_multi()
 	int count = 0;
 	const char *query = zz_query_string;
 	
+	buff[0] = '\0';
 	while ((query = GetString(query, buff, sizeof(buff), "dat")) != NULL) {
 		int retcode;
 		buff[40] = '\0';
@@ -2930,7 +2931,6 @@ char const *GetString(char const *line, char *dst, size_t dat_size, char const *
 	int value_len;
 	int value_start;
 
-	*dst = '\0';
 	for(i=0;i<MAX_QUERY_STRING;i++)
 	{
 		/* s––‚ðŒ©‚Â‚¯‚é */

@@ -3,6 +3,7 @@ tag: HEAD
   RAWOUT_MULTI¤ò¼ÂÁõ¡£
   REFERDRES_SIMPLE»þ¤Ëbase¥Ø¥Ã¥À¤¬½ÐÎÏ¤µ¤ì¤Ê¤¤¤¿¤á¡¢simple¤ÊÉ½¼¨¤¬µì·Á¼°¤Ç¹Ô¤ï¤ì¤¿¤È¤­¤Ë
 ¤½¤³¤«¤é¤Î >>n ¥ê¥ó¥¯¤Î´ð½à¤¬¤ª¤«¤·¤¯¤Ê¤Ã¤Æ¤¤¤¿bug fix.
+  GetString()‚ªˆø”‚ðƒNƒŠƒA‚µ‚È‚¢‚æ‚¤‚ÉC³B
 
 
 tag: YAKIN20011021: ¼Â¸³¥µ¡¼¥Ð choco.2ch.net ¤ª¤è¤Ó piza, teri2 ¤Ë¤Æ ver 5.26¤È¤·¤ÆºÎÍÑ¡£
