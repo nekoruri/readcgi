@@ -137,7 +137,7 @@
 	%02d=制限開始時刻 %02d=制限終了時刻 */
 #define R2CH_HTML_PATH_TAIL \
 	R2CH_HTML_T_TAIL("%d-%d", "%d", \
-			 "./?ls=%d", "%d")
+			 "./=%d", "%d")
 
 /*
  * i-MODEでレスを表示。
@@ -389,7 +389,7 @@
 	R2CH_HTML_T_CHUNK_ANCHOR("%d-%d", "%d")
 /* %d=レス個数 %d=レス個数 */
 #define R2CH_HTML_PATH_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR("./?ls=%d", "%d")
+	R2CH_HTML_T_LATEST_ANCHOR("./=%d", "%d")
 
 
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
@@ -556,11 +556,11 @@ h1,.c{text-align:center}
 <small>"
 
 #define R2CH_HTML_INDEX_LABEL(anchor, num, label, title) \
-	"<a href=\"" anchor "/?ls=50\">" num ":</a> " \
+	"<a href=\"" anchor "/=50\">" num ":</a> " \
 	"<a href=\"" label "\">" title "</a>\n"
 
 #define R2CH_HTML_INDEX_ANCHOR(anchor, num, title) \
-	"<a href=\"" anchor "/?ls=50\" target=\"body\">" num ": " title "</a>\n"
+	"<a href=\"" anchor "/=50\" target=\"body\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_INDEX_AD \
 "<p><a href=\"-\">スレッド一覧</a></p>
@@ -641,7 +641,7 @@ h1,.c{text-align:center}
 	"<font size=-1>\n"
 
 #define R2CH_HTML_SUBBACK_ITEM(anchor, num, title) \
-	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
+	"<a href=\"" anchor "/=50\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_SUBBACK_FOOTER \
 	"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></div></body></html>"

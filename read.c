@@ -2116,6 +2116,7 @@ static int last_line()
 /****************************************************************/
 void html_head(int level, char const *title, int line)
 {
+	char buf[1024];
 
 	if (level) {
 		pPrintf(pStdout,
@@ -2134,21 +2135,27 @@ void html_head(int level, char const *title, int line)
 		else 
 #endif
 		{
+#ifdef USE_PATH
+			if (path_depth)
+				sprintf(buf, "../../../../%.256s/", zz_bs);
+			else
+#endif
+				sprintf(buf, "../%.256s/", zz_bs);
 #ifdef CHECK_MOD_GZIP
 			if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "../%s/"),
-					title, zz_bs);
+					R2CH_HTML_HEADER_1("%s", "%s"),
+					title, buf);
 			} else
 #endif
 #ifdef GZIP
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "../%s/index.htm%s"),
-					title, zz_bs, gzip_flag ? "" : "l");
+					R2CH_HTML_HEADER_1("%s", "%sindex.htm%s"),
+					title, buf, gzip_flag ? "" : "l");
 #else
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "../%s/index.htm"),
-					title, zz_bs);
+					R2CH_HTML_HEADER_1("%s", "%sindex.htm"),
+					title, buf);
 #endif
 		}
 	/* ALL_ANCHOR は常に生きにする
@@ -2160,7 +2167,7 @@ void html_head(int level, char const *title, int line)
 #ifdef USE_PATH
 			if (path_depth)
 				pPrintf(pStdout,
-					R2CH_HTML_PATH_ALL_ANCHOR); 
+					R2CH_HTML_PATH_ALL_ANCHOR);
 			else
 #endif
 				pPrintf(pStdout,
@@ -2168,19 +2175,42 @@ void html_head(int level, char const *title, int line)
 					zz_bs, zz_ky); 
 		}
 #ifdef PREV_NEXT_ANCHOR
-		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
-			zz_bs, zz_ky, CHUNK_NUM);
-		if (first_line()>1)
-			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
-				zz_bs, zz_ky,
-				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-				first_line(),
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, " <a href=\"1-%d\">1-</a>",
+				 CHUNK_NUM);
+		else
+#endif
+			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
+				zz_bs, zz_ky, CHUNK_NUM);
+		if (first_line()>1) {
+#ifdef USE_PATH
+			if (path_depth)
+				pPrintf(pStdout, " <a href=\"%d-%d\">前%d</a>",
+					(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+					first_line(),
+					CHUNK_NUM );
+			else
+#endif
+				pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
+					zz_bs, zz_ky,
+					(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+					first_line(),
+					CHUNK_NUM );
+		}
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, " <a href=\"%d-%d\">次%d</a>",
+				last_line(),
+				last_line()+CHUNK_NUM,
 				CHUNK_NUM );
-		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
-			zz_bs, zz_ky,
-			last_line(),
-			last_line()+CHUNK_NUM,
-			CHUNK_NUM );
+		else
+#endif
+			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
+				zz_bs, zz_ky,
+				last_line(),
+				last_line()+CHUNK_NUM,
+				CHUNK_NUM );
 #endif
 #ifdef	SEPARATE_CHUNK_ANCHOR
 		html_thread_anchor(1, first_line()-1);
@@ -2268,6 +2298,7 @@ void html_reload(int startline)
 /****************************************************************/
 static void html_foot(int level, int line, int stopped)
 {
+	char buf[1024];
 #ifdef PREV_NEXT_ANCHOR
 	int nchunk;
 #endif
@@ -2283,21 +2314,27 @@ static void html_foot(int level, int line, int stopped)
 #endif
 	if (!isbusytime)
 	{
+#ifdef USE_PATH
+		if (path_depth)
+			sprintf(buf, "../../../../%.256s/", zz_bs);
+		else
+#endif
+			sprintf(buf, "../%.256s/", zz_bs);
 #ifdef CHECK_MOD_GZIP
 		if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
 			pPrintf(pStdout,
-				R2CH_HTML_RETURN_BOARD("../%s/"),
-				zz_bs);
+				R2CH_HTML_RETURN_BOARD("%s"),
+				buf);
 		} else
 #endif
 #ifdef GZIP
 			pPrintf(pStdout,
-				R2CH_HTML_RETURN_BOARD("../%s/index.htm%s"),
-				zz_bs, gzip_flag ? "" : "l");
+				R2CH_HTML_RETURN_BOARD("%sindex.htm%s"),
+				buf, gzip_flag ? "" : "l");
 #else
 			pPrintf(pStdout,
-				R2CH_HTML_RETURN_BOARD("../%s/index.htm"),
-				zz_bs);
+				R2CH_HTML_RETURN_BOARD("%sindex.htm"),
+				buf);
 #endif
 #ifdef USE_PATH
 		if (path_depth)
@@ -2310,30 +2347,60 @@ static void html_foot(int level, int line, int stopped)
 				zz_bs, zz_ky); 
 	}
 
-	pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
-		zz_bs, zz_ky, CHUNK_NUM);
+#ifdef USE_PATH
+	if (path_depth)
+		pPrintf(pStdout, " <a href=\"1-%d\">1-</a>",
+			CHUNK_NUM);
+	else
+#endif
+		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
+			zz_bs, zz_ky, CHUNK_NUM);
+
 	if (!isbusytime && first_line()>1) {
-		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
-			zz_bs, zz_ky,
-			(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-			first_line(),
-			CHUNK_NUM );
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, " <a href=\"%d-%d\">前%d</a>",
+				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+				first_line(),
+				CHUNK_NUM );
+		else
+#endif
+			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
+				zz_bs, zz_ky,
+				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+				first_line(),
+				CHUNK_NUM );
 	}
 	if (isbusytime && need_tail_comment)
 		nchunk = RES_NORMAL;
 	else
 		nchunk = CHUNK_NUM;
 	if ( last_line() < lineMax) {
-		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
-			zz_bs, zz_ky,
-			last_line(),
-			last_line()+nchunk,
-			nchunk );
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, " <a href=\"%d-%d\">次%d</a>",
+				last_line(),
+				last_line()+nchunk,
+				nchunk );
+		else
+#endif
+			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
+				zz_bs, zz_ky,
+				last_line(),
+				last_line()+nchunk,
+				nchunk );
 	} else {
-		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">未読</a>",
-			zz_bs, zz_ky,
-			last_line(),
-			last_line()+CHUNK_NUM);
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, " <a href=\"%d-%d\">未読</a>",
+				last_line(),
+				last_line()+CHUNK_NUM);
+		else
+#endif
+			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">未読</a>",
+				zz_bs, zz_ky,
+				last_line(),
+				last_line()+CHUNK_NUM);
 	}
 #ifdef USE_PATH
 	if (path_depth)
