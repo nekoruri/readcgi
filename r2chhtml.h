@@ -72,6 +72,10 @@
 #define R2CH_HTML_RES_NOMAIL \
 	"<dt>%d 名前：<font color=green><b>%s</b></font> 投稿日：%s<dd>%s<br><br>"
 
+/* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
+#define R2CH_HTML_RES_SAGE \
+	"<dt>%d 名前：<font color=#0000c0><b>%s</b></font> 投稿日：%s<dd>%s<br><br>"
+
 /* レス(ここ壊れています): %d=レス番号 */
 #define R2CH_HTML_RES_BROKEN_HERE \
 	"<dt>%d 名前： 投稿日：[ここ壊れています]<dd>[ここ壊れています]<br><br>"

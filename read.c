@@ -694,7 +694,15 @@ int out_html(int line, int lineNo)
 
 	if (!is_imode()) {	/* no imode */
 		if (*r3 && strlen(r3) < 8192) {
-			if (*r1) {
+			if (r1 && strcmp(r1, "sage") == 0) {
+#ifdef SAGE_IS_PLAIN
+				pPrintf(pStdout, R2CH_HTML_RES_SAGE,
+					lineNo, r0, s[2], r3);
+#else
+				pPrintf(pStdout, R2CH_HTML_RES_MAIL,
+					lineNo, r1, r0, s[2], r3);
+#endif
+			} else if (*r1) {
 				pPrintf(pStdout, R2CH_HTML_RES_MAIL,
 					lineNo, r1, r0, s[2], r3);
 			} else {
@@ -950,9 +958,9 @@ static int get_path_info(char const *path_info)
 	/* PATH_INFOから、トークンを2個以上抜き出す */
 	strncpy(buf, &path_info[1], sizeof(buf) - 1);
 	buf[sizeof(buf) - 1] = 0;
-	b = strtok(buf, "/");
-	k = strtok(NULL, "/");
-	r = strtok(NULL, "/");
+	b = strtok(buf, "/");	/* board */
+	k = strtok(NULL, "/");	/* key */
+	r = strtok(NULL, "/");	/* range */
 	if (!(b && k))
 		return 0;
 
