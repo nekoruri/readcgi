@@ -111,6 +111,7 @@ char *zz_GetString(char *dst, size_t dst_size, char const *tgt);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
 static void html_foot(int level, int line,int);
+void kako_dirname(char *buf, const char *key);
 int getLineMax(void);
 int IsBusy2ch(void);
 int getFileSize(char const *file);
@@ -1010,7 +1011,12 @@ int dat_out_raw(void)
 	}
 	/* raw_lastnum ‚©‚ç‘S•”‚ğ‘—M‚·‚é */
 	for(i = raw_lastnum; i < lineMax; i++) {
-		pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
+#ifdef ZLIB
+		if (gzip_flag)
+			gzwrite(pStdout, (const voidp)BigLine[i], BigLine[i+1] - BigLine[i]);
+		else
+#endif
+			fwrite(BigLine[i], 1, BigLine[i+1] - BigLine[i], pStdout);
 	}
 	return 1;
 }
@@ -1800,8 +1806,7 @@ void html_error(enum html_error_t errorcode)
 	
 	*tmp = '\0';
 	strcpy(tmp, LastChar(zz_ky, '/'));
-/*	strncpy(zz_soko, tmp, 3); */
-	sprintf(zz_soko, "%d", atoi(tmp)/(1000*1000) );
+	kako_dirname(zz_soko, tmp);
 
 	*comcom = '\0';
 	if (errorcode == ERROR_LOGOUT) {
@@ -1865,8 +1870,7 @@ int html_error999(char *mes)
 	}
 #endif
 	strcpy(tmp, LastChar(zz_ky, '/'));
-/*	strncpy(zz_soko, tmp, 3); */
-	sprintf(zz_soko, "%d", atoi(tmp)/(1000*1000) );
+	kako_dirname(zz_soko, tmp);
 	sprintf(tmp_time, "%02d:%02d:%02d", tm_now.tm_hour, tm_now.tm_min,
 		tm_now.tm_sec);
 
@@ -2293,6 +2297,22 @@ void html_foot_im(int line, int stopped)
 	}
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
 }
+
+/****************************************************************/
+/*	‰ß‹ƒƒOpath¶¬					*/
+/****************************************************************/
+void kako_dirname(char *buf, const char *key)
+{
+	int tm = atoi(key)/(1000*1000);
+	if (tm<1000) {
+	    /*  9aabbbbbb -> 9aa */
+	    sprintf(buf, "%03d", tm);
+	} else {
+	    /* 1abbcccccc -> 1a/abb */
+	    sprintf(buf, "%d/%03d", tm/100, tm%1000);
+	}
+}
+
 /****************************************************************/
 /*	END OF THIS FILE					*/
 /****************************************************************/
