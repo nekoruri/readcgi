@@ -1,0 +1,192 @@
+
+read.c,3410
+#  define GZIP	16,258
+#  define LASTMOD28,480
+#  define FORCE_304_TIME 31,530
+#define	CGINAME	36,649
+#define	CGIVER	37,676
+#define	RES_YELLOW	38,719
+#define	RES_REDZONE	39,742
+#define	RES_RED	40,766
+#define	RES_IMODE	41,788
+#define	RES_NORMAL	42,809
+#define	MAX_FILESIZE	43,832
+#define	SIZE_BUF	44,865
+#define	LIMIT_PM	46,890
+#define	LIMIT_AM	47,910
+char const *zz_remote_addr;49,930
+char const *zz_remote_host;50,958
+char const *zz_http_referer;51,986
+char const *zz_http_cookie;52,1015
+char const *zz_path_info;54,1059
+char const *zz_query_string;56,1092
+char *zz_temp;57,1121
+char const *zz_http_user_agent;58,1136
+char const *zz_http_language;59,1168
+char const *zz_http_encoding;61,1210
+int gzip_flag;62,1240
+char const *zz_http_if_modified_since;66,1278
+time_t zz_fileLastmod;67,1317
+char lastmod_str[68,1340
+char zz_bs[71,1372
+char zz_ky[72,1390
+char zz_ls[73,1408
+char zz_st[74,1426
+char zz_to[75,1444
+char zz_nf[76,1462
+char zz_im[77,1480
+int nn_st,78,1498
+int nn_st, nn_to,78,1498
+int nn_st, nn_to, nn_ls;78,1498
+char *BigBuffer 79,1523
+char *BigLine[80,1547
+#define is_imode(is_imode82,1577
+char *KARA 84,1623
+int zz_fileSize 85,1640
+int lineMax 86,1661
+int out_resN 87,1679
+time_t t_now;89,1698
+struct tm tm_now;90,1712
+long currentTime;91,1730
+int isbusytime 92,1748
+typedef int (*zz_printf_t)zz_printf_t118,2386
+static gzFile pStdout;119,2442
+static zz_printf_t pPrintf 120,2491
+#define pPrintf 122,2549
+#define pStdout 123,2573
+int pid;124,2596
+#define false 129,2671
+#define true 130,2689
+#define _C_ 131,2711
+#define _U_ 132,2762
+#define _S_ 133,2801
+#define LINKTAGCUT 134,2882
+#define isCheck(isCheck137,2969
+#define isSJIS1(isSJIS1138,3030
+#define hrefStop(hrefStop139,3087
+#define _0____ 141,3149
+#define __1___ 142,3171
+#define ___2__ 143,3193
+#define ____3_ 144,3215
+#define _____4 145,3237
+#define ______ 147,3260
+#define _01___ 148,3279
+#define __1_3_ 149,3312
+#define ___23_ 150,3345
+#define _0_23_ 151,3378
+char flagtable[154,3420
+} ressplitter;ressplitter194,5995
+void ressplitter_init(203,6154
+const char *ressplitter_split(219,6651
+void splitting_copy(316,8594
+#define FORM_MAXLEN 331,9023
+char form_name[332,9048
+char form_mail[333,9077
+void Unescape(340,9219
+#define SAFECPY(SAFECPY374,9911
+void SetFormName(401,10342
+int BadAccess(438,11178
+int BadAccess(462,11538
+int logOut(520,13292
+void html_bannerNew(564,14329
+void html_banner(573,14572
+void html_banner(579,14647
+int out_html1(589,14884
+int out_html(626,15637
+int dat_out(737,18059
+int dat_read(778,18852
+int getLineMax(840,20186
+int getFileSize(863,20591
+time_t getFileLastmod(875,20933
+int get_lastmod_str(888,21285
+void zz_GetEnv(898,21579
+void atexitfunc(984,23633
+int main(1003,23984
+void html_error(1125,26503
+int html_error999(1182,27791
+char *zz_GetString(1209,28551
+char *zz_GetString(1244,29155
+int whatKanji(1275,29771
+char *findSplitter(1310,30583
+char *findSplitter(1327,30939
+int res_split(1353,31510
+void dump_out16(1388,32061
+int IsBusy2ch(1401,32398
+char *LastChar(1410,32656
+void html_head(1426,32983
+void html_reload(1454,33802
+void html_foot(1467,34162
+void html_foot_im(1487,34650
+char *doReplace(1495,34904
+void someReplace(1513,35342
+int hrefStop(1527,35693
+int cutWordOff(1593,36720
+int ExistHlinkX(1604,37001
+int ExistHlink(1630,37610
+void hlinkReplace(1641,37944
+
+util_date.c,203
+#define ap_isupper 75,3236
+#define ap_islower 76,3263
+#define ap_isdigit 77,3290
+#define ap_isxdigit 78,3317
+#define ap_isspace 79,3346
+API_EXPORT(95,3724
+API_EXPORT(149,4886
+API_EXPORT(227,7576
+
+r2chhtml.h,1351
+#define	R2CH_HTML_NEW_BANNER 17,423
+#define	R2CH_HTML_BBSPINK_BANNER 48,2109
+#define	R2CH_HTML_BANNER 56,2492
+#define R2CH_HTML_RES_MAIL 68,2814
+#define R2CH_HTML_RES_NOMAIL 72,2982
+#define R2CH_HTML_RES_BROKEN_HERE 76,3132
+#define R2CH_HTML_TAIL 82,3401
+#define R2CH_HTML_IMODE_RES_MAIL 92,3716
+#define R2CH_HTML_IMODE_RES_NOMAIL 96,3878
+#define R2CH_HTML_IMODE_RES_BROKEN_HERE 100,3997
+#define R2CH_HTML_IMODE_TAIL 103,4177
+#define R2CH_HTML_ERROR_ADMIN 113,4495
+#define R2CH_HTML_ERROR_1 117,4702
+#define R2CH_HTML_ERROR_2 142,5353
+#define R2CH_HTML_ERROR_3 174,7270
+#define R2CH_HTML_ERROR_4 178,7341
+#define R2CH_HTML_ERROR_5_HTML 182,7474
+#define R2CH_HTML_ERROR_5_DAT 186,7632
+#define R2CH_HTML_ERROR_5_NONE 190,7874
+#define R2CH_HTML_ERROR_6 194,8048
+#define R2CH_HTML_ERROR_999_1 200,8293
+#define R2CH_HTML_ERROR_999_2 224,9249
+#define R2CH_HTML_HEADER_1 236,9556
+#define R2CH_HTML_HEADER_1 267,10488
+#define R2CH_HTML_IMODE_HEADER_1 281,11091
+#define R2CH_HTML_HEADER_RED 293,11585
+#define R2CH_HTML_HEADER_REDZONE 299,11811
+#define R2CH_HTML_HEADER_YELLOW 305,12040
+#define R2CH_HTML_HEADER_2 311,12225
+#define R2CH_RELOAD 317,12312
+#define R2CH_RELOAD_I 320,12422
+#define R2CH_HTML_FORM 329,12643
+#define R2CH_HTML_FORM 349,13467
+#define R2CH_HTML_FOOTER 362,13971
+#define R2CH_HTML_FORM_IMODE 366,14090
+
+read2ch.h,260
+#define CUTRESLINK4,74
+#define LASTMOD10,210
+#define NEWBA13,267
+#define GSTR216,336
+#define TYPE_TERI19,385
+#define USE_PATH24,512
+#define COOKIE27,606
+#define PREVENTRELOAD30,661
+#define FORCE_304_TIME 33,761
+#define GZIP36,818
+#define ZLIB39,862
+
+util_date.h,120
+#define APACHE_UTIL_DATE_H60,2854
+#define API_EXPORT(API_EXPORT62,2882
+#define BAD_DATE 78,3106
+API_EXPORT(80,3134

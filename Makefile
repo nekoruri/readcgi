@@ -2,7 +2,7 @@ CC            = gcc
 DEFS          = -DHAVE_READ2CH_H
 # DEFS        = -DCUTRESLINK -DRELOADLINK -DLASTMOD -DNEWBA -DGSTR2 \
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
-CFLAGS        = -g -Wall
+CFLAGS        = -g -O2 -Wall
 LIBS          = -lz
 #SOURCES       = read.c util_date.c
 OBJS          = read.o util_date.o
@@ -11,12 +11,12 @@ INCLUDES      = read2ch.h read2ch.h r2chhtml.h
 .SUFFIXES: .c .o .cgi
 
 # phony targets
-.PHONY:all clean test dat strip
+.PHONY:all clean test dat strip tags
 
 # targets
 read.cgi: $(OBJS)
 
-all: read.cgi
+all: read.cgi TAGS
 
 #read.cgi: $(SOURCES) $(INCLUDES)
 #	$(CC) $(LIBS) $(CFLAGS) $(DEFS) -o $@ $(SOURCES)
@@ -40,6 +40,11 @@ dat:
 strip:
 	$(MAKE) 'CFLAGS=-O2 -Wall' read.cgi
 	strip read.cgi
+
+tags: TAGS
+
+TAGS: *.c *.h
+	etags $^ $>
 
 # implicit rules
 .o.cgi:
