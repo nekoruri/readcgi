@@ -941,7 +941,7 @@ int get_lastmod_str(time_t lastmod)
 /****************************************************************/
 /*	PATH_INFOを解析						*/
 /*	/board/datnnnnnn/[range] であるとみなす			*/
-/*	return:pathが有効だったら1を返す			*/
+/*	return: pathが有効だったら1を返す			*/
 /*	副作用: zz_bs, zz_ky, zz_st, zz_to, zz_nf		*/
 /*		などが更新される場合がある			*/
 /****************************************************************/
@@ -1648,10 +1648,10 @@ void html_head(char *title, int line)
 void html_reload(int startline)
 {
 	if (is_imode())	/*  imode */
-		pPrintf(pStdout, R2CH_RELOAD_I, zz_bs, zz_ky,
+		pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
 			startline);
 	else
-		pPrintf(pStdout, R2CH_RELOAD, zz_bs, zz_ky,
+		pPrintf(pStdout, R2CH_HTML_RELOAD, zz_bs, zz_ky,
 			startline);
 }
 #endif

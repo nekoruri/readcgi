@@ -80,14 +80,28 @@
 #define R2CH_HTML_RES_BROKEN_HERE \
 	"<dt>%d 名前： 投稿日：[ここ壊れています]<dd>[ここ壊れています]<br><br>"
 
-/* tail: %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数
-         %s=cgi %s=board %s=key %d=レス数 %d=レス数
+/* tail: npath=生成するURLその1 nst=次のxxxレス
+	 lpath=生成するURLその2 ls=最新レスxxx
          %02d=制限開始時刻 %02d=制限終了時刻 */
-#define R2CH_HTML_TAIL \
-	" <a href=\"./%s?bbs=%s&key=%s&st=%d&to=%d&n=t\">次の%dレス</a>" \
-	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&n=t\">最新レス%d</a>\n" \
+#define R2CH_HTML_T_TAIL(npath, nst, lpath, ls) \
+	" <a href=\"" npath "\">次の" nst "レス</a>" \
+	" <a href=\"" lpath "\">最新レス" ls "</a>\n" \
 	" (%02d:00PM - %02d:00AM の間一気に全部は読めません)<br>\n"
 
+/* tail: PATHナシ
+	%s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数
+	%s=cgi %s=board %s=key %d=レス数 %d=レス数
+	%02d=制限開始時刻 %02d=制限終了時刻 */
+#define R2CH_HTML_TAIL \
+	R2CH_HTML_T_TAIL("./%s?bbs=%s&key=%s&st=%d&to=%d&n=t", "%d", \
+			 "./%s?bbs=%s&key=%s&ls=%d&n=t", "%d")
+/* tail: PATH仕様
+	%d=開始 %d=終了 %d=レス数
+	%d=レス数 %d=レス数
+	%02d=制限開始時刻 %02d=制限終了時刻 */
+#define R2CH_HTML_PATH_TAIL \
+	R2CH_HTML_T_TAIL("%d-%d", "%d", \
+			 "?ls=%d", "%d")
 
 /*
  * i-MODEでレスを表示。
@@ -274,17 +288,42 @@
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>"
 
+/* path=生成するURL */
+#define R2CH_HTML_T_ALL_ANCHOR(path) \
+	" <a href=\"" path "\">レスを全部読む</a>"
+/* path=生成するURL st=開始位置 */
+#define R2CH_HTML_T_CHUNK_ANCHOR(path, st) \
+	" <a href=\"" path "\">" st "-</a>"
+/* path=生成するURL ls=記事数 */
+#define R2CH_HTML_T_LATEST_ANCHOR(path, ls) \
+	" <a href=\"" path "\">最新レス"ls"</a>"
+
+/* 以下のものは、PATHナシ仕様で用いられる */
+
 /* %s=板 %s=スレ番号 */
 #define R2CH_HTML_ALL_ANCHOR \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s\">レスを全部読む</a>"
+	R2CH_HTML_T_ALL_ANCHOR(CGINAME "?bbs=%s&key=%s")
 /* %s=板 %s=スレ番号 %d=開始レス %d=終了レス %s="&n=f" %d=開始レス */
 #define R2CH_HTML_CHUNK_ANCHOR \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d%s\">%d-</a>"
+	R2CH_HTML_T_CHUNK_ANCHOR(CGINAME "?bbs=%s&key=%s&st=%d&to=%d%s", "%d")
 /* %s=板 %s=スレ番号 %d=レス個数 %d=レス個数 */
 #define R2CH_HTML_LATEST_ANCHOR \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&n=t\">最新レス%d</a>"
+	R2CH_HTML_T_LATEST_ANCHOR(CGINAME "?bbs=%s&key=%s&ls=%d&n=t", "%d")
 
-	
+/* 以下のものは、PATH仕様で用いられる
+   板・スレ番はすでに決定しているので、埋め込まれない */
+
+/* 外部パラメータナシ */
+#define R2CH_HTML_PATH_ALL_ANCHOR \
+	R2CH_HTML_T_ALL_ANCHOR("1-")
+/* %d=開始レス %d=終了レス %d=開始レス */
+#define R2CH_HTML_PATH_CHUNK_ANCHOR \
+	R2CH_HTML_T_CHUNK_ANCHOR("%d-%d", "%d")
+/* %d=レス個数 %d=レス個数 */
+#define R2CH_HTML_PATH_LATEST_ANCHOR \
+	R2CH_HTML_T_LATEST_ANCHOR("?ls=%d", "%d")
+
+
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
                      %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
 #define R2CH_HTML_IMODE_HEADER_1 \
@@ -323,10 +362,16 @@
 /*
  * RELOAD
  */
-#define R2CH_RELOAD \
-	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&n=t\">新レスの表\示</a></center><hr>"
+#define R2CH_HTML_T_RELOAD(path) \
+	"<hr><center><a href=\"" path "\">新レスの表\示</a></center><hr>"
 
-#define R2CH_RELOAD_I \
+#define R2CH_HTML_RELOAD \
+	R2CH_HTML_T_RELOAD("read.cgi?bbs=%s&key=%s&st=%d&n=t")
+
+#define R2CH_HTML_PATH_RELOAD \
+	R2CH_HTML_T_RELOAD("%s-")
+
+#define R2CH_HTML_RELOAD_I \
 	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&i=t&n=t\">新レスの表\示</a></center><hr>"
 
 /*
