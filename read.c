@@ -815,7 +815,7 @@ int dat_out()
 int dat_read()
 {
 	int i;
-	FILE *fp;
+	int in;
 	char fname[1024];
 
 	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
@@ -852,13 +852,14 @@ int dat_read()
 	if (!BigBuffer)
 		html_error("メモリの確保に失敗しました。");
 
-	fp = fopen(fname, "r");
-	if (!fp) {
+	in = open(fname, O_RDONLY);
+	if (in < 0)
+	{
 		html_error("そんな板orスレッドないです。");
 		return 0;
 	}
-	fread(BigBuffer, zz_fileSize, 1, fp);
-	fclose(fp);
+	read(in, BigBuffer, zz_fileSize);
+	close(in);
 	i = strlen(BigBuffer);
 	while(i < zz_fileSize) {
 		BigBuffer[i] = '*';
