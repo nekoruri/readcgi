@@ -18,6 +18,11 @@
 /* teri タイプのログを読み込む */
 #define TYPE_TERI
 
+/* PATH_INFOを処理することにより、
+   read.cgi/board/nnnnnn/?query
+   のリクエストを処理できるようになる */
+#define USE_PATH
+
 /* Cookie による名前、E-mail フィールドの初期値の埋め込みを CGI 側で行う */
 #define COOKIE
 
