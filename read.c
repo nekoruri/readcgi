@@ -585,7 +585,11 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 {
 	char *bufp = *This->buffers;
 	int bufrest = This->rest;
+#ifdef NORMAL_TAGCUT
+	int istagcut = (resnumber > 1) || is_imode();
+#else
 	int istagcut = (LINKTAGCUT && isbusytime && resnumber > 1) || is_imode();
+#endif
 	/*	ループ中、*This->Buffersはバッファの先頭を保持している	*/
 	while (--bufrest > 0) {
 		int ch = *p;
@@ -1326,6 +1330,9 @@ static int get_path_info(char const *path_info)
 		/* stがない時は1から */
 		strcpy(zz_st,"1");
 	}
+	if (zz_ls[0]) {
+		zz_st[0] = zz_to[0] = '\0';
+	}
 
 	/* 処理は完了したものとみなす */
 	return 1;
@@ -1606,6 +1613,11 @@ int main(void)
 		}
 	} else if (ls < 0)
 		ls = 0;
+
+	/* 複数指定された時はlsを優先 */
+	if (ls) {
+		st = to = 0;
+	}
 
 #ifdef USE_INDEX
 	/* ここでindexを読み込んでくる
