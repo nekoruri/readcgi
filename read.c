@@ -1404,14 +1404,19 @@ int dat_read(char const *fname,
 	close(in);
 #endif
 
+#ifdef	Katjusha_DLL_REPLY
+	if (zz_katjusha_raw) {
+		BigLine[lineMax = 0] = BigBuffer + zz_fileSize;
+		return 0;
+	}
+#endif
 	lineMax = getLineMax();
 #ifdef	RAWOUT
-	if (!rawmode)
+	if (rawmode)
+		return 0;
 #endif
-	{
-		check_logtype();
-		get_title();
-	}
+	check_logtype();
+	get_title();
 /*
 html_error(ERROR_MAINTENANCE);
 */
@@ -2375,6 +2380,7 @@ int main(void)
 		if (zz_fileSize && zz_fileSize == raw_lastsize) {
 			if (!zz_http_if_modified_since) {	/* NULL‚¾‚æ‚ËHKARA“ü‚ê‚½‚ç•Ï‚¦‚Ä‚Ë */
 				/* LastModified‚ğo—Í‚¹‚¸A”ñˆ³k‚Å•Ô‚· */
+				/*printf("Last-Modified: %s\n", lastmod_str);*/
 				printf("\n" "+OK 0/%dK\n", MAX_FILESIZE / 1024);
 				return 0;
 			}
