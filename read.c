@@ -1547,7 +1547,6 @@ void atexitfunc(void)
 		}
 #ifdef NN4_LM_WORKAROUND
 		if (!strncmp(zz_http_user_agent, "Mozilla/4.", 10)
-		    && zz_http_user_agent[10] >= '5'
 		    && !strstr(zz_http_user_agent, "compatible"))
 			putchar('\n');
 		else
