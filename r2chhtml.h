@@ -251,10 +251,15 @@
  */
 #ifndef COOKIE
 #define R2CH_HTML_COOKIE_SCRIPT \
-	"<script language=JavaScript><!--\n" \
-	"N=g(\"NAME\");" \
-	"M=g(\"MAIL\");" \
-	"function g(key,tmp1,tmp2,xx1,xx2,xx3){" \
+	"<script type=\"text/javascript\" defer><!--\n" \
+	"function l(e){" \
+	"var N=g(\"NAME\"),M=g(\"MAIL\"),i;" \
+	"with(document) for(i=0;i<forms.length;i++)" \
+	"if(forms[i].FROM&&forms[i].mail)" \
+	"with(forms[i]){FROM.value=N;mail.value=M;}" \
+	"}" \
+	"onload=l;" \
+	"function g(key,tmp1,tmp2,xx1,xx2,xx3,len){" \
 	"tmp1=\" \"+document.cookie+\";\";" \
 	"xx1=xx2=0;" \
 	"len=tmp1.length;" \
@@ -262,11 +267,11 @@
 	"xx2=tmp1.indexOf(\";\",xx1);" \
 	"tmp2=tmp1.substring(xx1+1,xx2);" \
 	"xx3=tmp2.indexOf(\"=\");" \
-	"if(tmp2.substring(0,xx3)==key){" \
+	"if(tmp2.substring(0,xx3)==key)" \
 	"return unescape(tmp2.substring(xx3+1,xx2-xx1-1));" \
-	"}" \
 	"xx1=xx2+1;" \
-	"}return \"\";" \
+	"}" \
+	"return \"\";" \
 	"}\n" \
 	"//--></script>" 
 #else
@@ -383,14 +388,9 @@
 #define R2CH_HTML_FORM(depth, bs, ky, tm) \
 	"<form method=POST action=\"" depth "bbs.cgi\">" \
 	"<input type=submit value=\"‘‚«‚Ş\" name=submit> –¼‘OF " \
-	"<script language=JavaScript><!--\n" \
-	"document.write(\"<input name=FROM size=19 value=\",N,\"> E-mail<font size=1> (È—ª‰Â) </font>: <input name=mail size=19 value=\",M,\">\");\n" \
-	"//--></script>" \
-	"<noscript>" \
 	"<input name=FROM size=19>" \
 	" E-mail<font size=1> (È—ª‰Â) </font>: " \
 	"<input name=mail size=19>" \
-	"</noscript>" \
 	"<br><textarea rows=5 cols=70 wrap=off name=MESSAGE></textarea>" \
 	"<input type=hidden name=bbs value=" bs ">" \
 	"<input type=hidden name=key value=" ky ">" \
