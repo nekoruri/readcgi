@@ -73,6 +73,9 @@
    資源の開放は積極的にサボりたい。 */
 #define USE_MMAP
 
+/* munmap(2)等の明示的な資源開放 */
+/* #undef EXPLICIT_RELEASE */
+
 /** Header custumization **/
 
 /* 「全部読む」をつける */

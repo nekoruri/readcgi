@@ -1387,14 +1387,16 @@ void readSettingFile(const char *bbsname)
 				}
 			}
 		}
-#if 0
 #ifdef	USE_MMAP
+#ifdef  EXPLICIT_RELEASE
 		munmap(mmptr, st.st_size);
-#else
-		free(mmptr);
-#endif
-#endif
 		close(fd);
+#endif
+#else
+		/* mmptr == automatic variable... */
+		/* free(mmptr); */
+		close(fd);
+#endif  /* USE_MMAP */
 	}
 }
 #endif	/*	USE_SETTING_FILE	*/
@@ -1535,6 +1537,7 @@ void atexitfunc(void)
 	if (isCalled) return;
 	isCalled = 1;
 
+#ifdef EXPLICIT_RELEASE
 #ifdef USE_MMAP
 	if (BigBuffer && BigBuffer != MAP_FAILED) {
 		munmap(BigBuffer, zz_mmap_size);
@@ -1545,6 +1548,7 @@ void atexitfunc(void)
 	if (BigBuffer)
 		free(BigBuffer);
 #endif
+#endif /* EXPLICIT_RELEASE */
 #ifdef ZLIB
 	if (gzip_flag) {
 		/* gzclose()だけで十分と思う... */
@@ -1725,7 +1729,7 @@ int main(void)
 		fflush(stdout);
 
 		/*  prepare zlib */
-		/* 引数1はzlib/gzio.cで特別扱い
+		/* 引数1はzlib/gzio.cで特別扱い（2chバージョンの独自仕様）
 		   仮にstdoutを設定し、closeしない */
 		pStdout = gzdopen(1, "wb9");
 
