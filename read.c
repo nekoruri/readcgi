@@ -869,6 +869,12 @@ static int out_html(int level, int line, int lineNo)
 	char *r0, *r1, *r3, *r4;
 	char p[SIZE_BUF];
 
+#ifdef	CREATE_NAME_ANCHOR
+#define	LineNo_			lineNo, lineNo
+#else
+#define	LineNo_			lineNo
+#endif
+
 /*printf("line=%d[%s]<P>\n",line,BigLine[line]);return 0;*/
 
 	if (!out_resN) {	/* Can I write header ?   */
@@ -890,48 +896,21 @@ static int out_html(int level, int line, int lineNo)
 
 	if (!is_imode()) {	/* no imode */
 		if (*r3 && s[4]-r3 < 8192) {
-			if (r1 && strcmp(r1, "sage") == 0) {
+			if (*r1) {
 #ifdef SAGE_IS_PLAIN
-# ifdef CREATE_NAME_ANCHOR
-				pPrintf(pStdout,
-					R2CH_HTML_RES_SAGE("%d", "%d", "%s", "%s", "%s"),
-					lineNo, lineNo, r0, s[2], r3);
-# else
-				pPrintf(pStdout,
-					R2CH_HTML_RES_SAGE("%d", "%s", "%s", "%s"),
-					lineNo, r0, s[2], r3);
-# endif
-#else
-# ifdef CREATE_NAME_ANCHOR
-				pPrintf(pStdout,
-					R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
-					lineNo, lineNo, r1, r0, s[2], r3);
-# else
-				pPrintf(pStdout,
-					R2CH_HTML_RES_MAIL("%d", "%s", "%s", "%s", "%s"),
-					lineNo, r1, r0, s[2], r3);
-# endif
+				if (strcmp(r1, "sage") == 0)
+					pPrintf(pStdout,
+						R2CH_HTML_RES_SAGE("%d", "%d", "%s", "%s", "%s"),
+						LineNo_, r0, s[2], r3);
+				else
 #endif
-			} else if (*r1) {
-# ifdef CREATE_NAME_ANCHOR
-				pPrintf(pStdout,
-					R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
-					lineNo, lineNo, r1, r0, s[2], r3);
-# else
-				pPrintf(pStdout,
-					R2CH_HTML_RES_MAIL("%d", "%s", "%s", "%s", "%s"),
-					lineNo, r1, r0, s[2], r3);
-# endif
+					pPrintf(pStdout,
+						R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
+						LineNo_, r1, r0, s[2], r3);
 			} else {
-# ifdef CREATE_NAME_ANCHOR
 				pPrintf(pStdout,
 					R2CH_HTML_RES_NOMAIL("%d", "%d", "%s", "%s", "%s"),
-					lineNo, lineNo, r0, s[2], r3);
-# else
-				pPrintf(pStdout,
-					R2CH_HTML_RES_NOMAIL("%d", "%s", "%s", "%s"),
-					lineNo, r0, s[2], r3);
-# endif
+					LineNo_, r0, s[2], r3);
 			}
 		} else {
 			pPrintf(pStdout, R2CH_HTML_RES_BROKEN_HERE("%d"),
@@ -1002,6 +981,7 @@ static int out_html(int level, int line, int lineNo)
 	}
 
 	return 0;
+#undef	LineNo_
 }
 /****************************************************************/
 /*	Output raw data file					*/

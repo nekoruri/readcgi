@@ -107,22 +107,23 @@
 
 #else
 
-/* アンカー名なし */
+/* アンカー名なし
+   マクロパラメータのlは捨てる */
 /* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
-#define R2CH_HTML_RES_MAIL(n, m, nm, d, t) \
+#define R2CH_HTML_RES_MAIL(n, l, m, nm, d, t) \
 	"<dt>" n " " R2CH_HTML_NAME "<a href=\"mailto:" m " \"><b>" nm " </b></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 
 /* レス(mailto無し): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #ifdef USE_CSS
-#define R2CH_HTML_RES_NOMAIL(n, nm, d, t) \
+#define R2CH_HTML_RES_NOMAIL(n, l, nm, d, t) \
 	"<dt>" n " " R2CH_HTML_NAME "<b>" nm " </b> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 #else
-#define R2CH_HTML_RES_NOMAIL(n, nm, d, t) \
+#define R2CH_HTML_RES_NOMAIL(n, l, nm, d, t) \
 	"<dt>" n " " R2CH_HTML_NAME "<font color=green><b>" nm " </b></font> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 #endif
 
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
-#define R2CH_HTML_RES_SAGE(n, nm, d, t) \
+#define R2CH_HTML_RES_SAGE(n, l, nm, d, t) \
 	"<dt>" n " " R2CH_HTML_NAME "<font color=blue><b>" nm " </b></font> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 #endif
 
