@@ -43,6 +43,11 @@
 # error "Too large CHUNK_NUM!!"
 #endif
 
+/* TERIÉ^ÉCÉvÇ≈','Ç™íuä∑Ç≥ÇÍÇƒäiî[Ç≥ÇÍÇÈï∂éöóÒ */
+#define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "ÅóÅM" */
+#define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
+#define COMMA_SUBSTITUTE_LEN 4
+
 char const *zz_remote_addr;
 char const *zz_remote_host;
 char const *zz_http_referer;
@@ -89,6 +94,7 @@ char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
 
 #define is_imode() (*zz_im == 't')
+#define is_nofirst() (*zz_nf == 't')
 
 char *KARA = "";
 int zz_fileSize = 0;
@@ -533,7 +539,7 @@ int urlcopy(char *bufp, const char *url, int urllen)
 static int isprinted(int lineNo)
 {
 	if (lineNo == 1) {
-		if (*zz_nf == 't')
+		if (is_nofirst())
 			return false;
 	} else {
 		if (nn_st && lineNo < nn_st)
@@ -732,9 +738,9 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				goto Break;
 				/*	break;	*/
 #ifndef TYPE_TERI
-			case 0x81: /*  *"Åó"(8197)  "ÅM"(814d) */
+			case COMMA_SUBSTITUTE_FIRSTCHAR: /*  *"Åó"(8197)  "ÅM"(814d) */
 				/* if (!This->isTeri) { */
-				if (memcmp(p+1, "\x97ÅM", 3) == 0) {
+				if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {
 					ch = ',';
 					p += 4 - 1;
 				}
@@ -1067,10 +1073,10 @@ static int out_html1(int level)
 		return 1; 
 #endif
 #ifdef	TYPE_TERI
-	/*someReplace(s[4],r4,"ÅóÅM",",")       ; */
+	/*someReplace(s[4],r4,COMMA_SUBSTITUTE,",")       ; */
 	html_head(level, s[4], lineMax);
 #else
-	someReplace(s[4], r4, "ÅóÅM", ",");
+	someReplace(s[4], r4, COMMA_SUBSTITUTE, ",");
 	html_head(level, r4, lineMax);
 #endif
 #if 0
@@ -1112,7 +1118,7 @@ static int out_html(int level, int line, int lineNo)
 #ifdef	TYPE_TERI
 		r4 = s[4];
 #else
-		someReplace(s[4], r4, "ÅóÅM", ",");
+		someReplace(s[4], r4, COMMA_SUBSTITUTE, ",");
 #endif
 		html_head(level, r4, lineMax);
 #if 0
@@ -1140,9 +1146,9 @@ static int out_html(int level, int line, int lineNo)
 	r1 = s[1];
 	r3 = s[3];
 #else
-	someReplace(s[0], r0, "ÅóÅM", ",");
-	someReplace(s[1], r1, "ÅóÅM", ",");
-	someReplace(s[3], r3, "ÅóÅM", ",");
+	someReplace(s[0], r0, COMMA_SUBSTITUTE, ",");
+	someReplace(s[1], r1, COMMA_SUBSTITUTE, ",");
+	someReplace(s[3], r3, COMMA_SUBSTITUTE, ",");
 	someReplace(r3, r3, "&amp;", "&");
 #endif
 #ifndef	CUTRESLINK
@@ -1298,7 +1304,7 @@ int dat_out(int level)
 		lineNo = line + 1;
 
 		if (lineNo == 1) {
-			if (!strncmp(zz_nf, "t", 1))
+			if (is_nofirst())
 				continue;
 		} else {
 			if (nn_st && lineNo < nn_st)
@@ -1376,7 +1382,7 @@ int dat_read(char const *fname,
 		if (!nn_st && !nn_to && !nn_ls)
 			nn_ls = RES_IMODE;
 	}
-	if (zz_nf[0] != 't' && nn_ls > 0) {
+	if (!is_nofirst() && nn_ls > 0) {
 		nn_ls--;
 		if(nn_ls == 0) {
 			nn_ls = 1;
