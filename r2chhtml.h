@@ -453,7 +453,7 @@
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
                      %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
 #define R2CH_HTML_IMODE_HEADER_1 \
-	R2CH_HTML_IMODE_HEADER_T("%s", "/%s/i/", \
+	R2CH_HTML_IMODE_HEADER_T("%s", "../%s/i/", \
 		CGINAME "?bbs=%s&key=%s&st=1&to=%d&imode=true", \
 		CGINAME "?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST )
 
