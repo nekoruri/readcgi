@@ -958,6 +958,49 @@ static int get_path_info(char const *path_info)
 	strncpy(zz_bs, b, 1024 - 1);
 	strncpy(zz_ky, k, 1024 - 1);
 
+	/* strtok()で切り出したバッファは総長制限が
+	   かかっているので、buffer overrunはないはず */
+	if (r) {
+		char *p;
+		/* 範囲指定のフォーマットは以下のものがある
+
+		   /4	(st=4&to=4)
+		   /4-	(st=4)
+		   /-6	(to=6)
+		   /4-6	(st=4to=4)
+
+		   カキコ1は特別扱いで、nofirstにより
+		   動作が左右されるっぽいので、どうしよう */
+
+		/* 特に指定がなかったら、st=1であるとみなす */
+		strcpy(zz_st, "1");
+
+		/* st を取り出す */
+		if (isdigit(*r)) {
+			for (p = zz_st; isdigit(*r); p++, r++)
+				*p = *r;
+			*p = 0;
+		}
+
+		if (*r == '-') {
+			r++;
+			/* toを取り出す */
+			if (isdigit(*r)) {
+				for (p = zz_to; isdigit(*r); p++, r++)
+					*p = *r;
+				*p = 0;
+			}
+		} else {
+			strcpy(zz_to, zz_st);
+		}
+
+		/* nofirstの仕様をごまかすためのkludge XXX */
+		strcpy(zz_nf,
+		       (atoi(zz_st) == 1
+			? "false"
+			: "true"));
+	}
+
 	/* 処理は完了したものとみなす */
 	return 1;
 }
