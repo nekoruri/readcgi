@@ -26,12 +26,6 @@
 /* Last-Modified を追加する */
 #define LASTMOD
 
-/* Last-Modified に併せて、Expires: も出力してみる */
-/* #define EXPIRES */
-
-/* 最適化された BadAccess を使用する */
-#define NEWBA
-
 /* nofirst → n など、短縮形で指示できるようにする */
 #define GSTR2
 
@@ -42,12 +36,6 @@
    read.cgi/board/nnnnnn/?query
    のリクエストを処理できるようになる */
 #define USE_PATH
-
-/* Cookie による名前、E-mail フィールドの初期値の埋め込みを CGI 側で行う
- * Last-Modified付加により、proxyでキャッシュされた場合に各種の不都合
- * (最悪の場合、キャップ・トリップのパス漏れ)が発生するため使用不可に
- */
-/* #define COOKIE */
 
 /* 書き込み直後のリロードを防止する */
 #define PREVENTRELOAD
@@ -106,9 +94,6 @@
 /* 板毎に設定が書いてあるファイル、使うけ？ */
 #define	USE_SETTING_FILE
 #define	SETTING_FILE_NAME	"SETTING_R.TXT"
-
-/* if index2.cgi exists, return link use index2.cgi */
-/* #define USE_INDEX2CGI */
 
 /* check server use mod_gzip? */
 #define CHECK_MOD_GZIP

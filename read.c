@@ -776,114 +776,9 @@ void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 
 #endif
 
-#ifdef COOKIE
-#define FORM_MAXLEN 1024
-char form_name[FORM_MAXLEN];
-char form_mail[FORM_MAXLEN];
-
-/*
- *  Unescape - %xx を元に戻して、HTML形式に変換
- *  %00はいろいろ問題あるから今のところは%20(' ')に置換
- */
-
-void Unescape(char *dst, const char *src, int dstlen, int srclen)
-{
-	while(dstlen > 1 && srclen > 0 && *src) {
-		int c = 0;
-		if(*src == '%') {
-			int i;
-			const char *tmp = ++src;
-			srclen--;
-			for(i = 0; i < 2 && srclen > 0; i++, src++, srclen--) {
-				c *= 16;
-				if(*src >= '0' && *src <= '9')
-					c += *src - '0';
-				else if(*src >= 'A' && *src <= 'F')
-					c += *src - 'A' + 10;
-				else if(*src >= 'a' && *src <= 'f')
-					c += *src - 'a' + 10;
-				else
-					break;
-			}
-			if(c == 0) {
-				if(tmp == src) {
-					*(dst++) = '%';
-					dstlen--;
-					continue;
-				} else {
-					*(dst++) = ' ';
-					dstlen--;
-					continue;
-				}
-			}
-		} else {
-			c = *(src++);
-			srclen--;
-		}
-#define SAFECPY(str, slen)        		\
-		if(dstlen <= slen + 1)		\
-			break;			\
-		memcpy(dst, str, slen);		\
-		dstlen -= slen;
-		if(c == '\"') {
-			SAFECPY("&quot;", 6);
-		} else if(c == '&') {
-			SAFECPY("&amp;", 5);
-		} else if(c == '<') {
-			SAFECPY("&lt;", 4);
-		} else if(c == '>') {
-			SAFECPY("&gt;", 4);
-#undef SAFECPY
-		} else {
-			*dst++ = c;
-			dstlen--;
-		}
-	}
-	if(dstlen)
-		*(dst++) = '\0';
-}
-
-/*
- *  SetFormName
- */
-
-void SetFormName(void)
-{
-	/* HTTP_COOKIE= FROM=......;MAIL=......といった形式
-	 (&で区切ればzz_GetStringが使えるんだけどね...) */
-	char const *p = zz_http_cookie;
-	strcpy(form_name, KARA);
-	strcpy(form_mail, KARA);
-	while(p && *p) {
-		char *q = strchr(p, '='), *r;
-		char *target;
-		if(!q)
-			break;
-		if(q - p == 4 && !strncmp(p, "MAIL", 4)) {
-			target = form_mail;
-		} else if (q - p == 4 && !strncmp(p, "NAME", 4)) {
-			target = form_name;
-		} else {
-			p = strchr(q, ';');
-			if(p)
-				p++;
-			continue;
-		}
-		r = strchr(q, ';');
-		if(!r) {
-			r = q + strlen(q);
-			p = NULL;
-		} else
-			p = r + 1;
-		Unescape(target, q + 1, FORM_MAXLEN, r - q - 1);
-	}
-}
-#endif
-
 /****************************************************************/
 /*	BadAccess						*/
 /****************************************************************/
-#ifdef NEWBA
 int BadAccess(void)
 {
 	char *agent_kick[] = {
@@ -907,62 +802,6 @@ int BadAccess(void)
 
 	return 0;
 }
-#else
-int BadAccess(void)
-{
-	if (strstr(zz_http_user_agent, "DreamPassport"))
-		return 0;
-	if (strstr(zz_http_user_agent, "DoCoMo"))
-		return 0;
-	if (strstr(zz_http_user_agent, "J-PHONE"))
-		return 0;
-	if (strstr(zz_http_user_agent, "ASTEL"))
-		return 0;
-	if (strstr(zz_http_user_agent, "[ja]"))
-		return 0;
-	if (strstr(zz_http_user_agent, "iCab"))
-		return 0;	/* MAC          */
-	if (strstr(zz_http_user_agent, "iBOX"))
-		return 0;	/* MAC          */
-	if (strstr(zz_http_user_agent, "WannaBe"))
-		return 0;	/* MAC          */
-	if (strstr(zz_http_user_agent, "Macintosh; I;"))
-		return 0;	/* MAC          */
-	if (strstr(zz_http_user_agent, "Mozilla/3.0N"))
-		return 0;	/* small?       */
-	if (strstr(zz_http_user_agent, "CBBoard"))
-		return 0;	/* small?       */
-	if (strstr(zz_http_user_agent, "PersonaWare"))
-		return 0;	/* small?       */
-	if (strstr(zz_http_user_agent, "Sharp"))
-		return 0;	/* small?       */
-	if (strstr(zz_http_user_agent, "95"))
-		return 0;	/* win95        */
-	if (strstr(zz_http_user_agent, "NT 4.0"))
-		return 0;	/* winNT        */
-	if (strstr(zz_http_user_agent, "WinNT"))
-		return 0;	/* winNT        */
-
-	if (!*zz_http_user_agent && !*zz_http_language)
-		return 1;
-/*	if(!*zz_http_user_agent)			return 1;*/
-/*	if(!*zz_http_language)				return 1;*/
-#ifdef	Katjusha_Beta_kisei
-	if (strstr(zz_http_user_agent, "Katjusha"))
-		return 1;
-#endif
-	if (strstr(zz_http_user_agent, "WebFetch"))
-		return 1;
-	if (strstr(zz_http_user_agent, "origin"))
-		return 1;
-	if (strstr(zz_http_user_agent, "Nozilla"))
-		return 1;
-	if (strstr(zz_http_user_agent, "WWWD"))
-		return 1;
-
-	return 0;
-}
-#endif
 /****************************************************************/
 /*	Log Out							*/
 /****************************************************************/
@@ -1752,9 +1591,6 @@ void zz_GetEnv(void)
 	/* zz_ky は単なる32ビット数値なので、
 	   以降、数字でも扱えるようにしておく */
 	nn_ky = atoi(zz_ky);
-#ifdef COOKIE
-	SetFormName();
-#endif
 #ifdef RAWOUT
 	rawmode = (*zz_rw != '\0');
 	if(rawmode) {
@@ -2000,10 +1836,6 @@ int main(void)
 /*  Get Last-Modified Date */
 #ifdef LASTMOD
 	pPrintf(pStdout, "Last-Modified: %.256s\n", lastmod_str);
-#ifdef EXPIRES
-	/* Expiresを吐いてみる */
-	pPrintf(pStdout, "Expires: %.256s\n", expires_str);
-#endif
 #endif
 
 #ifdef ZLIB
@@ -2415,9 +2247,6 @@ void html_head(int level, char const *title, int line)
 #ifdef CHUNK_ANCHOR
 	int i;
 #endif
-#ifdef USE_INDEX2CGI
-	char fname[1024];
-#endif
 
 	if (level) {
 		pPrintf(pStdout,
@@ -2436,10 +2265,6 @@ void html_head(int level, char const *title, int line)
 		else 
 #endif
 		{
-#ifdef USE_INDEX2CGI
-			sprintf(fname, "../%.256s/index2.cgi", zz_bs);
-			if (access(fname, S_IXUSR) == -1)
-#endif
 #ifdef CHECK_MOD_GZIP
 				if ( strstr(zz_server_software,"mod_gzip/") != NULL ) {
 					pPrintf(pStdout,
@@ -2454,12 +2279,6 @@ void html_head(int level, char const *title, int line)
 #else
 				pPrintf(pStdout,
 					R2CH_HTML_HEADER_1("%s", "/%s/index.htm"),
-					title, zz_bs);
-#endif
-#ifdef USE_INDEX2CGI
-			else
-				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "/%s/index2.cgi"),
 					title, zz_bs);
 #endif
 		}
@@ -2562,7 +2381,6 @@ static void html_foot(int level, int line, int stopped)
 	if (is_imode())
 		return html_foot_im(line,stopped);
 	if (line <= RES_RED && !stopped) {
-#ifndef COOKIE
 #ifdef USE_PATH
 		if (path_depth == 3)
 			pPrintf(pStdout,
@@ -2577,12 +2395,7 @@ static void html_foot(int level, int line, int stopped)
 			pPrintf(pStdout,
 				R2CH_HTML_FORM("", "%s", "%s", "%ld"),
 				zz_bs, zz_ky, currentTime);
-#else
-		pPrintf(pStdout, R2CH_HTML_FORM, form_name,
-			form_mail, zz_bs, zz_ky,
-			currentTime);
-#endif
-		}
+	}
 
 	if (level)
 		pPrintf(pStdout, R2CH_HTML_DIGEST_FOOTER);
