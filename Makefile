@@ -49,5 +49,5 @@ strip:
 	$(CC) -c $< $(DEFS) $(CFLAGS) -o $@
 
 # dependencies
-read.o: read.c r2chhtml.h
+read.o: read.c read2ch.h r2chhtml.h util_date.h
 util_date.o: util_date.c util_date.h
