@@ -113,9 +113,6 @@
 /* check server use mod_gzip? */
 #define CHECK_MOD_GZIP
 
-/* rewrite_href2を復活させる場合に定義 */
-/* #define REWRITE_HREF2 */
-
 /* "投稿日："を非表示にする */ 
 #define CUT_DATE_STRING
 
