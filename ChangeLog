@@ -2,6 +2,7 @@ tag: HEAD
   imodeでPREV_NEXT_ANCHOR機能追加
   ENGLISH condition 追加
   CONFIG_TIMEZONE 追加("JST-9")
+  過去ログがkako/100/に入っている場合に対応
 
 
 tag: YAKIN20010922: 実験サーバ choco.2ch.net にて ver 5.23として採用。

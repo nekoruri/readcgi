@@ -2014,6 +2014,14 @@ int out_simplehtml(void)
 }
 #endif	/* REFERDRES_SIMPLE */
 
+/* 旧形式 /bbs/kako/100/1000888777.*に対応。 dokoにpathを作成する */
+static int find_old_kakodir(char *doko, const char *key, const char *ext)
+{
+	struct stat CountStat;
+	sprintf(doko, KAKO_DIR "%.3s/%.50s.%s", zz_bs, key, key, ext);
+	return stat(doko, &CountStat) == 0;
+}
+
 /****************************************************************/
 /*	MAIN							*/
 /****************************************************************/
@@ -2100,9 +2108,11 @@ int main(void)
 
 #ifdef READ_KAKO
 	if (read_kako[0] == 'k') {
-		char buf[256];
-		kako_dirname(buf, zz_ky);
-		sprintf(fname, KAKO_DIR "%.20s/%.20s.dat", zz_bs, buf, zz_ky);
+		if (!find_old_kakodir(fname, zz_ky, "dat")) {
+			char buf[256];
+			kako_dirname(buf, zz_ky);
+			sprintf(fname, KAKO_DIR "%.20s/%.20s.dat", zz_bs, buf, zz_ky);
+		}
 # ifdef READ_TEMP
 	} else if (read_kako[0] == 't') {
 		sprintf(fname, TEMP_DIR "%.20s.dat", zz_bs, zz_ky);
@@ -2397,7 +2407,7 @@ void html_error(enum html_error_t errorcode)
 		/* -ERR (message)はエラー。 */
 		if (errorcode == ERROR_NOT_FOUND) {
 			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat", zz_bs, zz_soko, tmp);
-			if (!stat(doko, &CountStat)) {
+			if (!stat(doko, &CountStat) || find_old_kakodir(doko, tmp, "dat")) {
 				pPrintf(pStdout, "-ERR " ERRORMES_DAT_FOUND "\n", doko);
 			} else {
 				sprintf(doko, TEMP_DIR "%.50s.dat", zz_bs, tmp);
@@ -2431,14 +2441,14 @@ void html_error(enum html_error_t errorcode)
 	if (errorcode == ERROR_NOT_FOUND) {
 		sprintf(doko, KAKO_DIR "%.50s/%.50s.html", zz_bs,
 			zz_soko, tmp);
-		if (!stat(doko, &CountStat)) {
+		if (!stat(doko, &CountStat) || find_old_kakodir(doko, tmp, "html")) {
 			/* 過去ログ倉庫にhtml発見 */
 			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, 
 				zz_cgi_path, doko, tmp);
 		} else {
 			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
 				zz_bs, zz_soko, tmp);
-			if (!stat(doko, &CountStat)) {
+			if (!stat(doko, &CountStat) || find_old_kakodir(doko, tmp, "dat")) {
 				/* 過去ログ倉庫にdat発見 */
 #ifdef READ_KAKO
  				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT("%s","%s"),
