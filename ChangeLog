@@ -1,5 +1,8 @@
 tag: HEAD
 
+  out_simplehtml()でHEADER_0を出していなかった
+  can_simplehtml()でREFERERが旧形式の時にbbsを取りそこなっていた
+
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。
 

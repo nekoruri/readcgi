@@ -1963,7 +1963,8 @@ int can_simplehtml(void)
 		if ( *p == '?' ) {
 			char bbs[sizeof(zz_bs)];
 			char key[sizeof(zz_ky)];
-			const char * query_string = p;
+			const char * query_string = p+1;
+			bbs[0] = key[0] = '\0';
 			GetString(query_string, bbs, sizeof(bbs), "bbs");
 			GetString(query_string, key, sizeof(key), "key");
 			return (strcmp(zz_bs, bbs) == 0) && (strcmp(zz_ky, key) == 0);
@@ -1993,6 +1994,7 @@ int out_simplehtml(void)
 	int n = nn_st;
 	
 	/* html_head() */
+	pPrintf(pStdout, R2CH_HTML_HEADER_0);
 	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s", ""), zz_title);
 	pPrintf(pStdout, R2CH_HTML_HEADER_2("%s"), zz_title);
 	
