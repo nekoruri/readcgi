@@ -558,9 +558,8 @@
 #define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
 #define COMMA_SUBSTITUTE_LEN 4
 
-/* 投稿日欄に入るストッパー判定文字列 */
-#define STOPPER_MARK1 "ストッパー"
-#define STOPPER_MARK2 "停止"
+/* 投稿日欄に入るストッパー判定文字列をカンマ区切りで並べる */
+#define STOPPER_MARKS "ストッパー", "停止"
 
 #ifdef USE_INDEX
 

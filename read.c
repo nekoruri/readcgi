@@ -936,17 +936,18 @@ static int isthreadstopped()
 {
 	char *s[20];
 	char p[SIZE_BUF];
+	static const char * stoppers[] = {
+		STOPPER_MARKS
+	};
+	int i;
 	
 	if (lineMax >= RES_RED)
 		return 1;
 	if (lineMax) {
 		splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
-		if ( strstr( s[2], STOPPER_MARK1 ) 
-#ifdef STOPPER_MARK2
-		  || strstr( s[2], STOPPER_MARK2 )
-#endif
-		)
-			return 1;
+		for ( i = 0 ; i < (sizeof stoppers)/(sizeof stoppers[0]) ; ++i )
+			if ( strstr( s[2], stoppers[i] ) )
+				return 1;
 		return 0;
 	}
 	return 1;
