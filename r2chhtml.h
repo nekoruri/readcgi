@@ -84,8 +84,8 @@
          %s=cgi %s=board %s=key %d=レス数 %d=レス数
          %02d=制限開始時刻 %02d=制限終了時刻 */
 #define R2CH_HTML_TAIL \
-	" <a href=\"./%s?bbs=%s&key=%s&st=%d&to=%d\">次の%dレス</a>" \
-	" <a href=\"./%s?bbs=%s&key=%s&ls=%d\">最新レス%d</a>\n" \
+	" <a href=\"./%s?bbs=%s&key=%s&st=%d&to=%d&n=t\">次の%dレス</a>" \
+	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&n=t\">最新レス%d</a>\n" \
 	" (%02d:00PM - %02d:00AM の間一気に全部は読めません)<br>\n"
 
 
@@ -106,7 +106,7 @@
 /* tail: %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数 %s=cgi %s=board %s=key %d=レス数 %d=レス数 */
 #define R2CH_HTML_IMODE_TAIL \
 	" <a href=\"./%s?bbs=%s&key=%s&st=%d&to=%d&imode=true\">次の%dレス</a>\n" \
-	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&imode=true\">最新レス%d</a><br>\n"
+	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&imode=true&n=t\">最新レス%d</a><br>\n"
 
 /*
  * ERROR
@@ -266,7 +266,7 @@
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>" \
 	" <a href=\"" CGINAME "?bbs=%s&key=%s\">レスを全部読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=100\">最新レス100</a>"
+	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=100&n=t\">最新レス100</a>"
 #else
 #define R2CH_HTML_HEADER_1 \
 	"<html>" \
@@ -277,7 +277,7 @@
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>" \
 	" <a href=\"" CGINAME "?bbs=%s&key=%s\">レスを全部読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=100\">最新レス100</a>"
+	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=100&n=t\">最新レス100</a>"
 #endif
 	
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
@@ -291,7 +291,7 @@
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"/%s/i/\">■掲示板に戻る■</a>" \
 	" <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d&imode=true\">レスを最初から読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&imode=true\">最新レス%d</a>"
+	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&imode=true&n=t\">最新レス%d</a>"
 
 /* レス数オーバー: %d=最大レス数 */
 #define R2CH_HTML_HEADER_RED \
@@ -319,10 +319,10 @@
  * RELOAD
  */
 #define R2CH_RELOAD \
-	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d\">新レスの表\示</a></center><hr>"
+	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&n=t\">新レスの表\示</a></center><hr>"
 
 #define R2CH_RELOAD_I \
-	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&imode=true\">新レスの表\示</a></center><hr>"
+	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&i=t&n=t\">新レスの表\示</a></center><hr>"
 
 /*
  * FOOTER
