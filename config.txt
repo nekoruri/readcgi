@@ -61,9 +61,9 @@ read.cgi側によるindexの実装(experimental)
 ▲CHUNK_ANCHOR
 トップに「全部読む」/CHUNK_NUM毎に区切ったレスへのanchorをつける
 どちらかはあった方がよさそうだけど、
-CHUNK_ANCHORには、現在、副作用があるので。
-※表示範囲外への >>000 形式のリンクを、１レス分であっても
-CHUNK_NUMレス分へのリンクに変更してしまう。
+
+▲USE_CHUNK_LINK
+CUUNK_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
 
 △LATEST_ANCHOR
 「最新レス LATEST_NUM」をつける

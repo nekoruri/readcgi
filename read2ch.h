@@ -74,6 +74,9 @@
 #define CHUNK_ANCHOR
 #define CHUNK_NUM 50
 
+/* CUUNK_ANCHOR使用時に>>nnをCHUNKごとのリンクにする */
+/* #define USE_CHUNK_LINK */
+
 /* 「最新レス LATEST_NUM」をつける */
 #define LATEST_ANCHOR
 #define LATEST_NUM 50

@@ -437,7 +437,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 #endif
 			{
 				/* chunk仕様を生かすためのkludgeは以下に。 */
-#if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR)
+#if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR) && defined(USE_CHUNK_LINK)
 				mst = (st - 1) / CHUNK_NUM;
 				mto = (to - 1) / CHUNK_NUM;
 
@@ -466,10 +466,10 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 
 #ifdef CREATE_NAME_ANCHOR
 				if ( mst != st )
-					d += sprintf(d, "#%d\">", st);
+					d += sprintf(d, "#%d\" target=\"_blank\">", st);
 				else
 #endif
-					d += sprintf(d, "\">");
+					d += sprintf(d, "\"  target=\"_blank\">");
 
 			}
 		}
