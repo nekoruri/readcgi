@@ -28,6 +28,7 @@ clean:
 test:
 	( export HTTP_COOKIE='NAME=abcde%21;MAIL=hoge@huga.net' \
 	export QUERY_STRING='bbs=tech&key=998845501'; \
+	export HTTP_USER_AGENT='console'; \
 	cd tech; \
 	../read.cgi )
 
