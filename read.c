@@ -1165,9 +1165,20 @@ int dat_out_raw(void)
 	/* raw_lastnum ‚©‚ç‘S•”‚ğ‘—M‚·‚é */
 	for(i = raw_lastnum; i < lineMax; i++) {
 #ifndef CUTRESLINK
-		pPrintf(pStdout, "%s\n", BigLine[i]);
+# ifdef ZLIB
+		if (gzip_flag) {
+			gzwrite(pStdout, (const voidp)BigLine[i], strlen(BigLine[i]));
+			gzputc(pStdout, '\n');
+		} else
+# endif
+			pPrintf(pStdout, "%s\n", BigLine[i]);
 #else
-		pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
+# ifdef ZLIB
+		if (gzip_flag)
+			gzwrite(pStdout, (const voidp)BigLine[i], BigLine[i+1]-BigLine[i]);
+		else
+# endif
+			pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
 #endif 
 	}
 	return 1;
