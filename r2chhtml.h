@@ -48,14 +48,15 @@
 	"</center><p>" \
 	"</td></tr></table><p>"
 
+#ifdef CM_BBSPINK
 /* 使われてない...はず。 */
-#define	R2CH_HTML_BBSPINK_BANNER \
+#define	R2CH_HTML_BANNER \
 	"<center>" \
 	"<a href=\"http://www.pinknavi.com/?pinkid=PB0001&prg=3&act=0&txt=おいでませ&url=http://www.seiai.com/\" target=\"_blank\">おいでませアダルトサイト</a><br>" \
 	"<br><a href=\"http://www.maido3.com/mentai/\"><b><font size=4>深夜でも快適なレンタルサーバサービス</font></b></a><br>" \
 	"</center>" \
 	"<p>"
-
+#else
 /* 使われてない...はず。 */
 #define	R2CH_HTML_BANNER \
 	"<center>" \
@@ -64,6 +65,7 @@
 	"</a>" \
 	"<br>あの巨大なサイトも使っています。" \
 	"</center><p>"
+#endif
 
 /*
  * 名前ラベル
