@@ -1,6 +1,8 @@
 tag: HEAD
 
   RAWOUT_MULTIを実装。
+  REFERDRES_SIMPLE時にbaseヘッダが出力されないため、simpleな表示が旧形式で行われたときに
+そこからの >>n リンクの基準がおかしくなっていたbug fix.
 
 
 tag: YAKIN20011021: 実験サーバ choco.2ch.net および piza, teri2 にて ver 5.26として採用。

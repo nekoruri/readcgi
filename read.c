@@ -2217,6 +2217,24 @@ int match_etag(const char *etag)
 }
 #endif	/* PUT_ETAG */
 
+/****************************************************************/
+/****************************************************************/
+void header_base_out(void)
+{
+	if ((path_depth < 3 || need_basehref) && zz_server_name && zz_script_name) {
+#ifdef READ_KAKO
+		if (read_kako[0]) {
+			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, read_kako);
+			path_depth = 4;
+		} else
+#endif
+		{
+			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, zz_ky);
+			path_depth = 3;
+		}
+	}
+}
+
 #ifdef	REFERDRES_SIMPLE
 int can_simplehtml(void)
 {
@@ -2285,6 +2303,7 @@ int out_simplehtml(void)
 	
 	/* html_head() */
 	pPrintf(pStdout, R2CH_HTML_HEADER_0);
+	header_base_out();
 	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s", ""), zz_title);
 	pPrintf(pStdout, R2CH_HTML_HEADER_2("%s"), zz_title);
 	
@@ -3050,6 +3069,7 @@ void calc_first_last(void)
 #define calc_first_last()
 #endif
 
+
 /****************************************************************/
 /*	HTML HEADER						*/
 /****************************************************************/
@@ -3065,18 +3085,7 @@ void html_head(int level, char const *title, int line)
 #endif
 
 	pPrintf(pStdout, R2CH_HTML_HEADER_0);
-	if ((path_depth < 3 || need_basehref) && zz_server_name && zz_script_name) {
-#ifdef READ_KAKO
-		if (read_kako[0]) {
-			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, read_kako);
-			path_depth = 4;
-		} else
-#endif
-		{
-			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, zz_ky);
-			path_depth = 3;
-		}
-	}
+	header_base_out();
 	zz_init_parent_link();
 	zz_init_cgi_path();
 	calc_first_last();
