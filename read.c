@@ -792,8 +792,10 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	char const *s = *sp;
 	char const * copy_start;
 	int copy_len;
+	int dangling_len = 0;
 	int st, to;
 	struct range range;
+	int close_anchor = false;
 	range.count = 0;
 	
 	while (*s != '>' && *s != '\n')
@@ -818,8 +820,13 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	copy_start = s;
 
 	s = add_ranges_simple(&range, s);
-	if ( memcmp(s, "</a>", 4) == 0 )
-		add_ranges_simple(&range, s + 4);
+
+	copy_len = s - copy_start;
+	if (copy_len == 0 || memcmp(s, "</a>", 4) != 0)
+		return 0;
+	s += 4; /* skip "</a>" */
+
+	dangling_len = add_ranges_simple(&range, s) - s;
 
 	st = to = -1;
  	if ( range.count > 0 )
@@ -829,14 +836,9 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	if ( to < 1 )
 		to = lineMax;
 
-	copy_len = s - copy_start;
-	if (copy_len == 0 || memcmp(s, "</a>", 4) != 0)
-		return 0;
-	s += 4;
-
 	if (0 < st && st <= lineMax && 0 < to && to <= lineMax &&
 		!(istagcut && isprinted(st) && isprinted(to))) {
-			copy_len += 4;	/* strlen("</a>") */
+			close_anchor = true;
 #ifdef CREATE_NAME_ANCHOR
 			/* 新しい表現をブチ込む */
 			if (isprinted(st) && isprinted(to)) {
@@ -878,6 +880,17 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	*d++ = '>';
 	memcpy( d, copy_start, copy_len );
 	d += copy_len;
+	if ( dangling_len > 0 ) {
+		if ( *s != ',' )
+			*d++ = ',';
+		memcpy( d, s, dangling_len );
+		d += dangling_len;
+		s += dangling_len;
+	}
+	if ( close_anchor ) {
+		memcpy( d, "</a>", 4 );
+		d += 4;
+	}
 	*sp = s;
 	*dp = d;
 	return 1;
