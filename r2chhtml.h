@@ -309,7 +309,6 @@
  * (HEADER_REDZONE|HEADER_REDZONE|HEADER_REDZONE)
  * HEADER_2
  */
-#ifndef COOKIE
 #define R2CH_HTML_COOKIE_SCRIPT \
 	"<script type=\"text/javascript\" defer><!--\n" \
 	"function l(e){" \
@@ -334,9 +333,6 @@
 	"return \"\";" \
 	"}\n" \
 	"//--></script>" 
-#else
-#define R2CH_HTML_COOKIE_SCRIPT ""
-#endif
 
 #ifdef USE_CSS
 #define R2CH_HTML_CSS_TYPE "<meta http-equiv=Content-Style-Type content=\"text/css\">"
@@ -464,7 +460,6 @@
  * FOOTER
  * (FORM? , FOOTER) | FORM_IMODE
  */
-#ifndef COOKIE
 /* %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FORM(depth, bs, ky, tm) \
 	"<form method=POST action=\"" depth "bbs.cgi\">" \
@@ -477,19 +472,6 @@
 	"<input type=hidden name=key value=" ky ">" \
 	"<input type=hidden name=time value=" tm ">" \
 	"</form>"
-#else
-#define R2CH_HTML_FORM \
-	"<form method=POST action=\"bbs.cgi\">" \
-	"<input type=submit value=\"書き込む\" name=submit> 名前： " \
-	"<input name=FROM size=19 value=\"%s\">" \
-	" E-mail<font size=1> (省略可) </font>: " \
-	"<input name=mail size=19 value=\"%s\">" \
-	"<br><textarea rows=5 cols=70 wrap=off name=MESSAGE></textarea>" \
-	"<input type=hidden name=bbs value=%s>" \
-	"<input type=hidden name=key value=%s>" \
-	"<input type=hidden name=time value=%ld>" \
-	"</form>"
-#endif
 	
 /* ブラウザのときのフッタ: %s=投稿者名 %s=mail %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_PREFOOTER \
@@ -498,15 +480,15 @@
 	"<p>" CGIVER "</body></html>"
 
 /* i-MODEのときのFORM: %s=板 %s=スレ %ld=現在時刻 */
-#define R2CH_HTML_FORM_IMODE(depth) \
+#define R2CH_HTML_FORM_IMODE(depth, bs, ky, tm) \
 	"<form method=POST action=\"" depth "bbs.cgi\">\n" \
 	"<input type=submit value=\"かきこむ\" name=submit> " \
 	"NAME：<input name=FROM size=20 value=\"\">" \
 	"MAIL：<input name=mail size=20 value=\"\">" \
 	"<br>" \
-	"<input type=hidden name=bbs value=%s>" \
-	"<input type=hidden name=key value=%s>" \
-	"<input type=hidden name=time value=%ld>" \
+	"<input type=hidden name=bbs value=" bs ">" \
+	"<input type=hidden name=key value=" ky ">" \
+	"<input type=hidden name=time value=" tm ">" \
 	"<textarea rows=5 cols=60 wrap=off name=MESSAGE></textarea>" \
 	"</form><br>" 
 
