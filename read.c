@@ -2151,7 +2151,7 @@ char *zz_GetString(char *dst, size_t dat_size, char const *tgt)
 			if ( *line == *tgt )
 #else
 			/* 完全一致 */
-			if ( tgt_len == value_start && !memcmp(line, tgt, tgt_len) )
+			if ( tgt_len == (value_start-1) && !memcmp(line, tgt, tgt_len) )
 #endif
 			{
 				/* 値部分の開始位置と長さ */
