@@ -9,7 +9,8 @@ LIBS          =
 OBJS          = datindex.o read.o util_date.o $(zlibdir)/libz.a
 
 SRCS          = datindex.c digest.c read.c util_date.c
-HDRS          = r2chhtml.h read2ch.h datindex.h digest.h read.h util_date.h
+HDRS          = r2chhtml.h r2chhtml_en.h read2ch.h datindex.h digest.h \
+		read.h util_date.h
 DOCS          = Makefile config.txt ChangeLog
 
 .SUFFIXES: .c .o .cgi
