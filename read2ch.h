@@ -169,8 +169,16 @@
 
 /* dat落ち、過去ログをread.cgiで読む */
 /* #define READ_KAKO */
+/* #define READ_TEMP */
 
 /* READ_KAKOで過去ログに誘導するときに範囲指定を継承する */
 #define READ_KAKO_THROUGH
+
+/* 名前末尾・メール末尾・<br>タグ前・レス末尾の空白を
+(可能なら)全て削除する */
+#define CUT_TAIL_BLANK
+
+/* '<',"http://"の直前の文字を調べ、必要ならば空白を加える。 */
+/* #define STRICT_ILLEGAL_CHECK */
 
 #endif /* READ2CH_H__ */

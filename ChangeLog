@@ -20,9 +20,12 @@ tag: HEAD
 　PATH時に過去落ち/過去ログ倉庫へのリンクがおかしかったバグを修正
 　rawmode +リザルトでデータサイズに続けて "/上限サイズK"も出力するようにした
 　>>nnリンクを削除する場合に余分な"</a>"が残ってしまっていたバグ修正
-  READ_KAKO read.cgi/temp/nnnn/ read.cgi/kako/nnnn/で過去ログ読み出し
+  READ_KAKO read.cgi/kako/nnnn/で過去ログ読み出し
+  READ_TEMP READ_KAKOに加えてread.cgi/temp/nnnn/で過去ログ読み出し
     ■■■転送量の増加に注意、現在OFF
   READ_KAKO_THROUGH 過去ログに誘導するときに範囲指定を継承する
+　CUT_TAIL_BLANK 行末空白の削除
+　STRICT_ILLEGAL_CHECK SJIS1バイト目で終わる行は空白を追加
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。

@@ -171,8 +171,23 @@ dat落ち、過去ログのdatをread.cgiで読む
 read.cgi/tech/temp/nnnn/
 read.cgi/tech/kako/nnnn/
 
+▲READ_TEMP
+(READ_KAKO定義時のみ有効)
+html化待ちのdatもread.cgiで読む。
+
 ▲READ_KAKO_THROUGH
 過去ログに誘導するときに範囲指定を継承する
+
+△CUT_TAIL_BLANK
+直前の文字がShift_JISの１バイト目であるかを厳密に判定する事により、
+名前欄とメール欄の末尾の空白、及び<br>タグ直前の空白をほぼ消滅させる。
+
+▲STRICT_ILLEGAL_CHECK
+(意図的な)文字化け防止のため 
+'<',"http://"の直前の文字がShift_JISの１バイト目かを厳密に判定し、
+必要ならば空白を加える。(fusianasanのbold化け対策と似た処理)
+コスト(負荷)がかかる割に転送量減少には貢献せず、
+仮に文字化けしてもその部分だけで留まり、大きな影響はないため、OFF推奨。
 
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
