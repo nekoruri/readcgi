@@ -345,7 +345,6 @@
 	"<input type=hidden name=time value=%ld>" \
 	"</form>"
 #else
-/* ブラウザのときのフッタ: %s=投稿者名 %s=mail %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FORM \
 	"<form method=post action=\"bbs.cgi\">" \
 	"<input type=submit value=\"書き込む\" name=submit> 名前： " \
@@ -359,10 +358,11 @@
 	"</form>"
 #endif
 	
+/* ブラウザのときのフッタ: %s=投稿者名 %s=mail %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FOOTER \
 	"</dl><p>" CGIVER "</body></html>"
 
-/* i-MODEのときのフッタ: %s=板 %s=スレ %ld=現在時刻 */
+/* i-MODEのときのFORM: %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FORM_IMODE \
 	"<form method=post action=\"./bbs.cgi\">\n" \
 	"<input type=submit balue=\"かきこむ\" name=submit> " \
@@ -373,5 +373,9 @@
 	"<input type=hidden name=key value=%s>" \
 	"<input type=hidden name=time value=%ld>" \
 	"<textarea rows=5 cols=60 wrap=off name=MESSAGE></textarea>" \
-	"</form><br>" \
+	"</form><br>"
+
+/* i-MODEのときのフッタ: %s=板 %s=スレ %ld=現在時刻 */
+#define R2CH_HTML_FOOTER_IMODE \
 	"<p>" CGIVER "</body></html>"
+

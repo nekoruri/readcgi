@@ -98,7 +98,7 @@ char const *LastChar(char const *src, char c);
 char *zz_GetString(char *dst, char const *tgt);
 char *doReplace(char *des, char const *str0, char const *str1);
 void html_error(char *mes);
-void html_foot_im(void);
+void html_foot_im(int);
 void html_head(char *title, int line);
 int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
@@ -1622,7 +1622,7 @@ void html_reload(int startline)
 void html_foot(int line)
 {
 	if (is_imode())
-		return html_foot_im();
+		return html_foot_im(line);
 	if (line <= RES_RED) {
 #ifndef COOKIE		
 		pPrintf(pStdout, R2CH_HTML_FORM, zz_bs, zz_ky,
@@ -1639,9 +1639,12 @@ void html_foot(int line)
 /****************************************************************/
 /*	HTML FOOTER(i-MODE)					*/
 /****************************************************************/
-void html_foot_im(void)
+void html_foot_im(int line)
 {
-	pPrintf(pStdout, R2CH_HTML_FORM_IMODE, zz_bs, zz_ky, currentTime);
+	if (line <= RES_RED) {
+		pPrintf(pStdout, R2CH_HTML_FORM_IMODE, zz_bs, zz_ky, currentTime);
+	}
+	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
 }
 
 /****************************************************************/
