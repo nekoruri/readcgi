@@ -1778,6 +1778,9 @@ int main(void)
 	char fname[1024];
 
 	int st, to, ls;
+#ifdef	PUT_ETAG
+	int dat_loaded = false;
+#endif
 
 #if	('\xFF' != 0xFF)
 #error	-funsigned-char required.
@@ -1923,6 +1926,7 @@ int main(void)
 	if (need_etag(st, to, ls)) {
 		char etag[60];
 		dat_read(fname, st, to, ls);
+		dat_loaded = true;
 		create_etag(etag);
 		if (match_etag(etag)) {
 			puts("Status: 304 Not Modified\n");
@@ -1996,12 +2000,16 @@ int main(void)
 
 	logOut("");
 
-	dat_read(fname, st, to, ls);
+#ifdef	PUT_ETAG
+	if ( dat_loaded == false )
+#endif
+		dat_read(fname, st, to, ls);
 
 #ifdef RAWOUT
-	if (rawmode)
+	if (rawmode) {
 		dat_out_raw();
-	else
+		return 0;
+	}
 #endif
 #ifdef USE_PATH
 	if (path_depth && path_depth!=3) {
