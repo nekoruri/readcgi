@@ -5,6 +5,7 @@ tag: HEAD
   USE_INTERNAL_SETTINGS
     設定にSETTINGファイルではなく、SPECIAL_SETTINGを利用する
   過去ログがkako/100/に入っている場合に対応
+  gzip転送によるトラフィック削減を狙い、/boardname/?raw=0.0 でsubject.txtの転送ができるようにした
 
 
 tag: YAKIN20010922: 実験サーバ choco.2ch.net にて ver 5.23として採用。
