@@ -118,7 +118,7 @@ long currentTime;
 int isbusytime = 0;
 
 char const *LastChar(char const *src, char c);
-char *zz_GetString(char *dst, size_t dst_size, char const *tgt);
+char *GetString(char const *line, char *dst, size_t dst_size, char const *tgt);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
 static void html_foot(int level, int line,int);
@@ -1463,16 +1463,16 @@ void zz_GetEnv(void)
 		zz_path_info = NULL;
 	}
 #endif
-	zz_GetString(zz_bs, sizeof(zz_bs), "bbs");
-	zz_GetString(zz_ky, sizeof(zz_ky), "key");
-	zz_GetString(zz_ls, sizeof(zz_ls), "ls");
-	zz_GetString(zz_st, sizeof(zz_st), "st");
-	zz_GetString(zz_to, sizeof(zz_to), "to");
-	zz_GetString(zz_nf, sizeof(zz_nf), "nofirst");
-	zz_GetString(zz_im, sizeof(zz_im), "imode");
+	GetString(zz_query_string, zz_bs, sizeof(zz_bs), "bbs");
+	GetString(zz_query_string, zz_ky, sizeof(zz_ky), "key");
+	GetString(zz_query_string, zz_ls, sizeof(zz_ls), "ls");
+	GetString(zz_query_string, zz_st, sizeof(zz_st), "st");
+	GetString(zz_query_string, zz_to, sizeof(zz_to), "to");
+	GetString(zz_query_string, zz_nf, sizeof(zz_nf), "nofirst");
+	GetString(zz_query_string, zz_im, sizeof(zz_im), "imode");
 #ifdef RAWOUT
 	zz_rw[0] = '\0';
-	zz_GetString(zz_rw, sizeof(zz_rw), "raw");
+	GetString(zz_query_string, zz_rw, sizeof(zz_rw), "raw");
 #endif
 	/* zz_ky は単なる32ビット数値なので、
 	   以降、数字でも扱えるようにしておく */
@@ -1563,6 +1563,85 @@ void atexitfunc(void)
 	}
 #endif
 }
+
+#ifdef	REFERDRES_SIMPLE
+int can_simplehtml(void)
+{
+	char buff[1024];
+	const char *p;
+	const char *ref;
+	static const char cginame[] = "/test/" CGINAME "?";
+	static const char indexname[] = "index.htm";
+	
+	if (!isbusytime)
+		return false;
+	if (!nn_st || !nn_to || is_imode())
+		return false;
+	if (nn_st > nn_to || nn_to > lineMax)
+		return false;
+	/* とりあえず、リンク先のレスが１つの場合だけ */
+	if (nn_st != nn_to || !is_nofirst())
+		return false;
+	/*if (!(nn_st + 10 <= nn_to))
+		return false; */
+	ref = getenv("HTTP_REFERER");
+	if (!ref || !*ref)
+		return false;
+	
+	sprintf(buff, "/%.50s/", zz_bs);
+	p = strstr(ref, buff);
+	if (p) {
+		int n = strlen(buff);
+		if (*(p + n) == '\0')
+			return true;
+		if (strncmp(p + n, indexname, sizeof(indexname)-1) == 0)
+			return true;
+	}
+	p = strstr(ref, cginame);
+	if (p) {
+		char bbs[sizeof(zz_bs)];
+		char key[sizeof(zz_ky)];
+		const char * query_string = p + sizeof(cginame)-1;
+		GetString(query_string, bbs, sizeof(bbs), "bbs");
+		GetString(query_string, key, sizeof(key), "key");
+		return (strcmp(zz_bs, bbs) == 0) && (strcmp(zz_ky, key) == 0);
+	}
+#ifdef	USE_PATH
+	sprintf(buff, "/test/" CGINAME "/%.50s/%.50s/", zz_bs, zz_ky);
+	if (strstr(ref, buff))
+		return true;
+#endif
+	return false;
+}
+
+int out_simplehtml(void)
+{
+	char *s[20];
+	char p[SIZE_BUF];
+	int n = nn_st;
+	
+	/* html_head() */
+	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
+	if (!*p)
+		return 1;
+	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s"), s[4]);
+	pPrintf(pStdout, R2CH_HTML_HEADER_2, s[4]);
+	
+	out_resN++;	/* ヘッダ出力を抑止 */
+	if (!is_nofirst()) {
+		out_html(0, 0, 1);
+		if (n == 1)
+			n++;
+	}
+	for ( ; n <= nn_to; ++n) {
+		out_html(0, n-1, n);
+	}
+	
+	/* html_foot() */
+	pPrintf(pStdout, R2CH_HTML_PREFOOTER R2CH_HTML_FOOTER);
+	return 0;
+}
+#endif	/* REFERDRES_SIMPLE */
 
 /****************************************************************/
 /*	MAIN							*/
@@ -1791,14 +1870,19 @@ int main(void)
 #ifdef RAWOUT
 	if (rawmode)
 		dat_out_raw();
+	else
+#endif
 #if 0	/* #ifdef USE_PATH */
-	else if (path_depth == 2) {
+	if (path_depth == 2) {
 		if (zz_ky[0] == '-')
 			dat_out_subback();	/* スレ一覧 */
 		else
 			dat_out_index();	/* 板ダイジェスト */
-	}
+	} else
 #endif
+#ifdef	REFERDRES_SIMPLE
+	if (can_simplehtml())
+		out_simplehtml();
 	else
 #endif
 		dat_out(0);
@@ -1926,11 +2010,10 @@ int html_error999(char *mes)
 #define GETSTRING_LINE_DELIM '&'
 #define GETSTRING_VALUE_DELIM '='
 #define MAX_QUERY_STRING 200
-char *zz_GetString(char *dst, size_t dat_size, char const *tgt)
+char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 {
 	int	i;
 
-	char const *line = zz_query_string;
 	char const *delim_ptr;
 	char const *value_ptr;
 #ifndef GSTR2

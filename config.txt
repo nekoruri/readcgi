@@ -157,6 +157,10 @@ NN4.xでgzip圧縮時にContent-LengthがあるとLast-Modifiedが無効になる問
  RELOADLINKがない場合は、次50と未読に切り替え
  前後の数はCHUNK_NUMで定義
 
+△REFERDRES_SIMPLE
+混雑時間帯に、>>nn形式のリンクから参照された場合に
+出力htmlから余分なリンク等を省く。
+
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
 
