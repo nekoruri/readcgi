@@ -1,5 +1,8 @@
 tag: HEAD
 
+
+tag: YAKIN20010012: 実験サーバ choco.2ch.net にて ver 5.25として採用。
+
   out_simplehtml()でHEADER_0を出していなかった
   can_simplehtml()でREFERERが旧形式の時にbbsを取りそこなっていた
   datファイルが見つからないときはLastModifiedを出さないように修正
