@@ -997,7 +997,7 @@ int dat_out_raw(void)
 
 	/* もし報告された最終レス番号およびサイズが一致していなけ
 	   れば、最初の行にその旨を示す */
-	if(raw_lastnum > 0
+	if(raw_lastnum > 0 && raw_lastsize > 0
 	   && !(raw_lastnum <= lineMax
 		&& (BigLine[raw_lastnum - 1]
 			+ (BigLine[raw_lastnum] - BigLine[raw_lastnum - 1])
@@ -1227,9 +1227,13 @@ static int get_path_info(char const *path_info)
 	/* スレ */
 	s += n + 1;
 
+	/* st/to 存在ほかのチェックのため "-"を入れておく */
+	strcpy(zz_st, "-");
+	strcpy(zz_to, "-");
+
 	/* strtok()で切り出したバッファは総長制限が
 	   かかっているので、buffer overrunはないはず */
-	if (s[0]) {
+	while (s[0]) {
 		char *p;
 		/* 範囲指定のフォーマットは以下のものがある
 
@@ -1237,40 +1241,74 @@ static int get_path_info(char const *path_info)
 		   /4-	(st=4)
 		   /-6	(to=6)
 		   /4-6	(st=4to=4)
+		   /=10 (ls=10)
+		   /i   (imode=true)
+		   /.   (nofirst=false)
+		   /n   (nofirst=true)
 
 		   カキコ1は特別扱いで、nofirstにより
 		   動作が左右されるっぽいので、どうしよう */
-
-		/* 特に指定がなかったら、st=1であるとみなす */
-		strcpy(zz_st, "1");
 
 		/* st を取り出す */
 		if (isdigit(*s)) {
 			for (p = zz_st; isdigit(*s); p++, s++)
 				*p = *s;
 			*p = 0;
-		}
-
-		if (*s == '-') {
+		} else if (*s == 'i') {
+			strcpy(zz_im,"true");
+			s++;
+		} else if (*s == '.') {
+			strcpy(zz_nf,"false");
+			s++;
+		} else if (*s == 'n') {
+			strcpy(zz_nf,"true");
+			s++;
+		} else if (*s == '=') {
+			s++;
+			/* lsを取り出す */
+			if (isdigit(*s)) {
+				for (p = zz_ls; isdigit(*s); p++, s++)
+					*p = *s;
+				*p = 0;
+			}
+			/* ls= はnofirst=true を標準に */
+			if (!zz_nf[0]) {
+				strcpy(zz_nf,"true");
+			}
+		} else if (*s == '-') {
 			s++;
 			/* toを取り出す */
 			if (isdigit(*s)) {
 				for (p = zz_to; isdigit(*s); p++, s++)
 					*p = *s;
 				*p = 0;
+			} else {
+				/* to=∞とする */
+				zz_to[0] = '\0';
 			}
 		} else {
-			/* 範囲指定はないので、
-			   単点ポイントと見なす */
-			strcpy(zz_to, zz_st);
+			/* 規定されてない文字が来たので評価をやめる */
+			break;
 		}
+	}
 
-		/* nofirstの仕様をごまかすためのkludge XXX */
-		if (!zz_nf[0])
-			strcpy(zz_nf,
-			       (atoi(zz_st) == 1
-				? "false"
-				: "true"));
+	if (zz_to[0] == '-') {
+		/* 範囲指定はないので、
+		   単点ポイントと見なす */
+		strcpy(zz_to, zz_st);
+		if ( zz_to[0] == '-' ) {
+			/* stの指定もなかった */
+			zz_to[0] = '\0';
+		} else {
+			/* 単点は、nofirst=trueをdefaultに */
+			if (!zz_nf[0]) {
+				strcpy(zz_nf,"true");
+			}
+		}
+	}
+	if (zz_st[0] == '-') {
+		/* stがない時は1から */
+		strcpy(zz_st,"1");
 	}
 
 	/* 処理は完了したものとみなす */
@@ -1416,7 +1454,7 @@ void zz_GetEnv(void)
 			raw_lastnum = atoi(zz_rw);
 			raw_lastsize = atoi(p + 1);
 		}
-		if(!p || raw_lastnum < 1 || raw_lastsize < 1) {
+		if(!p || raw_lastnum < 1 || raw_lastsize < 0) {
 			raw_lastnum = raw_lastsize = 0;
 		}
 	}
