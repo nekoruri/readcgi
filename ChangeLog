@@ -6,6 +6,7 @@ tag:
 　REFERDRES_SIMPLE, NO_LINK_URL_BUSY追加
 　USE_CSS追加
 　「名前」も削除(CUT_NAME_STRING)
+　PUT_ETAG追加
 
 
 tag YAKIN20010915: 実験サーバ ex.2ch.net にて ver 5.21として採用。
