@@ -11,6 +11,10 @@
  * ・ころんでも、なかない。
  */
 
+#ifndef NO_FIRST
+#define NO_FIRST "&nofirst=true"
+#endif
+
 /*
  * BANNERS: スレが無い等のエラー時に出る広告。
  */
@@ -125,8 +129,8 @@
 	%s=cgi %s=board %s=key %d=レス数 %d=レス数
 	%02d=制限開始時刻 %02d=制限終了時刻 */
 #define R2CH_HTML_TAIL \
-	R2CH_HTML_T_TAIL("./%s?bbs=%s&key=%s&st=%d&to=%d&n=t", "%d", \
-			 "./%s?bbs=%s&key=%s&ls=%d&n=t", "%d")
+	R2CH_HTML_T_TAIL("./%s?bbs=%s&key=%s&st=%d&to=%d" NO_FIRST, "%d", \
+			 "./%s?bbs=%s&key=%s&ls=%d" NO_FIRST, "%d")
 /* tail: PATH仕様
 	%d=開始 %d=終了 %d=レス数
 	%d=レス数 %d=レス数
@@ -152,7 +156,7 @@
 /* tail: %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数 %s=cgi %s=board %s=key %d=レス数 %d=レス数 */
 #define R2CH_HTML_IMODE_TAIL \
 	" <a href=\"./%s?bbs=%s&key=%s&st=%d&to=%d&imode=true\">次の%dレス</a>\n" \
-	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&imode=true&n=t\">最新レス%d</a><br>\n"
+	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a><br>\n"
 
 /*
  * ERROR
@@ -341,7 +345,7 @@
 	R2CH_HTML_T_CHUNK_ANCHOR(CGINAME "?bbs=%s&key=%s&st=%d&to=%d%s", "%d")
 /* %s=板 %s=スレ番号 %d=レス個数 %d=レス個数 */
 #define R2CH_HTML_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR(CGINAME "?bbs=%s&key=%s&ls=%d&n=t", "%d")
+	R2CH_HTML_T_LATEST_ANCHOR(CGINAME "?bbs=%s&key=%s&ls=%d" NO_FIRST, "%d")
 
 /* 以下のものは、PATH仕様で用いられる
    板・スレ番はすでに決定しているので、埋め込まれない */
@@ -368,7 +372,7 @@
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"/%s/i/\">■掲示板に戻る■</a>" \
 	" <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d&imode=true\">レスを最初から読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&imode=true&n=t\">最新レス%d</a>"
+	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a>"
 
 /* レス数オーバー: %d=最大レス数 */
 #define R2CH_HTML_HEADER_RED \
@@ -403,13 +407,13 @@
 	"<hr><center><a href=\"" path "\">新レスの表\示</a></center><hr>"
 
 #define R2CH_HTML_RELOAD \
-	R2CH_HTML_T_RELOAD("read.cgi?bbs=%s&key=%s&st=%d&n=t")
+	R2CH_HTML_T_RELOAD("read.cgi?bbs=%s&key=%s&st=%d" NO_FIRST)
 
 #define R2CH_HTML_PATH_RELOAD \
 	R2CH_HTML_T_RELOAD("%d-")
 
 #define R2CH_HTML_RELOAD_I \
-	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&i=t&n=t\">新レスの表\示</a></center><hr>"
+	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&i=t" NO_FIRST "\">新レスの表\示</a></center><hr>"
 
 /*
  * FOOTER
@@ -472,7 +476,6 @@
 
 
 /* スレダイジェスト用HTML */
-
 #define R2CH_HTML_INDEX_HEADER(title1, title2) \
 "<head><meta http-equiv=Content-Type content=\"text/html; charset=Shift_JIS\">
 

@@ -486,7 +486,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					     (path_depth != 0) ?
 					     "<a href=\"%s%d-%d" : 
 #endif
-					     "<a href=\"%s&st=%d&to=%d&nofirst=true"
+					     "<a href=\"%s&st=%d&to=%d" NO_FIRST
 					     ),
 					     depth_expr,
 					     mst, mto);
@@ -662,18 +662,8 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				if (resnumber && p[1] == 'a' && isspace(p[2])) {
 					char *tdp = bufp;
 					char const *tsp = p;
-#ifdef REWRITE_HREF2 
-					if (path_depth && !is_imode()) {
-#endif
-						if (!rewrite_href(&tdp, &tsp, istagcut))
-							goto Break;
-#ifdef REWRITE_HREF2 
-					} else {
-						if (!rewrite_href2(&tdp, &tsp, istagcut))
-							break;	/* そのままコピーを続ける */
-							/* ↑無限ループにならない? */
-					}
-#endif
+					if (!rewrite_href(&tdp, &tsp, istagcut))
+						goto Break;
 					bufrest -= tdp - bufp;
 					bufp = tdp;
 					p = tsp;
@@ -2307,7 +2297,7 @@ void html_head(int level, char const *title, int line)
 					zz_bs, zz_ky,
 					i,
 					i + CHUNK_NUM - 1, 
-					(i == 1 ? "" : "&nofirst=true"),
+					(i == 1 ? "" : NO_FIRST),
 					i);
 		}
 #endif /* CHUNK_ANCHOR */

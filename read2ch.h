@@ -104,4 +104,7 @@
 /* <a name=...>をつける。これをつけないときはCHUNK_ANCHORも無効にしたほうが良い */ 
 #define CREATE_NAME_ANCHOR 
 
+/* nofirst=trueを短縮形にする。bbs.cgiの出力と同一形式が望ましい */
+/* #define NO_FIRST "&n=t" */
+
 #endif /* READ2CH_H__ */

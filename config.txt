@@ -1,0 +1,151 @@
+有効なオプションの説明
+
+◎Ver5.1xで導入済み
+○Ver5.1xで導入済みだが、変更あり
+△新機能・大きな変更ではない等で、ON推奨
+▲新機能・変更が大きいので、とりあえずOFF推奨
+×新機能・テスト中等の理由で、開発版でもOFFになっているもの
+
+○CUTRESLINK
+ファイルのreadとsplitを最適化する
+(define名がおかしい)
+
+○LINKTAGCUT
+混雑時間帯に >>000 形式のレスへのリンクを削除。
+「レスを全部読む」の増加への対策として、
+表示範囲外のリンクは削除しないように変更。
+(CUTRESLINKが有効な時のみ機能する。0/1で指定)
+
+△RELOADLINK
+一番最後に、「更新したレスを表示」のリンクを表示する
+連打されてもNotModifiedが返るので、大きな負荷にはならないはず。
+
+◎LASTMOD
+導入済み。ほぼ必須。
+
+◎GSTR2
+nofirst → n など、短縮形で指示できるようにする
+稼動中。今のところ問題なし。
+
+▲USE_PATH
+PATH_INFOを処理することにより、
+http:://piza2.2ch.net/test/read.cgi/tech/998997848/10-20
+のリクエストを処理できるようになる。
+CHUNK_ANCHORとの併用で効果を発揮する。
+http:://piza2.2ch.net/test/read.cgi/tech/
+時に、板のスレ一覧を表示するため、負荷が増える可能性あり。
+
+◎PREVENTRELOAD
+書き込み直後のリロードを防止する
+FORCE_304_TIMEで指定された時間の間、304 Not Modifiedを返す
+稼動中。
+
+◎GZIP
+△ZLIB
+出力を圧縮する。
+ZLIBを指定すると圧縮にgzipを使わなくなるため、
+プロセス数が減り、負荷低減につながる。
+
+△RAWOUT
+datの(差分)取得をread.cgiで処理する。
+生datも圧縮して転送量を減らすことができる。
+CGIへのリクエストが増加する可能性があるので、負荷が大きくなる可能性あり。
+mod_gzipの設定次第では、不要になる場合も。
+
+△USE_MMAP
+fread(read)の代わりにmmapを使用する。
+負荷の低減が期待できる。
+
+×EXPLICIT_RELEASE
+明示的に資源を解放する。
+CGIプロセスが終了すれば、資源は解放されるので明示的な解放は不要。
+逆に、解放処理が負荷を増加させる危険があるので、OFF推奨。
+
+×USE_INDEX
+read.cgi側によるindexの実装(experimental)
+/board/dat/idx/ディレクトリがあれば、各レスのindexを作成する。
+
+×ALL_ANCHOR
+▲CHUNK_ANCHOR
+トップに「全部読む」/CHUNK_NUM毎に区切ったレスへのanchorをつける
+どちらかはあった方がよさそうだけど、
+CHUNK_ANCHORには、現在、副作用があるので。
+※表示範囲外への >>000 形式のリンクを、１レス分であっても
+CHUNK_NUMレス分へのリンクに変更してしまう。
+
+△LATEST_ANCHOR
+「最新レス LATEST_NUM」をつける
+
+▲SAGE_IS_PLAIN
+sageレスのとき、名前を太字にしない
+(<a href="mailto:sage">の代わりに<font color=>をつける)
+若干転送量が減るが、見た目が変化する。
+
+△CHECK_MOD_GZIP
+mod_gzipが導入されていたら、「掲示板に戻る」のリンク先を
+/板名/ にする。
+(OFFにすると、戻り先はaccept-encodingによって、/index.htmか/index.htmlになる)
+
+△CUT_DATE_STRING
+"投稿日："を非表示にする
+
+▲CREATE_NAME_ANCHOR
+各レスにアンカーをつける。
+CHUNK_ANCHORとの併用でキャッシュ効果が上がる可能性があるが、
+転送量を増やす結果になる可能性もある。
+これをOFFにした場合でも、CHUNK_ANCHORをOFFにしないと、
+>>000 形式のリンク先が広範囲となるため、
+転送量を増やす可能性がある。
+
+▲NO_FIRST
+各種リンクに付く"&nofirst=true"を置きかえる。
+#define NO_FIRST "&n=t"
+
+△USE_SETTING_FILE
+板毎に設定が書いてあるファイルを使用する。
+板のディレクトリにSETTING_FILE_NAMEのファイルがあり(SETTING.TXTと同じ場所)、
+有効なエントリがあれば、デフォルト値を置き換える。
+SETTING_R.TXTは
+---
+FORCE_304_TIME=30
+LIMIT_PM=23
+RES_NORMAL=50
+MAX_FILESIZE=512
+LINKTAGCUT=0
+---
+など。空行可。'='前後の空白不可。'='がなかったり、マッチしなかったりしたら無視
+最後の行に改行が入ってなかったら、その行も無視
+現在設定可能な値は、
+RES_YELLOW
+RES_REDZONE
+RES_IMODE
+RES_NORMAL
+MAX_FILESIZE (Kbyte単位で設定)
+LIMIT_PM
+LIMIT_AM
+FORCE_304_TIME (PREVENTRELOAD有効時のみ)
+LATEST_NUM (LATEST_ANCHOR有効時のみ)
+LINKTAGCUT (CUTRESLINK有効時のみ)
+
+---------------------------------------------------------------------
+採用決定のためcondition削除
+
+◎NEWBA
+BadAccessの新しいバージョンを使う。
+稼動中。今のところ問題なし。かちゅ～しゃ規制に注意。
+
+---------------------------------------------------------------------
+不採用のためcode削除
+
+×USE_INDEX2CGI
+index2.cgiがあったら、「掲示板に戻る」のリンク先をindex2.cgiにする
+もはや不要？
+
+×EXPIRES
+proxy用に、キャッシュの保持期限を出力する。
+
+×COOKIE
+Cookie による名前、E-mail フィールドの初期値の埋め込みを CGI 側で行う
+Last-Modified付加により、proxyでキャッシュされた場合に各種の不都合
+(最悪の場合、キャップ・トリップのパス漏れ)が発生するため使用不可に
+
