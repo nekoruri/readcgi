@@ -496,7 +496,7 @@ static int rewrite_href(char **dp,		/* ‘‚«ž‚Ýƒ|ƒCƒ“ƒ^ */
 #ifdef CREATE_NAME_ANCHOR
 				d += sprintf(d, "#%d\">", st);
 #else
-				d += sprintf(d, "\">);
+				d += sprintf(d, "\">");
 #endif
 
 			}
