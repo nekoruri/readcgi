@@ -1600,10 +1600,26 @@ char const *LastChar(char const *src, char c)
 /****************************************************************/
 void html_head(char *title, int line)
 {
+#ifdef CHUNK_ANCHOR
+	int i;
+#endif
 
 	if (!is_imode()) {	/* no imode       */
-		pPrintf(pStdout, R2CH_HTML_HEADER_1, title, zz_bs, zz_bs,
-			zz_ky, zz_bs, zz_ky);
+		pPrintf(pStdout, R2CH_HTML_HEADER_1, title, zz_bs);
+#ifdef ALL_ANCHOR
+		pPrintf(pStdout, R2CH_HTML_ALL_ANCHOR, zz_bs, zz_ky); 
+#endif
+#ifdef CHUNK_ANCHOR
+		for (i = 1; i <= line; i += CHUNK_NUM) {
+			pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
+					zz_bs, zz_ky, i, i + CHUNK_NUM - 1, 
+					(i == 1 ? "" : "&n=t"), i);
+		}
+#endif /* CHUNK_ANCHOR */
+#ifdef LATEST_ANCHOR
+		pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR,
+				zz_bs, zz_ky, LATEST_NUM, LATEST_NUM);
+#endif
 	} else {
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1,
 			title, zz_bs, zz_bs, zz_ky, RES_IMODE, zz_bs,
@@ -1622,6 +1638,9 @@ void html_head(char *title, int line)
 
 	pPrintf(pStdout, R2CH_HTML_HEADER_2, title);
 }
+#if (defined(CHUNK_ANCHOR) && CHUNK_NUM > RES_NORMAL) 
+# error "Too large CHUNK_NUM!!"
+#endif
 /****************************************************************/
 /*	RELOAD						        */
 /****************************************************************/

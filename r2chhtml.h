@@ -66,15 +66,15 @@
  */
 /* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_MAIL \
-	"<dt>%d 名前：<a href=\"mailto:%s\"><b>%s</b></a> 投稿日：%s<dd>%s<br><br>"
+	"<dt>%d 名前：<a href=\"mailto:%s \"><b>%s </b></a> 投稿日：%s<dd>%s<br><br>"
 
 /* レス(mailto無し): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_NOMAIL \
-	"<dt>%d 名前：<font color=green><b>%s</b></font> 投稿日：%s<dd>%s<br><br>"
+	"<dt>%d 名前：<font color=green><b>%s </b></font> 投稿日：%s<dd>%s<br><br>"
 
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_SAGE \
-	"<dt>%d 名前：<font color=#0000c0><b>%s</b></font> 投稿日：%s<dd>%s<br><br>"
+	"<dt>%d 名前：<font color=#0000c0><b>%s </b></font> 投稿日：%s<dd>%s<br><br>"
 
 /* レス(ここ壊れています): %d=レス番号 */
 #define R2CH_HTML_RES_BROKEN_HERE \
@@ -94,11 +94,11 @@
  */
 /* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_IMODE_RES_MAIL \
-	"<p>[%d:<a href=\"mailto:%s\"><b>%s</b></a>(%s)]<br>%s</p><hr>"
+	"<p>[%d:<a href=\"mailto:%s \"><b>%s </b></a>(%s)]<br>%s</p><hr>"
 
 /* レス(mailto無し): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_IMODE_RES_NOMAIL \
-	"<p>[%d:<b>%s</b>(%s)]<br>%s</p><hr>"
+	"<p>[%d:<b>%s </b>(%s)]<br>%s</p><hr>"
 
 /* レス(ここ壊れています): %d=レス番号 */
 #define R2CH_HTML_IMODE_RES_BROKEN_HERE "<p>[%d:ここ壊れています]</p><hr>"
@@ -232,16 +232,13 @@
 	"</html>"
 
 /*
- * HEADER
- * (HEADER|IMODE_HEADER), (HEADER_REDZONE|HEADER_REDZONE|HEADER_REDZONE)? , HEADER_2
+ * HEADER:
+ * ((HEADER ALL_ANCHOR CHUNK_ANCHOR LATEST_ANCHOR)|IMODE_HEADER)
+ * (HEADER_REDZONE|HEADER_REDZONE|HEADER_REDZONE)
+ * HEADER_2
  */
-/* ブラウザで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %s=板 %s=スレ番号 */
 #ifndef COOKIE
-#define R2CH_HTML_HEADER_1 \
-	"<html>" \
-	"<head>" \
-	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
-	"<title>%s</title>" \
+#define R2CH_HTML_COOKIE_SCRIPT \
 	"<script language=JavaScript>" \
 	"<!--\n" \
 	"N=g(\"NAME\");" \
@@ -261,24 +258,32 @@
 	"}return(\"\");" \
 	"}\n" \
 	"// -->" \
-	"</script>" \
-	"</head>" \
-	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
-	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s\">レスを全部読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=100&n=t\">最新レス100</a>"
+	"</script>" 
 #else
+#define R2CH_HTML_COOKIE_SCRIPT ""
+#endif
+
+/* ブラウザで見たとき: %s=スレ名 %s=板 */
 #define R2CH_HTML_HEADER_1 \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
 	"<title>%s</title>" \
+	R2CH_HTML_COOKIE_SCRIPT \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
-	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s\">レスを全部読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=100&n=t\">最新レス100</a>"
-#endif
+	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>"
+
+/* %s=板 %s=スレ番号 */
+#define R2CH_HTML_ALL_ANCHOR \
+	" <a href=\"" CGINAME "?bbs=%s&key=%s\">レスを全部読む</a>"
+/* %s=板 %s=スレ番号 %d=開始レス %d=終了レス %s="&n=f" %d=開始レス */
+#define R2CH_HTML_CHUNK_ANCHOR \
+	" <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d%s\">%d-</a>"
+/* %s=板 %s=スレ番号 %d=レス個数 %d=レス個数 */
+#define R2CH_HTML_LATEST_ANCHOR \
+	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&n=t\">最新レス%d</a>"
+
 	
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
                      %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
@@ -326,7 +331,7 @@
 
 /*
  * FOOTER
- * (FORM? , FOOTER) | (FORM_IMODE? , FOOTER_IMODE)
+ * (FORM? , FOOTER) | FORM_IMODE
  */
 #ifndef COOKIE
 /* %s=板 %s=スレ %ld=現在時刻 */

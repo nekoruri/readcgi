@@ -49,5 +49,20 @@
  */
 #define RAWOUT
 
+/** Header custumization **/
+
+/* 「全部読む」をつける */
+#undef ALL_ANCHOR 
+
+/* pageの topに、CHUNK_NUM番ごとに区切ったレスへの anchorをつける
+ */
+#define CHUNK_ANCHOR
+#define CHUNK_NUM 50
+
+/* 「最新レス LATEST_NUM」をつける */
+#define LATEST_ANCHOR
+#define LATEST_NUM 50
+
+
 /* sageレスのとき、名前を太字にしない */
 /* #define SAGE_IS_PLAIN */
