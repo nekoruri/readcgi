@@ -557,6 +557,21 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	
 	while (*s != '>' && *s != '\n')
 		s++;
+	if (memcmp(s, ">http://", 8) == 0 ) {
+		/* URLリンクだった場合、そのまま出力してみる */
+		s += 8; /* skip ">http://" */
+		s = strstr(s, "</a>");
+		if ( !s )
+			return 0;
+		s += 4; /* length of "</a>" */
+		copy_start = *sp;
+		copy_len = s - copy_start;
+		memcpy( d, copy_start, copy_len );
+		d += copy_len;
+		*sp = s;
+		*dp = d;
+		return 1;
+	}
 	if (memcmp(s, ">&gt;&gt;", 9) == 0)
 		s += 9;
 	copy_start = s;
@@ -783,7 +798,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 					char *tdp = bufp;
 					char const *tsp = p;
 					if (!rewrite_href(&tdp, &tsp, istagcut))
-						goto Break;
+						break; /* 走査不能な<a >タグはそのまま出力し、続行 */
 					bufrest -= tdp - bufp;
 					bufp = tdp;
 					p = tsp;
@@ -792,8 +807,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				break;
 			case '&':
 				/* add_tailspace_strict(*This->buffers, bufp); */
-				if (p[1] == 'a' && p[2] == 'm' && p[3] == 'p') {
-				/*if (memcmp(p+1, "amp", 3) == 0) {*/
+				if (memcmp(p+1, "amp", 3) == 0) {
 					if (*(p + 4) != ';')
 						p += 4 - 1;
 				}
@@ -835,8 +849,8 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 #if	!defined(TYPE_TERI) || defined(AUTO_LOGTYPE)
 			case COMMA_SUBSTITUTE_FIRSTCHAR: /*  *"＠"(8197)  "｀"(814d) */
 				if (!IS_TYPE_TERI) {
-					/*if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {*/
-					if (p[1] == '\x97' && p[2] == '\x81' && p[3] == '\x4d') {
+					/* ここは特に頻度が低いため、可読性、保守性のほうが重要 */
+					if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {
 						ch = ',';
 						p += 4 - 1;
 					}
@@ -927,6 +941,7 @@ static void get_title()
 	if (lineMax) {
 		splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 		strncpy(zz_title, s[4], sizeof(zz_title)-1);
+		zz_title[sizeof(zz_title)-1] = '\0';
 	}
 }
 
