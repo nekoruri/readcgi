@@ -386,7 +386,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 
 #ifdef USE_PATH
 	if (path_depth == 0) {
-		sprintf(depth_expr, "./read.cgi/%.20s/%.20s/", zz_bs, zz_ky );
+		sprintf(depth_expr, "./read.cgi?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
 	} else
 	if (path_depth == 2) {
 		strncpy(depth_expr,
@@ -2070,7 +2070,7 @@ int main(void)
 #ifdef RAWOUT
 	if (rawmode)
 		dat_out_raw();
-#ifdef USE_PATH
+#if 0	/* #ifdef USE_PATH */
 	else if (path_depth == 2) {
 		if (zz_ky[0] == '-')
 			dat_out_subback();	/* スレ一覧 */
@@ -2428,7 +2428,7 @@ void html_head(int level, char const *title, int line)
 	}
 
 	if (!is_imode()) {	/* no imode       */
-#ifdef USE_PATH
+#if 0 /* スレ一覧を外すと要らなくなる #ifdef USE_PATH */
 		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_HEADER_1("%s", "../"),
