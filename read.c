@@ -2050,6 +2050,7 @@ static void html_thread_anchor(int first, int last)
 /* 最初と最後に表示されるレス番号を返す(レス１を除く)
    imode未対応, isprintedと同じ動作を。
 */
+#ifdef SEPARATE_CHUNK_ANCHOR
 static int first_line()
 {
 	if (nn_st)
@@ -2072,6 +2073,7 @@ static int last_line()
 	}
 	return line;
 }
+#endif
 
 /****************************************************************/
 /*	HTML HEADER						*/
