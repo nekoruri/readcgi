@@ -438,3 +438,4 @@
 #define ERROR_NOT_FOUND "そんな板orスレッドないです。"
 #define ERROR_NO_MEMORY "メモリの確保に失敗しました。"
 #define ERROR_MAINTENANCE "調整中。。。"
+#define ERROR_LOGOUT "なんか不調です。"

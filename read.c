@@ -666,7 +666,7 @@ if(strcmp(zz_bs,"ascii"))	return 1;
 
 	fclose(fp);
 #endif
-	html_error("Ç»ÇÒÇ©ïsí≤Ç≈Ç∑ÅB");
+	html_error(ERROR_LOGOUT);
 	return 1;
 }
 /****************************************************************/
