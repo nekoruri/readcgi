@@ -118,12 +118,16 @@ void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
 int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
+#ifndef CUTRESLINK
 void hlinkReplace(char *src);
+#endif
 static void html_foot(int level, int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
 int getFileSize(char const *file);
+#ifdef CUTRESLINK
 static int isprinted(int lineNo);
+#endif
 #ifndef CUTRESLINK
 /*int res_split(char **s, char *p);*/
 char *findSplitter(char *stt, int sp);
@@ -2789,7 +2793,6 @@ int hrefStop(char x)
 		return 0;
 	return 1;
 }
-#endif
 /****************************************************************/
 /*	Replace(cutWordOff)					*/
 /****************************************************************/
@@ -2853,7 +2856,7 @@ void hlinkReplace(char *src)
 		last = doReplace(last, hlink0, hlink1);
 	}
 }
-
+#endif
 
 /****************************************************************/
 /*	END OF THIS FILE					*/
