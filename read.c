@@ -166,9 +166,7 @@ struct {
 #ifdef PREVENTRELOAD
 	int Force_304_Time;
 #endif
-#ifdef	LATEST_ANCHOR
 	int Latest_Num;
-#endif
 	int LinkTagCut;
 } Settings = {
 	RES_YELLOW,
@@ -181,9 +179,7 @@ struct {
 #ifdef	PREVENTRELOAD
 	FORCE_304_TIME,
 #endif
-#ifdef	LATEST_ANCHOR
 	LATEST_NUM,
-#endif
 	LINKTAGCUT,
 };
 struct {
@@ -204,9 +200,7 @@ struct {
 #ifdef	PREVENTRELOAD
 	{	"FORCE_304_TIME",	&Settings.Force_304_Time,	},
 #endif
-#ifdef	LATEST_ANCHOR
 	{	"LATEST_NUM",	&Settings.Latest_Num,	},
-#endif
 	{	"LINKTAGCUT",	&Settings.LinkTagCut	},
 };
 #undef	RES_YELLOW
@@ -227,10 +221,8 @@ struct {
 #undef	FORCE_304_TIME
 #define	FORCE_304_TIME	Settings.Force_304_Time
 #endif
-#ifdef	LATEST_ANCHOR
 #undef	LATEST_NUM
 #define	LATEST_NUM	Settings.Latest_Num
-#endif
 #undef	LINKTAGCUT
 #define	LINKTAGCUT	Settings.LinkTagCut
 #endif	/*	USE_SETTING_FILE	*/
@@ -925,6 +917,9 @@ static int out_html(int level, int line, int lineNo)
 				lineNo);
 		}
 		if (isbusytime && out_resN > RES_NORMAL) {
+#ifdef SEPARATE_CHUNK_ANCHOR
+			pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
+#else
 #ifdef USE_PATH
 			if (path_depth)
 				pPrintf(pStdout,
@@ -947,6 +942,7 @@ static int out_html(int level, int line, int lineNo)
 					RES_NORMAL,
 					RES_NORMAL,
 					LIMIT_PM - 12, LIMIT_AM);
+#endif
 			return 1;
 		}
 	} else {		/* imode  */
@@ -2005,14 +2001,83 @@ char const *LastChar(char const *src, char c)
 		return src;
 	return (p + 1);
 }
+
+#ifdef	SEPARATE_CHUNK_ANCHOR
+#ifndef	CHUNK_ANCHOR
+#error	SEPARATE_CHUNK_ANCHOR needs CHUNK_ANCHOR
+#endif
+#endif
+#ifdef	CHUNK_ANCHOR
+/* first-lastまでのCHUNKED anchorを表示
+   firstとlastはレス番号。firstに0は渡すなー */
+static void html_thread_anchor(int first, int last)
+{
+	int line = ((first - 1)/ CHUNK_NUM) * CHUNK_NUM + 1;
+	if (first <= last) {
+#ifdef	CHUNKED_ANCHOR_WITH_FORM
+		pPrintf(pStdout, CHUNKED_ANCHOR_SELECT_HEAD("%s", "%s"),
+			zz_bs, zz_ky);
+		for ( ; line <= last; line += CHUNK_NUM) {
+			pPrintf(pStdout, CHUNKED_ANCHOR_SELECT_STARTNUM("%d"),
+			line);
+		}
+		pPrintf(pStdout, CHUNKED_ANCHOR_SELECT_TAIL);
+#else
+		for ( ; line <= last; line += CHUNK_NUM) {
+#ifdef USE_PATH
+			if (path_depth)
+				pPrintf(pStdout,
+					R2CH_HTML_PATH_CHUNK_ANCHOR,
+					line,
+					line + CHUNK_NUM - 1, 
+					line);
+			else
+#endif
+				pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
+					zz_bs, zz_ky,
+					line,
+					line + CHUNK_NUM - 1, 
+					(line == 1 ? "" : NO_FIRST),
+					line);
+		}
+#endif
+	}
+}
+#else
+#define	html_thread_anchor(first, last)		/* (void)0   nothing */
+#endif	/* SEPARATE_CHUNK_ANCHOR */
+
+/* 最初と最後に表示されるレス番号を返す(レス１を除く)
+   imode未対応, isprintedと同じ動作を。
+*/
+static int first_line()
+{
+	if (nn_st)
+		return nn_st;
+	if (nn_ls)
+		return lineMax - nn_ls + 1;
+	return 1;
+}
+static int last_line()
+{
+	/* html_footを呼ぶ時に最終表示行を渡すようにすれば要らないんだけど */
+	int line = lineMax;
+	if (nn_to && nn_to < lineMax)
+		line = nn_to;
+	if (isbusytime) {
+		int busy_last = first_line() + RES_NORMAL - 1 - is_nofirst();
+		/* 細かい計算間違ってるかも */
+		if (busy_last < line)
+			line = busy_last;
+	}
+	return line;
+}
+
 /****************************************************************/
 /*	HTML HEADER						*/
 /****************************************************************/
 void html_head(int level, char const *title, int line)
 {
-#ifdef CHUNK_ANCHOR
-	int i;
-#endif
 
 	if (level) {
 		pPrintf(pStdout,
@@ -2048,37 +2113,29 @@ void html_head(int level, char const *title, int line)
 					title, zz_bs);
 #endif
 		}
-#ifdef ALL_ANCHOR
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout,
-				R2CH_HTML_PATH_ALL_ANCHOR); 
-		else
+	/* ALL_ANCHOR は常に生きにする
+	   ただし、CHUNK_ANCHORが生きで、かつisbusytimeには表示しない */
+#ifdef	CHUNK_ANCHOR
+		if (!isbusytime)
 #endif
-			pPrintf(pStdout,
-				R2CH_HTML_ALL_ANCHOR,
-				zz_bs, zz_ky); 
-#endif
-#ifdef CHUNK_ANCHOR
-		for (i = 1; i <= line; i += CHUNK_NUM) {
+		{
 #ifdef USE_PATH
 			if (path_depth)
 				pPrintf(pStdout,
-					R2CH_HTML_PATH_CHUNK_ANCHOR,
-					i,
-					i + CHUNK_NUM - 1, 
-					i);
+					R2CH_HTML_PATH_ALL_ANCHOR); 
 			else
 #endif
-				pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
-					zz_bs, zz_ky,
-					i,
-					i + CHUNK_NUM - 1, 
-					(i == 1 ? "" : NO_FIRST),
-					i);
+				pPrintf(pStdout,
+					R2CH_HTML_ALL_ANCHOR,
+					zz_bs, zz_ky); 
 		}
-#endif /* CHUNK_ANCHOR */
-#ifdef LATEST_ANCHOR
+#ifdef	SEPARATE_CHUNK_ANCHOR
+		html_thread_anchor(1, first_line()-1);
+#else
+		html_thread_anchor(1, lineMax);
+#endif
+
+#if	defined(LATEST_ANCHOR) && !defined(SEPARATE_CHUNK_ANCHOR)
 #ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout,
@@ -2090,7 +2147,7 @@ void html_head(int level, char const *title, int line)
 				R2CH_HTML_LATEST_ANCHOR,
 				zz_bs, zz_ky,
 				LATEST_NUM, LATEST_NUM);
-#endif
+#endif	/* LATEST_ANCHOR */
 	} else {
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1,
 			title, zz_bs, zz_bs, zz_ky, RES_IMODE, zz_bs,
@@ -2158,12 +2215,41 @@ void html_reload(int startline)
 /****************************************************************/
 static void html_foot(int level, int line, int stopped)
 {
+#ifndef	SEPARATE_CHUNK_ANCHOR
+	/* 初期化した数値を再び使うのはダイジェスト関係だけのはず */
 	out_resN = 0;	/* ここで初期化するといいらしい? */
+#endif
 
 	if (is_imode()) {
 		html_foot_im(line,stopped);
 		return;
 	}
+#ifdef	SEPARATE_CHUNK_ANCHOR
+	if (last_line() < lineMax) {
+		/* RELOADLINKの表示条件の逆なんだけど */
+		html_thread_anchor(last_line() + 1, lineMax - LATEST_NUM);
+		if (!(isbusytime && out_resN > RES_NORMAL)) {
+			/* 最新レスnnがかぶるので苦肉の策
+			   LATEST_ANCHORを生きにして、なおかつ末尾に持ってきているので
+			   out_html内の　R2CH_HTML_TAILを修正するほうが
+			   処理の流れとしては望ましいが、
+			   「混雑時にCHUNK_ANCHORを非表示にする」等の場合には
+			   再修正が必要なので保留 */
+	/* LATEST_ANCHORも常に生きにする */
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout,
+				R2CH_HTML_PATH_LATEST_ANCHOR,
+				LATEST_NUM, LATEST_NUM);
+		else
+#endif
+			pPrintf(pStdout,
+				R2CH_HTML_LATEST_ANCHOR,
+				zz_bs, zz_ky,
+				LATEST_NUM, LATEST_NUM);
+		}
+	}
+#endif
 	if (line <= RES_RED && !stopped) {
 #ifdef USE_PATH
 		if (path_depth == 3)

@@ -158,6 +158,19 @@
 	" <a href=\"%s?bbs=%s&key=%s&st=%d&to=%d&imode=true\">次の%dレス</a>\n" \
 	" <a href=\"%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a><br>\n"
 
+#define R2CH_HTML_TAIL_SIMPLE \
+	" (%02d:00PM - %02d:00AM の間一気に全部は読めません)<br>\n"
+/* テストなので使っていないけど */
+#define CHUNKED_ANCHOR_SELECT_HEAD(bbs,key) \
+	"<form><select onchange='" \
+	"var st=parseInt(this[selectedIndex].text);" \
+	"location=\""CGINAME"?bbs="bbs"&key="key"&st=\"+st+\"&to=\"+(st+49)+\"&"NO_FIRST"\";"\
+	"'>"
+#define CHUNKED_ANCHOR_SELECT_STARTNUM(num) \
+	"<option>"num"-"
+#define CHUNKED_ANCHOR_SELECT_TAIL \
+	"</select></form>"
+
 /*
  * ERROR
  * ERROR1, ERROR2?, ERROR3, BANNER, ERROR4, (ERROR5_HTML|ERROR5_DAT|ERROR5_NONE)?, ERROR_6

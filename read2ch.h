@@ -4,7 +4,7 @@
 #define READ2CH_H__
 
 #define	CGINAME	"read.cgi"
-#define	CGIVER	"read.cgi ver14 (01/08/28)"
+#define	CGIVER	"read.cgi ver5.20+ (01/09/10-)"
 #define	RES_YELLOW	900
 #define	RES_REDZONE	950
 #define	RES_RED		1000
@@ -116,5 +116,11 @@
 /* NN4.xでgzip圧縮時にContent-Lengthがあると
   Last-Modifiedが無効になる問題の対策 */
 #define NN4_LM_WORKAROUND
+
+/* select form形式で CHUNKED_ANCHORを表示する */
+/* 「掲示板に戻る」「レスを全部」「最新レス」との統一が取れていない */
+/* #define　CHUNKED_ANCHOR_WITH_FORM */
+
+#define SEPARATE_CHUNK_ANCHOR
 
 #endif /* READ2CH_H__ */
