@@ -95,11 +95,4 @@
 #define N_INDEX_DIGESTS	10
 #define N_INDEX_THREADS	30
 
-/*
- *  どーでもいーんですが、Cソース中、
- *  このファイルだけEUCですな(藁
- *  どうしよ。個人的には全部EUCにできるなら
- *  したいところではある。(6411)
- */
-
 #endif /* READ2CH_H__ */

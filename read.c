@@ -14,7 +14,7 @@
 #include	<sys/mman.h>
 #endif
 
-#include "index.h"
+#include "digest.h"
 #include "read.h"
 
 #ifdef ZLIB
