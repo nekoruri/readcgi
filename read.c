@@ -136,6 +136,7 @@ int zz_log_type;	/* 0: non-TYPE_TERI  1: TYPE_TERI */
 #endif
 int nn_st, nn_to, nn_ls;
 
+#define RANGE_MAX_RES (65535) /* レス番号より十分に大きな数 */
 #define MAX_RANGE 20 
 struct range {
 	int count;
@@ -386,8 +387,20 @@ typedef struct { /*  class... */
 
 /****************************************************************/
 /* 範囲リスト range へ追加する
- * st, toの1文字目が共に '-' ならば処理しない
- * rangeが満杯ならば追加しない
+ *
+ * st, toの期待内容(aaa,bbbは実際は数字):
+ *   入力文字列   st    to
+ *   ""        -> "-"   "-"    無視
+ *   "aaa"     -> "aaa" "-"    単独
+ *   "aaa-"    -> "aaa" ""     先頭指定
+ *   "-bbb"    -> "-"   "bbb"  末尾指定
+ *   "-"       -> "-"   ""     全範囲
+ *   "aaa-bbb" -> "aaa" "bbb"  両端指定
+ *
+ * aaa > bbb ならば aaa のみとして扱う。
+ *
+ * 隣接または重なり合う範囲は併合するが、このときにリストの並びが入れ替わることがある。
+ * rangeが満杯ならば追加しない。
  */
 static void add_range( struct range *range, const char *st, const char *to )
 {
@@ -400,22 +413,21 @@ static void add_range( struct range *range, const char *st, const char *to )
 		return;
 
 	i_st = atoi(st);
-	i_to = atoi(to);
 	if ( i_st < 1 )
 		i_st = 0;
-	if ( i_to < 0 )
-		i_to = 0;
+
 	switch ( *to ) {
 	case '-':
 		i_to = i_st;
 		break;
 	case '\0':
-		i_to = RES_RED;
+		i_to = RANGE_MAX_RES;
 		break;
+	default:
+		i_to = atoi(to);
 	}
-	if ( i_st > i_to ) {
+	if ( i_to < i_st )
 		i_to = i_st;
-	}
 
 	/* merge */
 	hole = -1;
@@ -427,7 +439,8 @@ static void add_range( struct range *range, const char *st, const char *to )
 				i_to = range->array[i].to;
 
 			if ( hole >= 0 )
-				range->array[hole] = range->array[--range->count];
+				if ( --range->count != hole )
+					range->array[hole] = range->array[range->count];
 
 			hole = i;
 		}
@@ -445,6 +458,7 @@ static void add_range( struct range *range, const char *st, const char *to )
 }
 
 /* rangeの上下限取得
+ * *st以降全部なら *to = 0となる
  */
 int get_range_minmax( const struct range * range, int * st, int *to )
 {
@@ -461,7 +475,7 @@ int get_range_minmax( const struct range * range, int * st, int *to )
 		if ( i_to < range->array[i].to )
 			i_to = range->array[i].to;
 	}
-	if ( i_to >= RES_RED )
+	if ( i_to >= RANGE_MAX_RES )
 		i_to = 0;
 	*st = i_st;
 	*to = i_to;
