@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.2 2001/08/31 20:38:52 2ch Exp $ */
+ *  $Id: datindex.c,v 1.3 2001/09/01 05:36:48 2ch Exp $ */
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -187,6 +187,7 @@ static int create_index(DATINDEX_OBJ *dat,
 			char const *fn)
 {
 	int fd;
+	DATINDEX *tidx;
 
 	/* まず、ローカルにインデクスを作ってみる */
 	if (!create_local_index(dat)) {
@@ -196,29 +197,24 @@ static int create_index(DATINDEX_OBJ *dat,
 
 	fd = open(fn, O_CREAT | O_EXCL | O_RDWR, 0666);
 	if (fd < 0) {
-		return create_local_index(dat);
+		return 0;
 	}
 
 	/* ファイル領域を作り出す */
-	if (lseek(fd, sizeof(DATINDEX) - 1, SEEK_SET) < 0
-	    || write(fd, "", 1) <= 0) {
-		return create_local_index(dat);
+	if (write(fd, dat->private_idx, sizeof(DATINDEX)) < 0) {
+		/* XXX 本来ならば unlink した方がいい */
+		return 0;
 	}
-	dat->shared_idx = mmap(NULL,
-			       sizeof(DATINDEX),
-			       PROT_READ | PROT_WRITE,
-			       MAP_SHARED,
-			       fd,
-			       0);
-	if (dat->shared_idx == MAP_FAILED) {
-		return create_local_index(dat);
+	tidx = mmap(NULL,
+		    sizeof(DATINDEX),
+		    PROT_READ | PROT_WRITE,
+		    MAP_SHARED,
+		    fd,
+		    0);
+	if (tidx == MAP_FAILED) {
+		return 0;
 	}
-
-	/* この時点で private_idx は、
-	   ヒープ上に作られているはず */
-	memcpy((DATINDEX *)dat->shared_idx,
-	       dat->private_idx,
-	       sizeof(DATINDEX));
+	dat->shared_idx = tidx;
 
 	/* 最後に、署名などを書き入れる */
 	dat->shared_idx->signature = DATINDEX_VERSION;
