@@ -2369,17 +2369,23 @@ int main(void)
 	}
 #endif
 
+#ifdef	RAWOUT
+	/* ここまでで既にzz_fileSizeは(ファイルが見つかれば)設定されている */
+	if (rawmode) {
+		if (zz_fileSize && zz_fileSize == raw_lastsize) {
+			/* LastModifiedを出力せず、非圧縮で返す */
+			printf("\n" "+OK 0/%dK\n", MAX_FILESIZE / 1024);
+			return 0;
+		}
+	}
+#endif
+
 #if	defined(GZIP) && defined(RAWOUT) && defined(Katjusha_DLL_REPLY)
 	/* BadAccess中で設定すると、早目のファイルサイズ判定が出来ないので */
-	if (rawmode && gzip_flag != compress_none)
+	if (rawmode && gzip_flag)
 		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
 			&& strstr(zz_http_user_agent, "Katjusha"));
 	if (zz_katjusha_raw && zz_fileSize) {
-		/* ここまでで既にzz_fileSizeは(ファイルが見つかれば)設定されている */
-		if (zz_fileSize == raw_lastsize) {
-			puts("Status: 304 Not Modified\n");
-			return 0;
-		}
 		if (zz_fileSize < raw_lastsize) {
 			/* ここでhtml_error()を呼ぶと非圧縮のテキストを返すが、構わないはず。
 			   Content-EncodingもLastModifiedも出力しないが、必要ないと思う。
