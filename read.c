@@ -91,21 +91,21 @@ struct tm tm_now;
 long currentTime;
 int isbusytime = 0;
 
-char *LastChar(char *src, char *c);
-char *zz_GetString(char *dst, char *tgt);
-char *doReplace(char *des, char *str0, char *str1);
+char const *LastChar(char const *src, char const *c);
+char *zz_GetString(char *dst, char const *tgt);
+char *doReplace(char *des, char const *str0, char const *str1);
 void html_error(char *mes);
 void html_foot_im(void);
 void html_head(char *title, int line);
 int res_split(char **s, char *p);
-void someReplace(char *src, char *des, char *str0, char *str1);
+void someReplace(char const *src, char *des, char const *str0, char const *str1);
 void hlinkReplace(char *src);
 void html_foot(int line);
 int getLineMax();
 int IsBusy2ch();
 int getFileSize(char *file);
 #ifndef CUTRESLINK
-int res_split(char **s, char *p);
+/*int res_split(char **s, char *p);*/
 char *findSplitter(char *stt, int sp);
 #endif
 #ifdef RELOADLINK
@@ -928,7 +928,7 @@ void zz_GetEnv(void)
 		zz_http_referer = KARA;
 #ifdef USE_PATH
 	if (!zz_path_info)
-		zz_path_info = KARA;
+		zz_path_info = "";
 #endif
 	if (!zz_query_string)
 		zz_query_string = KARA;
@@ -961,14 +961,18 @@ void zz_GetEnv(void)
 		/* PATH_INFOから、トークンを2個抜き出す */
 		char buf[48];
 		char const *b, *k;
-		strncpy(buf, zz_path_info + 1, 47);
-		buf[47] = 0;
+		strncpy(buf, &zz_path_info[1], sizeof(buf) - 1);
+		buf[sizeof(buf) - 1] = 0;
 		b = strtok(buf, "/");
 		k = strtok(NULL, "/");
 		if (b && k) {
 			strncpy(zz_bs, b, 1023);
 			strncpy(zz_ky, k, 1023);
+		} else {
+			zz_path_info = "";
 		}
+	} else {
+		zz_path_info = "";
 	}
 #endif
 #ifdef COOKIE
@@ -1206,7 +1210,7 @@ int html_error999(char *mes)
 /*								*/
 /****************************************************************/
 #ifdef GSTR2
-char *zz_GetString(char *dst, char *tgt)
+char *zz_GetString(char *dst, char const *tgt)
 {
 	int i;
 	int len;
@@ -1407,9 +1411,9 @@ int IsBusy2ch()
 /****************************************************************/
 /*	えらー							*/
 /****************************************************************/
-char *LastChar(char *src, char *c)
+char const *LastChar(char const *src, char const *c)
 {
-	char *p;
+	char const *p;
 	if (!*src)
 		return (src);
 	p = strstr(src, c);
@@ -1492,7 +1496,7 @@ void html_foot_im(void)
 /****************************************************************/
 /*	Replace(do)						*/
 /****************************************************************/
-char *doReplace(char *des, char *str0, char *str1)
+char *doReplace(char *des, char const *str0, char const *str1)
 {
 	char *p, *ret = NULL;
 	char t[SIZE_BUF];
@@ -1510,7 +1514,9 @@ char *doReplace(char *des, char *str0, char *str1)
 /****************************************************************/
 /*	Replace(some)						*/
 /****************************************************************/
-void someReplace(char *src, char *des, char *str0, char *str1)
+void someReplace(char const *src,
+		 char *des,
+		 char const *str0, char const *str1)
 {
 	char *last;
 	strcpy(des, src);
