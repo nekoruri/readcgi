@@ -160,6 +160,9 @@ NN4.xでgzip圧縮時にContent-LengthがあるとLast-Modifiedが無効になる問
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
 
+▲USE_CSS
+名前の緑表示をCSSを使って表示
+
 ？CM_BBSPINK
 CM欄がBBSPINK用のものに置き換わる。
 

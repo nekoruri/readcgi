@@ -142,4 +142,7 @@
 /* かちゅーしゃによるアクセスを拒絶する */
 #define Katjusha_Beta_kisei
 
+/* 名前の緑表示をCSSを使って表示 */
+#define USE_CSS
+
 #endif /* READ2CH_H__ */
