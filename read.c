@@ -52,6 +52,9 @@ char const *zz_http_referer;
 char const *zz_http_cookie;
 #ifdef USE_PATH
 char const *zz_path_info;
+/* 0 のときは、pathは適用されていない
+   read.cgi/tech/998845501/ のときは、3になる */
+int path_depth;
 #endif
 char const *zz_query_string;
 char *zz_temp;
@@ -352,7 +355,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 					p += 2;
 					goto Teri_Break;
 				}
-				if (zz_path_info
+				if (path_depth
 				    && p[1] == 'a'
 				    && isspace(p[2])) {
 					char *tdp = bufp;
@@ -817,7 +820,7 @@ int out_html(int line, int lineNo)
 				lineNo);
 		}
 		if (isbusytime && out_resN > RES_NORMAL) {
-			if (zz_path_info)
+			if (path_depth)
 				pPrintf(pStdout,
 					R2CH_HTML_PATH_TAIL,
 					lineNo,
@@ -1058,6 +1061,8 @@ int get_lastmod_str(time_t lastmod)
 #endif
 /****************************************************************/
 /*	PATH_INFOを解析						*/
+/*	/board							*/
+/*	/board/							*/
 /*	/board/datnnnnnn/[range] であるとみなす			*/
 /*	return: pathが有効だったら1を返す			*/
 /*	副作用: zz_bs, zz_ky, zz_st, zz_to, zz_nf		*/
@@ -1066,29 +1071,44 @@ int get_lastmod_str(time_t lastmod)
 #ifdef USE_PATH
 static int get_path_info(char const *path_info)
 {
-	char buf[48];
-	char const *b, *k, *r;
+	char const *s = path_info;
+	int n;
 
 	/* PATH_INFO は、'/' で始まってるような気がしたり */
-	if (path_info[0] != '/')
+	if (s[0] != '/')
 		return 0;
 
-	/* PATH_INFOから、トークンを2個以上抜き出す */
-	strncpy(buf, &path_info[1], sizeof(buf) - 1);
-	buf[sizeof(buf) - 1] = 0;
-	b = strtok(buf, "/");	/* board */
-	k = strtok(NULL, "/");	/* key */
-	r = strtok(NULL, "/");	/* range */
-	if (!(b && k))
+	path_depth++;
+
+	/* 長すぎるPATH_INFOは怖いので受け付けない */
+	if (strlen(s) >= 256)
 		return 0;
 
-	/* さしあたって bs, ky を更新しる */
-	strncpy(zz_bs, b, 1024 - 1);
-	strncpy(zz_ky, k, 1024 - 1);
+	/* PATH_INFOを走査。ボード名などを抜き出す。
+	   さまざまな理由により、'/'の有無もチェックしておく */
+	n = strcspn(++s, "/");
+	if (n == 0)
+		return 0;
+	/* 板名 */
+	strncpy(zz_bs, s, n);
+	s += n;
+	if (s[0] != '/') {
+		/* XXX ここで何かがしたい。hehehe */
+		return 0;
+	}
+	path_depth++;
+	/* つぎ… */
+	n = strcspn(++s, "/");
+	if (n == 0 || s[n] != '/')
+		return 0;
+	path_depth++;
+	/* スレ */
+	strncpy(zz_ky, s, n);
+	s += n + 1;
 
 	/* strtok()で切り出したバッファは総長制限が
 	   かかっているので、buffer overrunはないはず */
-	if (r) {
+	if (s[0]) {
 		char *p;
 		/* 範囲指定のフォーマットは以下のものがある
 
@@ -1104,18 +1124,18 @@ static int get_path_info(char const *path_info)
 		strcpy(zz_st, "1");
 
 		/* st を取り出す */
-		if (isdigit(*r)) {
-			for (p = zz_st; isdigit(*r); p++, r++)
-				*p = *r;
+		if (isdigit(*s)) {
+			for (p = zz_st; isdigit(*s); p++, s++)
+				*p = *s;
 			*p = 0;
 		}
 
-		if (*r == '-') {
-			r++;
+		if (*s == '-') {
+			s++;
 			/* toを取り出す */
-			if (isdigit(*r)) {
-				for (p = zz_to; isdigit(*r); p++, r++)
-					*p = *r;
+			if (isdigit(*s)) {
+				for (p = zz_to; isdigit(*s); p++, s++)
+					*p = *s;
 				*p = 0;
 			}
 		} else {
@@ -1726,7 +1746,7 @@ void html_head(char *title, int line)
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1, title, zz_bs);
 #ifdef ALL_ANCHOR
-		if (zz_path_info)
+		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_PATH_ALL_ANCHOR); 
 		else
@@ -1736,7 +1756,7 @@ void html_head(char *title, int line)
 #endif
 #ifdef CHUNK_ANCHOR
 		for (i = 1; i <= line; i += CHUNK_NUM) {
-			if (zz_path_info)
+			if (path_depth)
 				pPrintf(pStdout,
 					R2CH_HTML_PATH_CHUNK_ANCHOR,
 					i,
@@ -1752,7 +1772,7 @@ void html_head(char *title, int line)
 		}
 #endif /* CHUNK_ANCHOR */
 #ifdef LATEST_ANCHOR
-		if (zz_path_info)
+		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_PATH_LATEST_ANCHOR,
 				LATEST_NUM, LATEST_NUM);
@@ -1793,7 +1813,7 @@ void html_reload(int startline)
 		pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
 			startline);
 	else {
-		if (zz_path_info)
+		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_PATH_RELOAD,
 				startline);
