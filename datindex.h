@@ -2,7 +2,7 @@
  *
  *  世界共通インデクスの定義
  *
- *  $Id: datindex.h,v 1.3 2001/09/02 15:04:44 2ch Exp $ */
+ *  $Id: datindex.h,v 1.4 2001/09/03 10:35:23 2ch Exp $ */
 
 #ifndef DATINDEX_H__
 #define DATINDEX_H__
@@ -92,7 +92,7 @@ typedef struct DATINDEX
 	struct
 	{
 		time_t lastmod;
-		unsigned ofs;
+		unsigned nextofs;
 	} idx[DATINDEX_IDX_SIZE];
 
 	/* XXX うめぐさ1 */
@@ -110,6 +110,23 @@ typedef struct DATINDEX
 	unsigned long signature;
 } DATINDEX;
 
+struct DATINDEX_STRING
+{
+	char const *p;
+	int len;
+};
+
+struct DATINDEX_LINE
+{
+	/* これらのポインタ同士を再計算すべきではない XXX */
+	struct DATINDEX_STRING name;
+	struct DATINDEX_STRING mailto;
+	struct DATINDEX_STRING date;
+	struct DATINDEX_STRING text;
+	int len;	/* 未計算の時は 0 が入る */
+	time_t lastmod;	/* あぼーん時には 0 を入れれ */
+};
+
 /* index管理
    べつにグローバル変数でもいいけどね */
 typedef struct DATINDEX_OBJ
@@ -118,8 +135,10 @@ typedef struct DATINDEX_OBJ
 	struct stat dat_stat;
 	char *private_dat;
 
+	/* .datを読んで生成されるテーブル */
+	struct DATINDEX_LINE *line;
+
 	/* インデクス */
-	DATINDEX const *private_idx;
 	DATINDEX volatile *shared_idx;
 } DATINDEX_OBJ;
 
@@ -139,7 +158,26 @@ typedef struct DATINDEX_OBJ
 		eax; \
 	 }) : 0)
 
-extern int open_index(DATINDEX_OBJ *dat,
-		      char const *bs, long ky);
+/* 命名規則を間違えた…鬱
+   公開インタフェイスは、
+   <module>_<method>()
+   って命名にするようにしよう、今後は。 */
+
+/* インデクスを dat に読み込む
+   dat は完全に初期化が行われる */
+extern int datindex_open(DATINDEX_OBJ *dat,
+			 char const *bs, long ky);
+
+/* lastmodを拾い上げる
+   first は、!is_nofirst() であることに注意 */
+extern int datindex_lastmod(DATINDEX_OBJ const *dat,
+			    int first,	/* 1番目を含める */
+			    int st,
+			    int to,
+			    int ls);
+
+/* 実は漏れ、C++大好きなんだ…
+   なんとなくそれを匂わせる書き方になってるでしょ?(鬱
+   (6411) */
 
 #endif /* DATINDEX_H__ */

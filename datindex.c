@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.4 2001/09/02 15:04:44 2ch Exp $ */
+ *  $Id: datindex.c,v 1.5 2001/09/03 10:35:23 2ch Exp $ */
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -89,33 +89,55 @@ static int get_date(struct tm *datetime,
  *	こいつは署名を行わない
  ****************************************************************/
 static int buildup_index(DATINDEX_OBJ *dat,
-		       DATINDEX *idx)
+			 int linenum,	/* 0 origin */
+			 DATINDEX volatile *idx,
+			 long ofs,
+			 long datlen)
 {
-	long ofs;
-	int chunk, linenum;
-	long datlen = dat->dat_stat.st_size;
+	int chunk;
 	char const *const p = dat->private_dat;
 
-	for (ofs = 0, chunk = 0, linenum = 0;
-	     (ofs < datlen
-	      && (DATINDEX_CHUNK_SIZE * chunk + linenum
-		  < DATINDEX_MAX_ARTICLES));
-	     linenum++) {
+	/* .dat の mtime は記録しておく */
+	idx->lastmod = dat->dat_stat.st_mtime;
+
+	chunk = linenum / DATINDEX_CHUNK_SIZE;
+	linenum %= DATINDEX_CHUNK_SIZE;
+	for (/* nil */;
+		      (ofs < datlen
+		       && (DATINDEX_CHUNK_SIZE * chunk + linenum
+			   < DATINDEX_MAX_ARTICLES));
+		      linenum++, (linenum + 1 >= DATINDEX_CHUNK_SIZE
+				  ? idx->idx[chunk].nextofs = ofs
+				  : 0)) {
+		struct DATINDEX_LINE *line;
 		int i, n;
-		long nt;
+		int orig_ofs;
 		struct tm datetime;
+
+		/* わかんないフラグが多すぎてごめんね */
+		int aborted = 0;	/* あぼーん? */
+		int completed = 0;	/* パースが通ったらセットすべし */
+		time_t lastmod = idx->lastmod;
 
 		if (linenum >= DATINDEX_CHUNK_SIZE) {
 			/* 繰り上がり */
-			chunk++;
+			idx->idx[++chunk].lastmod = 0; /* epoch(藁 */
 			linenum = 0;
-			idx->idx[chunk].ofs = ofs;
-			idx->idx[chunk].lastmod = 0; /* epoch(藁 */
+			/* XXX nextofs は、
+			   ループ境界で更新している */
 		}
+
+		line = &dat->line[DATINDEX_CHUNK_SIZE * chunk + linenum];
+		orig_ofs = ofs;
 
 		/* name<>mailto<>date id<>text<>[subject]\n */
 		/* name, mailtoをスキップする */
 		for (i = 0; i < 2; i++) {
+			if (i == 0)
+				line->name.p = &p[ofs];
+			else if (i == 1)
+				line->mailto.p = &p[ofs];
+
 			while (!(p[ofs] == '<' && p[ofs + 1] == '>')) {
 				if (p[ofs] == '\n') {
 					ofs++;
@@ -124,6 +146,12 @@ static int buildup_index(DATINDEX_OBJ *dat,
 				ofs++;
 				ofs += strcspn(&p[ofs], "<>\n");
 			}
+
+			if (i == 0)
+				line->name.len = &p[ofs] - line->name.p;
+			else if (i == 1)
+				line->mailto.len = &p[ofs] - line->mailto.p;
+
 			ofs += 2;
 		}
 
@@ -132,20 +160,23 @@ static int buildup_index(DATINDEX_OBJ *dat,
 		   あぼーんと見なす */
 		n = get_date(&datetime, &p[ofs]);
 		if (n == 0) {
-			/* あぼーんと見なす */
-			if (idx->idx[chunk].lastmod < dat->dat_stat.st_mtime)
-				idx->idx[chunk].lastmod = dat->dat_stat.st_mtime;
-			/* このまま行の処理を打ち切ってもいいのだが
+			/* あぼーんと見なす
+			   このまま行の処理を打ち切ってもいいのだが
 			   スレタイトルを取得したい場合があるので、
-			   放っておく */
+			   その場合はフラグを立てて続行(鬱 */
+			if (chunk == 0 && linenum == 0)
+				aborted = 1;
 		} else {
 			/* 取得した時刻を L-M としてセットしておく */
-			nt = mktime(&datetime);
-			if (idx->idx[chunk].lastmod < nt)
-				idx->idx[chunk].lastmod = nt;
+			lastmod = mktime(&datetime);
 		}
 		/* dateの残り、本文をスキップする */
 		for (i = 0; i < 2; i++) {
+			if (i == 0)
+				line->date.p = &p[ofs];
+			else if (i == 1)
+				line->text.p = &p[ofs];
+
 			while (!(p[ofs] == '<' && p[ofs + 1] == '>')) {
 				if (p[ofs] == '\n') {
 					ofs++;
@@ -154,36 +185,76 @@ static int buildup_index(DATINDEX_OBJ *dat,
 				ofs++;
 				ofs += strcspn(&p[ofs], "<>\n");
 			}
+
+			if (i == 0)
+				line->date.len = &p[ofs] - line->mailto.p;
+			else if (i == 1)
+				line->text.len = &p[ofs] - line->date.p;
+
 			ofs += 2;
 		}
-		/* ここまで来れたらあぼーんではないと見なす */
-		n = DATINDEX_CHUNK_SIZE * chunk + linenum;
-		idx->valid_bitmap[n >> 5] |= 1 << (n & 31);
+		/* ここまで来れたらあぼーんではないと見なす
+		   (除 aborted がセットされてる場合 )*/
+		if (!aborted) {
+			n = DATINDEX_CHUNK_SIZE * chunk + linenum;
+			idx->valid_bitmap[n >> 5] |= 1 << (n & 31);
+			completed = 1;
+		}
 		/* スレタイトル取得を試みる */
 		if (chunk == 0 && linenum == 0) {
 			idx->title_ofs = ofs;
 		}
 		ofs += 1 + strcspn(&p[ofs], "\n");
+
 	can_not_parse:
-		;
+		if (!completed) {
+			/* 行の解析が完了していない場合 */
+
+			static struct DATINDEX_LINE ab =
+			{
+				{"あぼーん", 8},
+				{"あぼーん", 8},
+				{"あぼーん", 8},
+				{"あぼーん", 8},
+				0, 0
+			};
+
+			*line = ab;
+		}
+
+		line->lastmod = lastmod;
+		line->len = ofs - orig_ofs;	/* \n までの長さ */
+
+		/* あぼーん行であるときは、
+		   lastmod が最新時刻のままであるはず */
+		if (idx->idx[chunk].lastmod < lastmod)
+			idx->idx[chunk].lastmod = lastmod;
 	}
+
+	/* linenum が CHUNK_SIZE を超えてる場合があるが、
+	   下記の式は適切に働く。 */
+	idx->linenum = DATINDEX_CHUNK_SIZE * chunk + linenum;
 
 	return 1;
 }
 /****************************************************************
  *	ヒープに領域を確保し、インデクスを汲み上げる
  *	こいつも署名を行わない
+ *	こいつは作成したINDEXを返すことに注意
  ****************************************************************/
-static int create_local_index(DATINDEX_OBJ *dat)
+static DATINDEX *create_local_index(DATINDEX_OBJ *dat)
 {
 	DATINDEX *idx = calloc(1, sizeof(DATINDEX));
 	if (!idx)
 		return 0;
-	/* private idxとshared idxは、
-	   同じものが見えるようにしておく */
-	dat->private_idx = idx;
 	dat->shared_idx = idx;
-	return buildup_index(dat, idx);
+	return (buildup_index(dat,
+			      0,	/* 開始行 */
+			      idx,
+			      0,	/* ファイルオフセット */
+			      dat->dat_stat.st_size)
+		? idx
+		: NULL);
 }
 /****************************************************************
  *	インデクスファイルを作成してみる
@@ -198,7 +269,8 @@ static int create_index(DATINDEX_OBJ *dat,
 	/* まず、ローカルにインデクスを作ってみる
 	   dat中各フィールドは、ローカル内容で
 	   満たされるので、このまま帰っても氏なない。 */
-	if (!create_local_index(dat)) {
+	tidx = create_local_index(dat);
+	if (!tidx) {
 		/* .datファイルが不正だったとみなす */
 		return 0;
 	}
@@ -211,21 +283,22 @@ static int create_index(DATINDEX_OBJ *dat,
 		return 0;
 	}
 
-	/* ファイル領域を作り出す */
-	if (write(fd, dat->private_idx, sizeof(DATINDEX)) < 0) {
+	/* ファイル領域を作り出す
+	   作成してもらった private idx を書き出す*/
+	if (write(fd, tidx, sizeof(DATINDEX)) < 0) {
 		/* XXX 本来ならば unlink した方がいい */
 		return 0;
 	}
-	tidx = mmap(NULL,
-		    sizeof(DATINDEX),
-		    PROT_READ | PROT_WRITE,
-		    MAP_SHARED,
-		    fd,
-		    0);
-	if (tidx == MAP_FAILED) {
+	/* 書きだしたものを、mapする */
+	dat->shared_idx = mmap(NULL,
+			       sizeof(DATINDEX),
+			       PROT_READ | PROT_WRITE,
+			       MAP_SHARED,
+			       fd,
+			       0);
+	if (dat->shared_idx == MAP_FAILED) {
 		return 0;
 	}
-	dat->shared_idx = tidx;
 
 	/* 最後に、署名などを書き入れる */
 	dat->shared_idx->signature = DATINDEX_VERSION;
@@ -244,6 +317,12 @@ static int open_dat(DATINDEX_OBJ *dat,
 {
 	int fd;
 	char fn[64];
+
+	/* 行インデクスを、空の状態で作成 */
+	dat->line = calloc(sizeof(dat->line[0]),
+			   DATINDEX_MAX_ARTICLES);
+	if (!dat->line)
+		return 0;
 
 	sprintf(fn, "../%.64s/dat/%ld.dat", bs, ky);
 	fd = open(fn, O_RDONLY);
@@ -269,8 +348,8 @@ static int open_dat(DATINDEX_OBJ *dat,
  *	インデクスファイルをメモリに固定する
  *	固定できないときは、エラーを返す
  ****************************************************************/
-int open_index(DATINDEX_OBJ *dat,
-	       char const *bs, long ky)
+int datindex_open(DATINDEX_OBJ *dat,
+		  char const *bs, long ky)
 {
 	int fd;
 	int ver;
@@ -293,20 +372,20 @@ int open_index(DATINDEX_OBJ *dat,
 		return create_index(dat, fn);
 	}
 
-	/* まずは private map を譲り受ける */
-	dat->private_idx = mmap(NULL,
-				sizeof(DATINDEX),
-				PROT_READ,
-				MAP_PRIVATE,
-				fd,
-				0);
-	if (dat->private_idx == MAP_FAILED) {
+	/* まずは map を譲り受ける */
+	dat->shared_idx = mmap(NULL,
+			       sizeof(DATINDEX),
+			       PROT_READ | PROT_WRITE,
+			       MAP_SHARED,
+			       fd,
+			       0);
+	if (dat->shared_idx == MAP_FAILED) {
 		/* 自力でインデクス作れ */
-		return create_local_index(dat);
+		return !!create_local_index(dat);
 	}
 
 	/* インデクスのバージョンを検査 */
-	ver = dat->private_idx->version;
+	ver = dat->shared_idx->version;
 	if (ver == 0) {
 		/* 思いっきり時間が経ってないかい? */
 		struct stat idx_stat;
@@ -320,28 +399,30 @@ int open_index(DATINDEX_OBJ *dat,
 		}
 
 		/* 自力でインデクス作れや */
-		return create_local_index(dat);
+		return !!create_local_index(dat);
 	} else if (ver > DATINDEX_VERSION) {
 		/* 未知のバージョンなので泣き寝入り */
-		return create_local_index(dat);
+		return !!create_local_index(dat);
 	} else if (ver < DATINDEX_VERSION
-		   || dat->private_idx->signature != DATINDEX_VERSION) {
+		   || dat->shared_idx->signature != DATINDEX_VERSION) {
 		/* 潰して作り直しや */
 		if (unlink(fn) >= 0)
 			return create_index(dat, fn);
 	}
 
-	/* これでやっと、shared mapが与えられる */
-	dat->shared_idx = mmap(NULL,
-			       sizeof(DATINDEX),
-			       PROT_READ | PROT_WRITE,
-			       MAP_SHARED,
-			       fd,
-			       0);
-	if (dat->shared_idx == MAP_FAILED) {
-		/* 自力でインデクス建てろ */
-		return create_local_index(dat);
-	}
+	/* すべてが揃った
+	   ここからがホントの闘い
+	   まずは、現在indexが握っている行数より
+	   進んでいるかどうかチェック */
+
+	/* 進んでいる分の行を、行インデクス(ローカルだ)
+	   つくっとく */
+	
+	/* 進んだ分を申請 */
+
+	/* 申請が通って、かつ、chunk boundaryを
+	   またいだら、chunk indexを更新する義務を負う */
+
 	return 1;
 }
 
