@@ -137,6 +137,10 @@ char zz_title[256];
 #define is_nofirst() (*zz_nf == 't')
 #define is_head() (zz_head_request != 0)
 
+#define set_imode_true()	(*zz_im = 't')
+#define set_nofirst_true()	(*zz_nf = 't')
+#define set_nofirst_false()	(*zz_nf = '\0')
+
 char *KARA = "";
 int zz_fileSize = 0;
 int lineMax = -1;
@@ -369,10 +373,12 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 {
 	static char url_expr[128];
 	char *p;
+#if defined(USE_INDEX) || defined(CREATE_OLD_LINK)
 	const char * key = zz_ky;
 #ifdef READ_KAKO
 	if ( read_kako[0] )
 		key = read_kako;
+#endif
 #endif
 
 #ifdef	CREATE_OLD_LINK
@@ -837,11 +843,12 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				break;
 			case ':':
 #ifndef NO_LINK_URL_BUSY
-				if (resnumber) {
+				if (resnumber)
 #else
-				if (resnumber && !istagcut) {
+				if (resnumber && !istagcut)
 					/* urlのリンクを(時間帯によって)廃止するなら */
 #endif
+				{
 					if (*(p+1) == '/' && *(p+2) == '/' && isalnum(*(p+3))) {
 						/*
 							正常なdat(名前欄が少なくとも1文字)ならば、
@@ -1586,13 +1593,13 @@ static int get_path_info(char const *path_info)
 				*p = *s;
 			*p = 0;
 		} else if (*s == 'i') {
-			strcpy(zz_im,"true");
+			set_imode_true();
 			s++;
 		} else if (*s == '.') {
-			strcpy(zz_nf,"false");
+			set_nofirst_false();
 			s++;
 		} else if (*s == 'n') {
-			strcpy(zz_nf,"true");
+			set_nofirst_true();
 			s++;
 		} else if (*s == 'l') {
 			s++;
@@ -1605,7 +1612,7 @@ static int get_path_info(char const *path_info)
 #if 0
 			/* ls= はnofirst=true を標準に */
 			if (!zz_nf[0]) {
-				strcpy(zz_nf,"true");
+				set_nofirst_true();
 			}
 #endif
 		} else if (*s == '-') {
@@ -1636,7 +1643,7 @@ static int get_path_info(char const *path_info)
 		} else {
 			/* 単点は、nofirst=trueをdefaultに */
 			if (!zz_nf[0]) {
-				strcpy(zz_nf,"true");
+				set_nofirst_true();
 			}
 		}
 	}
@@ -1735,6 +1742,33 @@ void readSettingFile(const char *bbsname)
 #endif	/*	USE_SETTING_FILE	*/
 
 /****************************************************************/
+/*	cell-phone detection					*/ 
+/****************************************************************/
+int is_imode_agent( const char * user_agent )
+{
+	const static char * small_screen_agents[] = {
+	"DoCoMo/",	/* i-Mode */
+	"UP.Browser/",	/* EZWeb */
+	"J-PHONE/", 	/* J-Phone */
+	"ASTEL/",	/* Dot i */
+	};
+	int i;
+	int len;
+	int user_agent_len;
+
+	user_agent_len = strlen( user_agent );
+
+	for ( i = 0 ; i < ((sizeof small_screen_agents) / (sizeof small_screen_agents[0])) ; ++i )
+	{
+		len = strlen( small_screen_agents[i] );
+		if ( len < user_agent_len && !memcmp(user_agent, small_screen_agents[i], len) )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+/****************************************************************/
 /*	GET Env							*/
 /****************************************************************/
 void zz_GetEnv(void)
@@ -1799,6 +1833,8 @@ void zz_GetEnv(void)
 	GetString(zz_query_string, zz_st, sizeof(zz_st), "st");
 	GetString(zz_query_string, zz_to, sizeof(zz_to), "to");
 	GetString(zz_query_string, zz_nf, sizeof(zz_nf), "nofirst");
+	if ( is_imode_agent( zz_http_user_agent ) )
+		set_imode_true();
 	GetString(zz_query_string, zz_im, sizeof(zz_im), "imode");
 #ifdef RAWOUT
 	zz_rw[0] = '\0';
@@ -2276,7 +2312,7 @@ int main(void)
 		ls--;
 		if(ls == 0) {
 			ls = 1;
-			strcpy(zz_nf, "true");
+			set_nofirst_true();
 		}
 	}
 
