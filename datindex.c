@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.7 2001/09/03 12:47:48 2ch Exp $ */
+ *  $Id: datindex.c,v 1.8 2001/09/03 14:50:36 2ch Exp $ */
 
 #include <assert.h>
 #include <ctype.h>
@@ -185,9 +185,12 @@ static int buildup_line(struct DATINDEX_LINE *line,
 			completed = 1;
 		}
 		/* スレタイトルがあるかもしれないが、読み飛ばす */
-		ofs += 1 + strcspn(&dat[ofs], "\n");
 
 	can_not_parse:
+		/* XXX ファイル終端のケツを破る可能性あり
+		   修正しる!! */
+		ofs += 1 + strcspn(&dat[ofs], "\n");
+
 		if (completed) {
 			line->lastmod = lastmod;
 		} else {
@@ -221,6 +224,9 @@ static int buildup_line(struct DATINDEX_LINE *line,
  *	新たにインデクスをつくりあげる
  *	private_datにファイルが読まれているのが前提
  *	こいつは署名を行わない
+ *	idx に NULL を与えることで、
+ *	行インデクスのみ更新できる。
+ *	処理した最終行数を返す
  ****************************************************************/
 static int buildup_index(DATINDEX_OBJ *dat,
 			 int linenum,	/* 0 origin */
@@ -232,7 +238,8 @@ static int buildup_index(DATINDEX_OBJ *dat,
 	char const *const p = dat->private_dat;
 
 	/* .dat の mtime は記録しておく */
-	idx->lastmod = dat->dat_stat.st_mtime;
+	if (idx)
+		idx->lastmod = dat->dat_stat.st_mtime;
 
 	chunk = linenum / DATINDEX_CHUNK_SIZE;
 	linenum %= DATINDEX_CHUNK_SIZE;
@@ -256,19 +263,26 @@ static int buildup_index(DATINDEX_OBJ *dat,
 				    DATINDEX_CHUNK_SIZE - linenum,
 				    &p[ofs],
 				    datlen - ofs,
-				    idx->lastmod,
+				    dat->dat_stat.st_mtime,
 				    &n_line_processed,
 				    &chunk_lastmod);
+		if (!idx)
+			continue;
 
-		idx->idx[chunk].lastmod = chunk_lastmod;
-		idx->idx[chunk].nextofs = ofs;
+		/* 以降、idxの更新に入る */
+
+		if (linenum == 0
+		    && n_line_processed == DATINDEX_CHUNK_SIZE) {
+			/* chunkを完全に捉えきっていないと
+			   インデクスは更新しない */
+			idx->idx[chunk].lastmod = chunk_lastmod;
+			idx->idx[chunk].nextofs = ofs;
+		}
 
 		/* 有効な行に対してフラグ立ててく */
 		for (i = 0; i < n_line_processed; i++) {
-			unsigned o = (n + i) >> 5;
-			unsigned b = (n + i) & 31;
 			if (line[i].lastmod)
-				idx->valid_bitmap[o] |= 1 << b;
+				idx->idx[chunk].valid_bitmap |= 1 << i;
 		}
 
 		/* サブジェクトが採れていそうだったら、採る */
@@ -284,9 +298,12 @@ static int buildup_index(DATINDEX_OBJ *dat,
 
 	/* linenum が CHUNK_SIZE を超えてる場合があるが、
 	   下記の式は適切に働く。 */
-	idx->linenum = DATINDEX_CHUNK_SIZE * chunk + linenum;
+	linenum = DATINDEX_CHUNK_SIZE * chunk + linenum;
+	
+	if (idx)
+		idx->linenum = linenum;
 
-	return 1;
+	return linenum;
 }
 /****************************************************************
  *	ヒープに領域を確保し、インデクスを汲み上げる
@@ -299,13 +316,15 @@ static DATINDEX *create_local_index(DATINDEX_OBJ *dat)
 	if (!idx)
 		return 0;
 	dat->shared_idx = idx;
-	return (buildup_index(dat,
-			      0,	/* 開始行 */
-			      idx,
-			      0,	/* ファイルオフセット */
-			      dat->dat_stat.st_size)
-		? idx
-		: NULL);
+	if (buildup_index(dat,
+			  0,	/* 開始行 */
+			  idx,
+			  0,	/* ファイルオフセット */
+			  dat->dat_stat.st_size)) {
+		dat->linenum = idx->linenum;
+		return idx;
+	} else
+		return NULL;
 }
 /****************************************************************
  *	インデクスファイルを作成してみる
@@ -404,6 +423,8 @@ int datindex_open(DATINDEX_OBJ *dat,
 {
 	int fd;
 	int ver;
+	int local_ofs, local_st, current_n, old_n;
+	int i;
 
 	char fn[64];
 
@@ -463,16 +484,59 @@ int datindex_open(DATINDEX_OBJ *dat,
 
 	/* すべてが揃った
 	   ここからがホントの闘い
-	   まずは、現在indexが握っている行数より
-	   進んでいるかどうかチェック */
+	   まずは、インデクスに足りない
+	   行インデクス(ローカルだ)つくっとく */
 
-	/* 進んでいる分の行を、行インデクス(ローカルだ)
-	   つくっとく */
-	
+	/* すでに用意されているインデクスを計上 */
+	local_ofs = 0;
+	for (i = 0; 
+	     i < DATINDEX_IDX_SIZE
+		     && dat->shared_idx->idx[i].nextofs != 0;
+	     i++)
+		local_ofs = dat->shared_idx->idx[i].nextofs;
+
+	local_st = DATINDEX_IDX_SIZE * i;
+
+	/* 次に、ローカル行インデクス(不足分)を構築 */
+	dat->linenum = buildup_index(dat,
+				     local_st,
+				     NULL,
+				     local_ofs,
+				     dat->dat_stat.st_size - local_ofs);
+	/* 更新行がなかった場合は何もすることがない、はず */
+	if (!dat->linenum)
+		return 1;
+
+	/* indexを更新すべきかどうかの判断 */
+	current_n = dat->shared_idx->linenum;
+	if (current_n >= dat->linenum)
+		return 1;
+
 	/* 進んだ分を申請 */
+	old_n = DATINDEX_CMPXCHG(dat->shared_idx->linenum,
+				 current_n,
+				 dat->linenum);
+
+	/* 申請が通らなかったら、あきらめて帰れ */
+	if (old_n == dat->linenum)
+		return 1;
+
+	/* chunk boundaryをまたいでいなかったら、何もする必要ナシ */
+	if (old_n / DATINDEX_CHUNK_SIZE
+	    == dat->linenum / DATINDEX_CHUNK_SIZE)
+		return 1;
 
 	/* 申請が通って、かつ、chunk boundaryを
 	   またいだら、chunk indexを更新する義務を負う */
+	for (i = old_n / DATINDEX_CHUNK_SIZE;
+	     i < dat->linenum / DATINDEX_CHUNK_SIZE;
+	     i++) {
+		int j;
+		dat->shared_idx->idx[i].lastmod = 0;
+		for (j = 0; j < DATINDEX_CHUNK_SIZE; j++)
+			if (dat->line[DATINDEX_CHUNK_SIZE * i + j].lastmod)
+				dat->shared_idx->idx[i].valid_bitmap |= 1 << j;
+	}
 
 	return 1;
 }

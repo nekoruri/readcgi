@@ -2,7 +2,7 @@
  *
  *  世界共通インデクスの定義
  *
- *  $Id: datindex.h,v 1.4 2001/09/03 10:35:23 2ch Exp $ */
+ *  $Id: datindex.h,v 1.5 2001/09/03 14:50:37 2ch Exp $ */
 
 #ifndef DATINDEX_H__
 #define DATINDEX_H__
@@ -72,7 +72,8 @@ typedef struct DATINDEX
 	/* バージョン情報。破壊操作のセマフォにもなっている */
 	unsigned long volatile version;
 
-	/* 発言数 */
+	/* 発言数
+	   chunk idx更新のセマフォにもなっている */
 	unsigned long linenum;
 
 	/* .dat の最終更新時刻 */
@@ -91,13 +92,15 @@ typedef struct DATINDEX
 	   特別扱いする、というkludgeも考えられるが… */
 	struct
 	{
-		time_t lastmod;
 		unsigned nextofs;
+		time_t lastmod;
+		unsigned valid_bitmap;
+		long pad;
 	} idx[DATINDEX_IDX_SIZE];
 
 	/* XXX うめぐさ1 */
-	unsigned pad1[558];
-
+	unsigned pad1[615];
+#if 0
 	/* 有効発言 bitmap
 	   little endian なので、LSBから数えること。
 	   あぼーんされている発言は 0 になる。*/
@@ -105,6 +108,7 @@ typedef struct DATINDEX
 
 	/* XXX うめぐさ2 */
 	unsigned pad2[223];
+#endif
 
 	/* シグネチャ */
 	unsigned long signature;
@@ -137,15 +141,30 @@ typedef struct DATINDEX_OBJ
 
 	/* .datを読んで生成されるテーブル */
 	struct DATINDEX_LINE *line;
+	/* lineの個数 */
+	int linenum;
 
 	/* インデクス */
 	DATINDEX volatile *shared_idx;
 } DATINDEX_OBJ;
 
+/* 注意: i386 では動きませーん(藁 */
+#define DATINDEX_CMPXCHG(sem, cur, new) \
+	({ \
+		long eax; \
+		__asm__ ("cmpxchg %2,%3": \
+			 "=a"(eax) : \
+			 "0"(cur), \
+			 "r"(new), \
+			 "g"(sem)); \
+		eax; \
+	 })
+
 /* 破壊更新のために、idxを排他取得する
    勝ったら 非0 (というよりDATINDEX_VERSION)を戻す
    負けたら 0 を戻す
    注意: i386 では動きませーん(藁 */
+#if 0
 #define DATINDEX_GET_DESTRUCTIVE_UPDATE(idx) \
 	((idx)->version == DATINDEX_VERSION \
 	 ? ({ \
@@ -157,6 +176,7 @@ typedef struct DATINDEX_OBJ
 			 "g"((idx)->version)); \
 		eax; \
 	 }) : 0)
+#endif
 
 /* 命名規則を間違えた…鬱
    公開インタフェイスは、
@@ -170,11 +190,11 @@ extern int datindex_open(DATINDEX_OBJ *dat,
 
 /* lastmodを拾い上げる
    first は、!is_nofirst() であることに注意 */
-extern int datindex_lastmod(DATINDEX_OBJ const *dat,
-			    int first,	/* 1番目を含める */
-			    int st,
-			    int to,
-			    int ls);
+extern time_t datindex_lastmod(DATINDEX_OBJ const *dat,
+			       int first,	/* 1番目を含める */
+			       int st,
+			       int to,
+			       int ls);
 
 /* 実は漏れ、C++大好きなんだ…
    なんとなくそれを匂わせる書き方になってるでしょ?(鬱
