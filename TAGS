@@ -1,5 +1,5 @@
 
-read.c,3410
+read.c,3416
 #  define GZIP	16,258
 #  define LASTMOD28,480
 #  define FORCE_304_TIME 31,530
@@ -49,81 +49,81 @@ time_t t_now;89,1698
 struct tm tm_now;90,1712
 long currentTime;91,1730
 int isbusytime 92,1748
-typedef int (*zz_printf_t)zz_printf_t118,2386
-static gzFile pStdout;119,2442
-static zz_printf_t pPrintf 120,2491
-#define pPrintf 122,2549
-#define pStdout 123,2573
-int pid;124,2596
-#define false 129,2671
-#define true 130,2689
-#define _C_ 131,2711
-#define _U_ 132,2762
-#define _S_ 133,2801
-#define LINKTAGCUT 134,2882
-#define isCheck(isCheck137,2969
-#define isSJIS1(isSJIS1138,3030
-#define hrefStop(hrefStop139,3087
-#define _0____ 141,3149
-#define __1___ 142,3171
-#define ___2__ 143,3193
-#define ____3_ 144,3215
-#define _____4 145,3237
-#define ______ 147,3260
-#define _01___ 148,3279
-#define __1_3_ 149,3312
-#define ___23_ 150,3345
-#define _0_23_ 151,3378
-char flagtable[154,3420
-} ressplitter;ressplitter194,5995
-void ressplitter_init(203,6154
-const char *ressplitter_split(219,6651
-void splitting_copy(316,8594
-#define FORM_MAXLEN 331,9023
-char form_name[332,9048
-char form_mail[333,9077
-void Unescape(340,9219
-#define SAFECPY(SAFECPY374,9911
-void SetFormName(401,10342
-int BadAccess(438,11178
-int BadAccess(462,11538
-int logOut(520,13292
-void html_bannerNew(564,14329
-void html_banner(573,14572
-void html_banner(579,14647
-int out_html1(589,14884
-int out_html(626,15637
-int dat_out(737,18059
-int dat_read(778,18852
-int getLineMax(840,20186
-int getFileSize(863,20591
-time_t getFileLastmod(875,20933
-int get_lastmod_str(888,21285
-void zz_GetEnv(898,21579
-void atexitfunc(984,23633
-int main(1003,23984
-void html_error(1125,26503
-int html_error999(1182,27791
-char *zz_GetString(1209,28551
-char *zz_GetString(1244,29155
-int whatKanji(1275,29771
-char *findSplitter(1310,30583
-char *findSplitter(1327,30939
-int res_split(1353,31510
-void dump_out16(1388,32061
-int IsBusy2ch(1401,32398
-char *LastChar(1410,32656
-void html_head(1426,32983
-void html_reload(1454,33802
-void html_foot(1467,34162
-void html_foot_im(1487,34650
-char *doReplace(1495,34904
-void someReplace(1513,35342
-int hrefStop(1527,35693
-int cutWordOff(1593,36720
-int ExistHlinkX(1604,37001
-int ExistHlink(1630,37610
-void hlinkReplace(1641,37944
+typedef int (*zz_printf_t)zz_printf_t118,2444
+static gzFile pStdout;119,2500
+static zz_printf_t pPrintf 120,2549
+#define pPrintf 122,2607
+#define pStdout 123,2631
+int pid;124,2654
+#define false 129,2729
+#define true 130,2747
+#define _C_ 131,2769
+#define _U_ 132,2820
+#define _S_ 133,2859
+#define LINKTAGCUT 134,2940
+#define isCheck(isCheck137,3027
+#define isSJIS1(isSJIS1138,3088
+#define hrefStop(hrefStop139,3145
+#define _0____ 141,3207
+#define __1___ 142,3229
+#define ___2__ 143,3251
+#define ____3_ 144,3273
+#define _____4 145,3295
+#define ______ 147,3318
+#define _01___ 148,3337
+#define __1_3_ 149,3370
+#define ___23_ 150,3403
+#define _0_23_ 151,3436
+char flagtable[154,3478
+} ressplitter;ressplitter194,6053
+void ressplitter_init(203,6212
+const char *ressplitter_split(219,6709
+void splitting_copy(316,8652
+#define FORM_MAXLEN 331,9081
+char form_name[332,9106
+char form_mail[333,9135
+void Unescape(340,9277
+#define SAFECPY(SAFECPY374,9969
+void SetFormName(401,10400
+int BadAccess(438,11236
+int BadAccess(462,11596
+int logOut(520,13350
+void html_bannerNew(564,14387
+void html_banner(573,14630
+void html_banner(579,14705
+int out_html1(589,14942
+int out_html(626,15695
+int dat_out(737,18117
+int dat_read(778,18910
+int getLineMax(840,20244
+int getFileSize(863,20649
+time_t getFileLastmod(875,20991
+int get_lastmod_str(888,21343
+void zz_GetEnv(898,21637
+void atexitfunc(988,23779
+int main(1007,24130
+void html_error(1129,26649
+int html_error999(1186,27937
+char *zz_GetString(1213,28697
+char *zz_GetString(1248,29307
+int whatKanji(1279,29923
+char *findSplitter(1314,30735
+char *findSplitter(1331,31091
+int res_split(1357,31662
+void dump_out16(1392,32213
+int IsBusy2ch(1405,32550
+char const *LastChar(1414,32808
+void html_head(1430,33159
+void html_reload(1458,33978
+void html_foot(1471,34338
+void html_foot_im(1491,34826
+char *doReplace(1499,35080
+void someReplace(1517,35530
+int hrefStop(1533,35905
+int cutWordOff(1599,36932
+int ExistHlinkX(1610,37213
+int ExistHlink(1636,37822
+void hlinkReplace(1647,38156
 
 util_date.c,203
 #define ap_isupper 75,3236
