@@ -72,7 +72,6 @@ char const *zz_server_software;
 char const *zz_http_if_modified_since;
 time_t zz_fileLastmod;
 char lastmod_str[1024];
-char expires_str[1024];
 
 #ifdef USE_MMAP
 static int zz_mmap_fd;
@@ -1644,18 +1643,6 @@ int main(void)
 						  to);
 #endif
 	get_lastmod_str(lastmod_str, zz_fileLastmod);
-#if 0
-	/* XXX これはウソ、Expires: は、
-	   現在時間を基準にすべきである */
-	get_lastmod_str(expires_str, zz_fileLastmod + 5);
-#else
-	{
-		/* ためしに廃棄期限をちょっと先に設定してみる */
-		time_t nw;
-		time(&nw);
-		get_lastmod_str(expires_str, nw + 10);
-	}
-#endif
 #ifdef PREVENTRELOAD
 	if (zz_http_if_modified_since) {
 		time_t modtime = ap_parseHTTPdate(zz_http_if_modified_since);
