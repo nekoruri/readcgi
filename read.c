@@ -1911,9 +1911,6 @@ int main(void)
 		st = to = 0;
 	}
 
-	zz_init_parent_link();
-	zz_init_cgi_path();
-
 #ifdef USE_INDEX
 	/* ここでindexを読み込んでくる
 	   実はすでに、.datもマッピングされちゃってるので、
@@ -2462,6 +2459,9 @@ void html_head(int level, char const *title, int line)
 		path_depth = 3;
 	}
 #endif
+	zz_init_parent_link();
+	zz_init_cgi_path();
+
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1("%s", "%s"),
 			title, zz_parent_link);
