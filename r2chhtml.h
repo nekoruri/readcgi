@@ -495,7 +495,7 @@ h1, .c{text-align:center}
 	"<a href=\"" anchor "/?ls=50\" target=\"body\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_INDEX_AD \
-"<p><a href=\"subback.html\">スレッド一覧</a></p>
+"<p><a href=\"-\">スレッド一覧</a></p>
 </small>
 </div>
 
