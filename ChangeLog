@@ -2,6 +2,12 @@ tag: HEAD
 
   out_simplehtml()でHEADER_0を出していなかった
   can_simplehtml()でREFERERが旧形式の時にbbsを取りそこなっていた
+  datファイルが見つからないときはLastModifiedを出さないように修正
+
+  追加condition:
+    ▲AUTO_KAKO 過去ログに対して透過的にアクセスする
+      AUTO_KAKO_MODE AUTO_KAKOの動作制限設定
+    ▲AUTO_LOGTYPE datファイルを見てログのフォーマットを自動判別する
 
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。

@@ -199,6 +199,22 @@ html化待ちのdatもread.cgiで読む。
 ▲READ_KAKO_THROUGH
 過去ログに誘導するときに範囲指定を継承する
 
+▲AUTO_KAKO
+過去ログに対して透過的にアクセスする
+AUTO_KAKO_MODEで制限内容を定義すること
+
+AUTO_KAKO_MODE
+AUTO_KAKOで過去ログを取得/閲覧できる制限を設定する(0～2)
+      通常読み出し    RAWモード
+      temp/  kako/    temp/  kako/
+  0 =  ×     ×       ○     ○
+  1 =  ○     ×       ○     ○
+  2 =  ○     ○       ○     ○
+  凡例) ○は閲覧可能  ×は閲覧禁止
+
+▲AUTO_LOGTYPE
+datファイルを見てログのフォーマットを自動判別する
+
 △CUT_TAIL_BLANK
 直前の文字がShift_JISの１バイト目であるかを厳密に判定する事により、
 名前欄とメール欄の末尾の空白、及び<br>タグ直前の空白をほぼ消滅させる。
