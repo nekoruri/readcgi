@@ -1364,7 +1364,7 @@ int dat_read(char const *fname,
 	close(in);
 #endif
 
-#ifdef	Katjusha_DLL_REPLY
+#if	defined(RAWOUT) && defined(Katjusha_DLL_REPLY)
 	if (zz_katjusha_raw) {
 		BigLine[lineMax = 0] = BigBuffer + zz_fileSize;
 		return 0;
@@ -2208,6 +2208,7 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 	sprintf(fname, "998695422.dat");
 #endif
 
+#ifdef	RAWOUT
 	/* ƒXƒŒˆê——‚ğæ‚è‚ÉÀ‚­ƒ‚[ƒh */
 	if (1 <= path_depth && path_depth < 3
 #ifndef USE_INDEX
@@ -2232,6 +2233,7 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 			strcpy(zz_to, zz_ls), zz_ls[0] = zz_st[0] = '\0';
 #endif
 	}
+#endif
 }
 
 /****************************************************************/
