@@ -342,12 +342,18 @@
 #define R2CH_HTML_CSS_DEFINE ""
 #endif
 
+#define R2CH_HTML_HEADER_0 \
+	"<html>" \
+	"<head>" \
+	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">"
+
+#ifdef ALWAYS_PATH
+#define R2CH_HTML_BASE_DEFINE "<base href=\"http://%s%s/%s/%s/\">"
+#endif
+
 /* ブラウザで見たとき: %s=スレ名 %s=板 */
 /* </title> の前の空白は削除しないこと */
 #define R2CH_SIMPLE_HTML_HEADER_1(title, cookie_script) \
-	"<html>" \
-	"<head>" \
-	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
 	R2CH_HTML_CSS_TYPE \
 	"<title>" title " </title>" \
 	cookie_script \
@@ -383,10 +389,7 @@
 #endif
 
 /* </title>の前の空白は削除しないこと */
-#define R2CH_HTML_IMODE_HEADER_1(title, board, alllink)  \
-	"<html>" \
-	"<head>" \
-	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
+#define R2CH_HTML_IMODE_HEADER_1(title, board, alllink) \
 	"<title>" title " </title>" \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \

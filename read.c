@@ -47,6 +47,10 @@ static int pid;
 # define CHUNK_ANCHOR
 #endif
 
+#if defined(ALWAYS_PATH) && !defined(USE_PATH)
+# undef ALWAYS_PATH /* USE_PATHが定義されていなければALWAYS_PATHは無視 */
+#endif
+
 /* 非TERIタイプで','が置換されて格納される文字列 */
 #define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */
 #define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
@@ -56,7 +60,11 @@ int zz_head_request; /* !0 = HEAD request */
 char const *zz_remote_addr;
 char const *zz_remote_host;
 char const *zz_http_referer;
-/* char const *zz_http_cookie; */
+#ifdef ALWAYS_PATH
+char const *zz_server_name;
+char const *zz_script_name;
+#endif
+
 #ifdef USE_PATH
 char const *zz_path_info;
 /* 0 のときは、pathは適用されていない
@@ -1490,7 +1498,11 @@ void zz_GetEnv(void)
 	zz_remote_addr = getenv("REMOTE_ADDR");
 	zz_remote_host = getenv("REMOTE_HOST");
 	zz_http_referer = getenv("HTTP_REFERER");
-/*	zz_http_cookie = getenv("HTTP_COOKIE"); */
+#ifdef ALWAYS_PATH
+	zz_server_name = getenv("SERVER_NAME");
+	zz_script_name = getenv("SCRIPT_NAME");
+#endif
+
 #ifdef USE_PATH
 	zz_path_info = getenv("PATH_INFO");
 #endif
@@ -2444,6 +2456,13 @@ void html_head(int level, char const *title, int line)
 		return;
 	}
 
+	pPrintf(pStdout, R2CH_HTML_HEADER_0);
+#ifdef ALWAYS_PATH
+	if (path_depth < 3 && zz_server_name && zz_script_name) {
+		pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, zz_ky);
+		path_depth = 3;
+	}
+#endif
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1("%s", "%s"),
 			title, create_parent_link());

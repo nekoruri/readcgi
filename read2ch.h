@@ -40,6 +40,9 @@
    のリクエストを処理できるようになる */
 #define USE_PATH
 
+/* 非パス仕様のURLで呼ばれたときはBASEを出力して、常にパス仕様でリンクを生成 */
+#define ALWAYS_PATH
+
 /* 書き込み直後のリロードを防止する */
 #define PREVENTRELOAD
 

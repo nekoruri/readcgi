@@ -14,6 +14,7 @@ tag: HEAD
   path形式でのlxxでnofirst=trueにしていたのをやめた。
   path形式と旧形式でnofirst=の不整合を修正
   LATEST_ANCHORのcondition削除
+　ALWAYS_PATH condition追加
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。
