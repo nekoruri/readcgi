@@ -539,8 +539,8 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		s = strstr(s, "</a>");
 		if (!s)
 			return 0;
-		s += 4;
 		copy_len = s - copy_start;
+		s += 4; /* strlen("</a>") */
 
 		if (is_imode()
 		|| (st == 0 || to == 0 || st > lineMax || to > lineMax)
@@ -554,6 +554,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 			// タグ除去 /
 		} else
 		{
+			copy_len = s - copy_start;
 #ifdef CREATE_NAME_ANCHOR
 			/* 新しい表現をブチ込む */
 			if (isprinted(st) && isprinted(to))
