@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.9 2001/09/04 07:26:48 2ch Exp $ */
+ *  $Id: datindex.c,v 1.10 2001/09/04 08:06:10 2ch Exp $ */
 
 #include <assert.h>
 #include <ctype.h>
@@ -353,7 +353,7 @@ static int create_index(DATINDEX_OBJ *dat,
 		/* たとえば、idxディレクトリが
 		   存在しなかった場合でも、open(2)は
 		   失敗する。インデクスはローカルに作成される */
-		return 0;
+		return 1;	/* ローカルインデクスを持って帰る */
 	}
 
 	/* ファイル領域を作り出す
