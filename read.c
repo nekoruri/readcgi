@@ -399,7 +399,7 @@ typedef struct { /*  class... */
  *
  * aaa > bbb ならば aaa のみとして扱う。
  *
- * 隣接または重なり合う範囲は併合するが、このときにリストの並びが入れ替わることがある。
+ * rangeの内容は常に昇順を維持する。
  * rangeが満杯ならば追加しない。
  */
 static void add_range( struct range *range, const char *st, const char *to )
@@ -440,7 +440,7 @@ static void add_range( struct range *range, const char *st, const char *to )
 
 			if ( hole >= 0 )
 				if ( --range->count != hole )
-					range->array[hole] = range->array[range->count];
+					memcpy( &range->array[hole], &range->array[hole+1], (range->count - hole) * sizeof range->array[hole]);
 
 			hole = i;
 		}
@@ -453,6 +453,10 @@ static void add_range( struct range *range, const char *st, const char *to )
 		hole = range->count++;
 	}
 
+	while ( hole > 0 && i_st < range->array[hole-1].from ) {
+		range->array[hole] = range->array[hole - 1];
+		--hole;
+	}
 	range->array[hole].from = i_st;
 	range->array[hole].to = i_to;
 }
@@ -463,18 +467,12 @@ static void add_range( struct range *range, const char *st, const char *to )
 int get_range_minmax( const struct range * range, int * st, int *to )
 {
 
-	int i, i_st, i_to;
+	int i_st, i_to;
 	if ( range->count <= 0 )
 		return false;
 
 	i_st = range->array[0].from;
-	i_to = range->array[0].to;
-	for ( i = 1 ; i < range->count ; ++i ) {
-		if ( i_st > range->array[i].from )
-			i_st = range->array[i].from;
-		if ( i_to < range->array[i].to )
-			i_to = range->array[i].to;
-	}
+	i_to = range->array[range->count-1].to;
 	if ( i_to >= RANGE_MAX_RES )
 		i_to = 0;
 	*st = i_st;
@@ -488,6 +486,10 @@ int get_range_minmax( const struct range * range, int * st, int *to )
 int in_range( const struct range * range, int lineNo )
 {
 	int i;
+	if ( range->count == 0 
+	  || range->array[0].from > lineNo || range->array[range->count-1].to < lineNo )
+		return false;
+
 	for ( i = 0 ; i < range->count ; ++i ) {
 		if ( range->array[i].from <= lineNo &&
 		     range->array[i].to >= lineNo )
