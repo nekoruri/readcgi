@@ -1,150 +1,151 @@
 
-read.c,4045
-#  define GZIP	19,303
-#  define LASTMOD31,525
-#  define FORCE_304_TIME 34,575
-#define	CGINAME	39,694
-#define	CGIVER	40,721
-#define	RES_YELLOW	41,764
-#define	RES_REDZONE	42,787
-#define	RES_RED	43,811
-#define	RES_IMODE	44,833
-#define	RES_NORMAL	45,854
-#define	MAX_FILESIZE	46,877
-#define	SIZE_BUF	47,910
-#define	LIMIT_PM	49,935
-#define	LIMIT_AM	50,955
-char const *zz_remote_addr;52,975
-char const *zz_remote_host;53,1003
-char const *zz_http_referer;54,1031
-char const *zz_http_cookie;55,1060
-char const *zz_path_info;57,1104
-int path_depth;60,1217
-char const *zz_query_string;62,1240
-char *zz_temp;63,1269
-char const *zz_http_user_agent;64,1284
-char const *zz_http_language;65,1316
-char const *zz_http_encoding;67,1358
-int gzip_flag;68,1388
-char const *zz_http_if_modified_since;72,1426
-time_t zz_fileLastmod;73,1465
-char lastmod_str[74,1488
-char expires_str[75,1512
-char zz_bs[78,1544
-char zz_ky[79,1562
-char zz_ls[80,1580
-char zz_st[81,1598
-char zz_to[82,1616
-char zz_nf[83,1634
-char zz_im[84,1652
-char zz_rw[86,1684
-int nn_st,88,1709
-int nn_st, nn_to,88,1709
-int nn_st, nn_to, nn_ls;88,1709
-char *BigBuffer 89,1734
-char const *BigLine[90,1758
-#define is_imode(is_imode92,1794
-char *KARA 94,1830
-int zz_fileSize 95,1847
-int lineMax 96,1868
-int out_resN 97,1886
-time_t t_now;99,1905
-struct tm tm_now;100,1919
-long currentTime;101,1937
-int isbusytime 102,1955
-enum html_error_t html_error_t107,2135
-	ERROR_TOO_HUGE,108,2155
-	ERROR_NOT_FOUND,109,2172
-	ERROR_NO_MEMORY,110,2190
-	ERROR_MAINTENANCE,111,2208
-	ERROR_LOGOUT,112,2228
-int rawmode;132,2764
-int raw_lastnum,133,2777
-int raw_lastnum, raw_lastsize;133,2777
-typedef int (*zz_printf_t)zz_printf_t139,2890
-static gzFile pStdout;140,2946
-static zz_printf_t pPrintf 141,2995
-char *outbuf;142,3047
-int outlen 143,3061
-int outalloc 144,3077
-#define pPrintf 146,3101
-#define pStdout 147,3125
-int pid;148,3148
-#define false 153,3223
-#define true 154,3241
-#define _C_ 155,3263
-#define _U_ 156,3314
-#define _S_ 157,3353
-#define LINKTAGCUT 158,3434
-#define isCheck(isCheck161,3521
-#define isSJIS1(isSJIS1162,3582
-#define hrefStop(hrefStop163,3639
-#define _0____ 165,3701
-#define __1___ 166,3723
-#define ___2__ 167,3745
-#define ____3_ 168,3767
-#define _____4 169,3789
-#define ______ 171,3812
-#define _01___ 172,3831
-#define __1_3_ 173,3864
-#define ___23_ 174,3897
-#define _0_23_ 175,3930
-char flagtable[178,3972
-} ressplitter;ressplitter218,6547
-void ressplitter_init(227,6706
-static int rewrite_href(248,7358
-const char *ressplitter_split(335,9156
-void splitting_copy(443,11358
-#define FORM_MAXLEN 459,11809
-char form_name[460,11834
-char form_mail[461,11863
-void Unescape(468,12005
-#define SAFECPY(SAFECPY502,12697
-void SetFormName(529,13128
-int BadAccess(566,13964
-int BadAccess(590,14324
-int logOut(648,16078
-void html_bannerNew(692,17109
-void html_banner(701,17352
-void html_banner(707,17427
-int out_html1(717,17664
-int out_html(754,18417
-int dat_out_raw(889,21299
-static void dat_out_index(918,22079
-static void dat_out_subback(977,23377
-int dat_out(1010,24189
-int dat_read(1051,24978
-int getLineMax(1131,26646
-int getFileSize(1154,27051
-time_t getFileLastmod(1166,27393
-int get_lastmod_str(1179,27745
-static int get_path_info(1196,28279
-void zz_GetEnv(1287,30103
-int gzipped_fwrite(1382,32307
-void atexitfunc(1407,32884
-int main(1442,33646
-void html_error(1622,37337
-int html_error999(1713,39238
-char *zz_GetString(1754,40215
-char *zz_GetString(1789,40825
-int whatKanji(1820,41441
-char *findSplitter(1855,42244
-char *findSplitter(1872,42573
-int res_split(1898,43117
-void dump_out16(1933,43668
-int IsBusy2ch(1946,43990
-char const *LastChar(1957,44312
-void html_head(1969,44605
-void html_reload(2048,46423
-void html_foot(2069,46896
-void html_foot_im(2089,47388
-char *doReplace(2100,47717
-void someReplace(2128,48398
-int hrefStop(2144,48773
-int cutWordOff(2210,49800
-int ExistHlinkX(2221,50081
-int ExistHlink(2247,50690
-void hlinkReplace(2258,51024
+index.c,58
+void dat_out_index(16,407
+void dat_out_subback(118,2544
+
+read.c,3908
+#  define GZIP	22,341
+#  define LASTMOD34,563
+#  define FORCE_304_TIME 37,613
+#define	CGINAME	42,732
+#define	CGIVER	43,759
+#define	RES_YELLOW	44,802
+#define	RES_REDZONE	45,825
+#define	RES_RED	46,849
+#define	RES_IMODE	47,871
+#define	RES_NORMAL	48,892
+#define	MAX_FILESIZE	49,915
+#define	SIZE_BUF	50,948
+#define	LIMIT_PM	52,973
+#define	LIMIT_AM	53,993
+char const *zz_remote_addr;55,1013
+char const *zz_remote_host;56,1041
+char const *zz_http_referer;57,1069
+char const *zz_http_cookie;58,1098
+char const *zz_path_info;60,1142
+int path_depth;63,1255
+char const *zz_query_string;65,1278
+char *zz_temp;66,1307
+char const *zz_http_user_agent;67,1322
+char const *zz_http_language;68,1354
+char const *zz_http_encoding;70,1396
+int gzip_flag;71,1426
+char const *zz_http_if_modified_since;75,1464
+time_t zz_fileLastmod;76,1503
+char lastmod_str[77,1526
+char expires_str[78,1550
+char zz_bs[81,1582
+char zz_ky[82,1600
+char zz_ls[83,1618
+char zz_st[84,1636
+char zz_to[85,1654
+char zz_nf[86,1672
+char zz_im[87,1690
+char zz_rw[89,1722
+int nn_st,91,1747
+int nn_st, nn_to,91,1747
+int nn_st, nn_to, nn_ls;91,1747
+char *BigBuffer 92,1772
+char const *BigLine[93,1796
+#define is_imode(is_imode95,1832
+char *KARA 97,1868
+int zz_fileSize 98,1885
+int lineMax 99,1906
+int out_resN 100,1924
+time_t t_now;102,1943
+struct tm tm_now;103,1957
+long currentTime;104,1975
+int isbusytime 105,1993
+enum html_error_t html_error_t110,2173
+	ERROR_TOO_HUGE,111,2193
+	ERROR_NOT_FOUND,112,2210
+	ERROR_NO_MEMORY,113,2228
+	ERROR_MAINTENANCE,114,2246
+	ERROR_LOGOUT,115,2266
+int rawmode;135,2808
+int raw_lastnum,136,2821
+int raw_lastnum, raw_lastsize;136,2821
+gzFile pStdout;141,2933
+zz_printf_t pPrintf 142,2975
+char *outbuf;143,3020
+int outlen 144,3034
+int outalloc 145,3050
+#define pPrintf 147,3074
+#define pStdout 148,3098
+int pid;149,3121
+#define false 154,3196
+#define true 155,3214
+#define _C_ 156,3236
+#define _U_ 157,3287
+#define _S_ 158,3326
+#define LINKTAGCUT 159,3407
+#define isCheck(isCheck162,3494
+#define isSJIS1(isSJIS1163,3555
+#define hrefStop(hrefStop164,3612
+#define _0____ 166,3674
+#define __1___ 167,3696
+#define ___2__ 168,3718
+#define ____3_ 169,3740
+#define _____4 170,3762
+#define ______ 172,3785
+#define _01___ 173,3804
+#define __1_3_ 174,3837
+#define ___23_ 175,3870
+#define _0_23_ 176,3903
+char flagtable[179,3945
+} ressplitter;ressplitter219,6520
+void ressplitter_init(228,6679
+static int rewrite_href(249,7331
+const char *ressplitter_split(336,9129
+void splitting_copy(444,11331
+#define FORM_MAXLEN 460,11782
+char form_name[461,11807
+char form_mail[462,11836
+void Unescape(469,11978
+#define SAFECPY(SAFECPY503,12670
+void SetFormName(530,13101
+int BadAccess(567,13937
+int BadAccess(591,14297
+int logOut(649,16051
+void html_bannerNew(693,17082
+void html_banner(702,17325
+void html_banner(708,17400
+int out_html1(718,17637
+int out_html(755,18390
+int dat_out_raw(890,21272
+int dat_out(920,22073
+int dat_read(962,22917
+int getLineMax(1040,24368
+int getFileSize(1063,24773
+time_t getFileLastmod(1075,25121
+int get_lastmod_str(1088,25473
+static int get_path_info(1105,26007
+void zz_GetEnv(1196,27831
+int gzipped_fwrite(1291,30035
+void atexitfunc(1316,30612
+int main(1351,31374
+void html_error(1535,35119
+int html_error999(1626,37020
+char *zz_GetString(1667,37997
+char *zz_GetString(1702,38607
+int whatKanji(1733,39223
+char *findSplitter(1768,40026
+char *findSplitter(1785,40355
+int res_split(1811,40899
+void dump_out16(1846,41450
+int IsBusy2ch(1859,41772
+char const *LastChar(1870,42094
+void html_head(1882,42387
+void html_reload(1961,44205
+void html_foot(1982,44678
+void html_foot_im(2002,45170
+char *doReplace(2013,45499
+void someReplace(2041,46180
+int hrefStop(2057,46555
+int cutWordOff(2123,47582
+int ExistHlinkX(2134,47863
+int ExistHlink(2160,48472
+void hlinkReplace(2171,48806
 
 util_date.c,203
 #define ap_isupper 75,3236
@@ -155,6 +156,9 @@ util_date.c,203
 API_EXPORT(95,3724
 API_EXPORT(149,4886
 API_EXPORT(227,7576
+
+index.h,23
+#define INDEX_H__4,39
 
 r2chhtml.h,2799
 #define	R2CH_HTML_NEW_BANNER 17,423
@@ -222,25 +226,50 @@ r2chhtml.h,2799
 #define R2CH_HTML_SUBBACK_ITEM(R2CH_HTML_SUBBACK_ITEM475,17455
 #define R2CH_HTML_SUBBACK_FOOTER 478,17567
 
-read2ch.h,472
-#define CUTRESLINK4,74
-#define RELOADLINK7,153
-#define LASTMOD10,204
-#define NEWBA16,338
-#define GSTR219,407
-#define TYPE_TERI22,456
-#define USE_PATH27,583
-#define PREVENTRELOAD36,879
-#define FORCE_304_TIME 39,979
-#define GZIP42,1036
-#define RAWOUT53,1351
-#define CHUNK_ANCHOR62,1514
-#define CHUNK_NUM 63,1535
-#define LATEST_ANCHOR66,1595
-#define LATEST_NUM 67,1617
-#define USE_MMAP75,1770
-#define N_INDEX_DIGESTS	79,1860
-#define N_INDEX_THREADS	80,1887
+read.h,300
+#define READ_H__4,37
+# define GZIP	11,103
+typedef int (*zz_printf_t)zz_printf_t15,182
+extern gzFile pStdout;17,239
+extern zz_printf_t pPrintf;18,288
+extern int lineMax;21,324
+extern char zz_bs[22,344
+extern char zz_nf[23,369
+extern char *BigBuffer;24,394
+extern char const *BigLine[25,418
+
+read2ch.h,800
+#define READ2CH_H__4,37
+#define	CGINAME	6,58
+#define	CGIVER	7,85
+#define	RES_YELLOW	8,128
+#define	RES_REDZONE	9,151
+#define	RES_RED	10,175
+#define	RES_IMODE	11,197
+#define	RES_NORMAL	12,218
+#define	MAX_FILESIZE	13,241
+#define	SIZE_BUF	14,274
+#define	LIMIT_PM	16,299
+#define	LIMIT_AM	17,319
+#define CUTRESLINK20,396
+#define RELOADLINK23,475
+#define LASTMOD26,526
+#define NEWBA32,660
+#define GSTR235,729
+#define TYPE_TERI38,778
+#define USE_PATH43,905
+#define PREVENTRELOAD52,1201
+#define FORCE_304_TIME 55,1301
+#define GZIP58,1358
+#define ZLIB61,1402
+#define RAWOUT69,1671
+#define USE_MMAP73,1746
+#define CHUNK_ANCHOR82,1911
+#define CHUNK_NUM 83,1932
+#define LATEST_ANCHOR86,1992
+#define LATEST_NUM 87,2014
+#define N_INDEX_DIGESTS	95,2180
+#define N_INDEX_THREADS	96,2207
 
 util_date.h,120
 #define APACHE_UTIL_DATE_H60,2854

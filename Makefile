@@ -6,8 +6,7 @@ DEFS          = -DHAVE_READ2CH_H
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
 CFLAGS        = -I$(zlibdir) -g -O2 -Wall -funsigned-char
 LIBS          = 
-OBJS          = read.o util_date.o $(zlibdir)/libz.a
-INCLUDES      = read2ch.h read2ch.h r2chhtml.h
+OBJS          = index.o read.o util_date.o $(zlibdir)/libz.a
 
 .SUFFIXES: .c .o .cgi
 
@@ -56,5 +55,6 @@ $(zlibdir)/libz.a:
 	$(CC) -c $< $(DEFS) $(CFLAGS) -o $@
 
 # dependencies
-read.o: read.c read2ch.h r2chhtml.h util_date.h
+index.o: index.c index.h read.h read2ch.h r2chhtml.h
+read.o: read.c read2ch.h index.h read.h r2chhtml.h util_date.h
 util_date.o: util_date.c util_date.h

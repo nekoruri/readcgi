@@ -1,5 +1,21 @@
 /* read2ch.h */
 
+#ifndef READ2CH_H__
+#define READ2CH_H__
+
+#define	CGINAME	"read.cgi"
+#define	CGIVER	"read.cgi ver14 (01/08/28)"
+#define	RES_YELLOW	900
+#define	RES_REDZONE	950
+#define	RES_RED		1000
+#define	RES_IMODE	10
+#define	RES_NORMAL	100
+#define	MAX_FILESIZE	(8192 * 64)
+#define	SIZE_BUF	0xa000
+
+#define	LIMIT_PM	23
+#define	LIMIT_AM	3
+
 /* 混雑時間帯に、>>000 形式のレスへのリンクを削除する */
 #define CUTRESLINK
 
@@ -52,6 +68,10 @@
  */
 #define RAWOUT
 
+/* mmap(2) を活用。
+   資源の開放は積極的にサボりたい。 */
+#define USE_MMAP
+
 /** Header custumization **/
 
 /* 「全部読む」をつける */
@@ -70,10 +90,6 @@
 /* sageレスのとき、名前を太字にしない */
 /* #define SAGE_IS_PLAIN */
 
-/* mmap(2) を活用。
-   資源の開放は積極的にサボりたい。 */
-#define USE_MMAP
-
 /* スレダイジェスト出力パラメータ
    本来ならばどこかから取得できる? */
 #define N_INDEX_DIGESTS	10
@@ -85,3 +101,5 @@
  *  どうしよ。個人的には全部EUCにできるなら
  *  したいところではある。(6411)
  */
+
+#endif /* READ2CH_H__ */

@@ -14,6 +14,9 @@
 #include	<sys/mman.h>
 #endif
 
+#include "index.h"
+#include "read.h"
+
 #ifdef ZLIB
 # ifndef GZIP
 #  define GZIP			/* gzip由来のコードも使用するので */
@@ -133,18 +136,10 @@ int rawmode;
 int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
 #endif
 
-static int dat_read(char const *fname,
-		    int st,
-		    int to,
-		    int ls);
-static int dat_out(void);
-
-
 #ifdef ZLIB
 /*  zlib対応 */
-typedef int (*zz_printf_t) (gzFile, const char *, ...);
-static gzFile pStdout; /*  = (gzFile) stdout; */
-static zz_printf_t pPrintf = (zz_printf_t) fprintf;
+gzFile pStdout; /*  = (gzFile) stdout; */
+zz_printf_t pPrintf = (zz_printf_t) fprintf;
 char *outbuf;
 int outlen = 0;
 int outalloc = 0;
@@ -918,145 +913,11 @@ int dat_out_raw()
 #endif
 
 /****************************************************************/
-/*	スレダイジェスト(index2.html)を出力してみる。		*/
-/*	path_depth == 1 のはず					*/
-/****************************************************************/
-static void dat_out_index(void)
-{
-	char *dat_name_4digest[N_INDEX_DIGESTS];
-
-	int i;
-	int max = 0;
-
-	pPrintf(pStdout,
-		R2CH_HTML_INDEX_HEADER("%s", "%s"),
-		"プログラム技術＠2ch掲示板",
-		"プログラム技術＠2ch掲示板");
-
-	/* スレ一覧の出力
-	   この時点ではまだメモリ上に subject.txt が存在。*/
-	for (i = 0; i < N_INDEX_THREADS && i < lineMax; i++) {
-		char const *p = BigLine[i];
-		char const *subj;
-		int datn, subjn;
-		datn = strspn(p, "0123456789");
-		if (datn == 0)
-			continue;
-		if (memcmp(&p[datn], ".dat<>", 6) != 0)
-			continue;
-		subj = p + datn + 6;
-		subjn = strcspn(subj, "\r\n");
-		if (subjn == 0)
-			continue;
-		if (i < N_INDEX_DIGESTS) {
-			char *q;
-			pPrintf(pStdout,
-				R2CH_HTML_INDEX_LABEL("%.64s/%.*s",
-						      "%d",
-						      "#%d",
-						      "%.*s"),
-				zz_bs,
-				datn, p,
-				1 + i,
-				1 + i,
-				subjn, subj);
-			q = malloc(datn + 1);
-			memcpy(q, p, datn);
-			q[datn] = 0;
-			max = i;
-			dat_name_4digest[max++] = q;
-		} else {
-			pPrintf(pStdout,
-				R2CH_HTML_INDEX_ANCHOR("%.64s/%.*s",
-						       "%d",
-						       "%.*s"),
-				zz_bs,
-				datn, p,
-				1 + i,
-				subjn, subj);
-		}
-	}
-
-	pPrintf(pStdout,
-		R2CH_HTML_INDEX_AD("%.64s/"),
-		zz_bs);
-
-	/* かなーり気休め */
-#ifndef USE_MMAP
-	if (BigBuffer)
-		free(BigBuffer);
-#endif
-	BigBuffer = NULL;
-	/* これ以降、グローバル変数が
-	   信用おけなくなる可能性あり
-	   なんだかひっくり返して書き直したい
-	   …鬱だ氏のう */
-
-	/* スレダイジェストの出力 */
-	zz_nf[0] = 0;
-	for (i = 0; i < N_INDEX_DIGESTS && i < max; i++) {
-		char fname[1024];
-
-		/* ファイルを読み込んでくる */
-		sprintf(fname,
-			"../%.64s/dat/%.64s.dat",
-			zz_bs,
-			dat_name_4digest[i]);
-		dat_read(fname, 0, 0, 10);
-
-		/* せっかくだから表示してあげる */
-		pPrintf(pStdout,
-			"<HR><P><A name=\"#%d\">%s\n",
-			1 + i, fname);
-		dat_out();
-#ifndef USE_MMAP
-		if (BigBuffer)
-			free(BigBuffer);
-#endif
-		BigBuffer = NULL;
-	}
-
-	pPrintf(pStdout,
-		R2CH_HTML_INDEX_FOOTER);
-}
-/****************************************************************/
-/*	スレ一覧(subback.html相当)を出力してみる。		*/
-/*	path_depth == 2 のはず					*/
-/****************************************************************/
-static void dat_out_subback(void)
-{
-	int i;
-
-	pPrintf(pStdout, R2CH_HTML_SUBBACK_HEADER);
-
-	/* 行を読み込んで解析していく
-	   BigLine[]の情報をとりあえず信用しておくことにする */
-	for (i = 0; i < lineMax; i++) {
-		char const *p = BigLine[i];
-		char const *subj;
-		int datn, subjn;
-		datn = strspn(p, "0123456789");
-		if (datn == 0)
-			continue;
-		if (memcmp(&p[datn], ".dat<>", 6) != 0)
-			continue;
-		subj = p + datn + 6;
-		subjn = strcspn(subj, "\r\n");
-		if (subjn == 0)
-			continue;
-		pPrintf(pStdout,
-			R2CH_HTML_SUBBACK_ITEM("%.*s", "%d", "%.*s"),
-			datn, p,
-			1 + i,
-			subjn, subj);
-	}
-
-	pPrintf(pStdout, R2CH_HTML_SUBBACK_FOOTER);
-}
-/****************************************************************/
 /*	Get file size(dat_out)					*/
+/*	Level=0のときは、外側の出力				*/
+/*	Level=1のときは、内側の出力				*/
 /****************************************************************/
-static int dat_out(void)
+int dat_out(void)
 {
 	int line, lineNo;
 #ifdef RELOADLINK
@@ -1098,10 +959,10 @@ static int dat_out(void)
 /*	Get file size(dat_read)					*/
 /*	BigBuffer, BigLine, LineMaxが更新されるはず		*/
 /****************************************************************/
-static int dat_read(char const *fname,
-		    int st,
-		    int to,
-		    int ls)
+int dat_read(char const *fname,
+	     int st,
+	     int to,
+	     int ls)
 {
 	int i;
 	int in;
