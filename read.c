@@ -99,20 +99,12 @@ int isbusytime = 0;
 char const *LastChar(char const *src, char c);
 char *zz_GetString(char *dst, char const *tgt);
 char *doReplace(char *des, char const *str0, char const *str1);
-enum html_error_t {
-	ERROR_TOO_HUGE,
-	ERROR_NOT_FOUND,
-	ERROR_NO_MEMORY,
-	ERROR_MAINTENANCE,
-	ERROR_LOGOUT,
-};
-void html_error(enum html_error_t errorcode);
 void html_foot_im(int,int);
-void html_head(char *title, int line);
+void html_head(int level, char const *title, int line);
 int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
 void hlinkReplace(char *src);
-void html_foot(int line,int);
+static void html_foot(int level, int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
 int getFileSize(char const *file);
@@ -136,9 +128,7 @@ char *outbuf;
 int outlen = 0;
 int outalloc = 0;
 #else
-#define pPrintf fprintf
-#define pStdout stdout
-int pid;
+static int pid;
 #endif
 
 #ifdef CUTRESLINK
@@ -242,10 +232,20 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 			 char const **sp,	/* 読み出しポインタ */
 			 int istagcut)		/* タグカットしていいか? */
 {
+	char depth_expr[64];
 	char *d = *dp;
 	char const *s = *sp;
 	int n;
 	int f_processed = 0;
+
+	if (path_depth == 2) {
+		strncpy(depth_expr,
+			zz_ky,
+			sizeof(depth_expr) - 4);
+		depth_expr[sizeof(depth_expr) - 4] = 0;
+		strcat(depth_expr, "/");
+	} else
+		depth_expr[0] = 0;
 
 	/* 閉じ位置を探す */
 	n = strcspn(*sp, ">");
@@ -287,11 +287,13 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		/* 新しい表現をブチ込む */
 		if (st < to)
 			d += sprintf(d,
-				     "<a href=\"%d-%d\">&gt;&gt;%d-%d</a>",
+				     "<a href=\"%s%d-%d\">&gt;&gt;%d-%d</a>",
+				     depth_expr,
 				     st, to, st, to);
 		else
 			d += sprintf(d,
-				     "<a href=\"%d\">&gt;&gt;%d</a>",
+				     "<a href=\"%s%d\">&gt;&gt;%d</a>",
+				     depth_expr,
 				     st, st);
 	}
 
@@ -556,7 +558,7 @@ void SetFormName(void)
 /*	BadAccess						*/
 /****************************************************************/
 #ifdef NEWBA
-int BadAccess()
+int BadAccess(void)
 {
 	char *agent_kick[] = {
 #ifdef	Katjusha_Beta_kisei
@@ -580,7 +582,7 @@ int BadAccess()
 	return 0;
 }
 #else
-int BadAccess()
+int BadAccess(void)
 {
 	if (strstr(zz_http_user_agent, "DreamPassport"))
 		return 0;
@@ -682,7 +684,7 @@ if(strcmp(zz_bs,"ascii"))	return 1;
 /****************************************************************/
 /*	HTML BANNER						*/
 /****************************************************************/
-void html_bannerNew()
+void html_bannerNew(void)
 {
 	pPrintf(pStdout, R2CH_HTML_NEW_BANNER);
 }
@@ -691,13 +693,13 @@ void html_bannerNew()
 /*	HTML BANNER						*/
 /****************************************************************/
 #ifdef	CM_BBSPINK
-void html_banner()
+void html_banner(void)
 {
 	pPrintf(pStdout, R2CH_HTML_BBSPINK_BANNER);
 }
 
 #else
-void html_banner()
+void html_banner(void)
 {
 	pPrintf(pStdout, R2CH_HTML_BANNER);
 }
@@ -707,7 +709,7 @@ void html_banner()
 /****************************************************************/
 /*	Get file size(out_html1)				*/
 /****************************************************************/
-int out_html1()
+static int out_html1(int level)
 {
 	char *s[20];
 #ifndef TYPE_TERI
@@ -730,21 +732,23 @@ int out_html1()
 #endif
 #ifdef	TYPE_TERI
 	/*someReplace(s[4],r4,"＠｀",",")       ; */
-	html_head(s[4], lineMax);
+	html_head(level, s[4], lineMax);
 #else
 	someReplace(s[4], r4, "＠｀", ",");
-	html_head(r4, lineMax);
+	html_head(level, r4, lineMax);
 #endif
+#if 0
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, "<DL>");
 	}
+#endif
 	out_resN++;
 	return 0;
 }
 /****************************************************************/
 /*	Get file size(out_html)					*/
 /****************************************************************/
-int out_html(int line, int lineNo)
+static int out_html(int level, int line, int lineNo)
 {
 	char *s[20];
 #ifdef	TYPE_TERI
@@ -774,10 +778,12 @@ int out_html(int line, int lineNo)
 #else
 		someReplace(s[4], r4, "＠｀", ",");
 #endif
-		html_head(r4, lineMax);
+		html_head(level, r4, lineMax);
+#if 0
 		if (!is_imode()) {	/* no imode       */
 			pPrintf(pStdout, "<DL>");
 		}
+#endif
 	}
 	out_resN++;
 
@@ -879,7 +885,7 @@ int out_html(int line, int lineNo)
 /*	Output raw data file					*/
 /****************************************************************/
 #ifdef RAWOUT
-int dat_out_raw()
+int dat_out_raw(void)
 {
 	int i;
 
@@ -909,7 +915,7 @@ int dat_out_raw()
 /*	Level=0のときは、外側の出力				*/
 /*	Level=1のときは、内側の出力				*/
 /****************************************************************/
-int dat_out(void)
+int dat_out(int level)
 {
 	int line, lineNo;
 #ifdef RELOADLINK
@@ -934,15 +940,15 @@ int dat_out(void)
 				continue;
 		}
 
-		if (out_html(line, lineNo))
+		if (out_html(level, line, lineNo))
 			break;
 #ifdef RELOADLINK
 		lineLast = lineNo;
 #endif
 	}
-	out_html1();
+	out_html1(level);
 #ifdef RELOADLINK
-	if (lineMax == lineLast) {
+	if (!level && lineMax == lineLast) {
 		html_reload(lineLast);	/*  Button: Reload */
 	}
 #endif
@@ -958,7 +964,7 @@ int dat_out(void)
 		return 1; 
 #endif
 	if( s[2]!=0 && strstr( s[2], "ストッパー" )) threadStopped=1;
-	html_foot(lineMax, threadStopped);
+	html_foot(level, lineMax, threadStopped);
 
 	return 0;
 }
@@ -1044,7 +1050,7 @@ html_error(ERROR_MAINTENANCE);
 /****************************************************************/
 /*	Get line number						*/
 /****************************************************************/
-int getLineMax()
+int getLineMax(void)
 {
 	int line = 0;
 	char *p = BigBuffer;
@@ -1101,7 +1107,7 @@ int get_lastmod_str(char *buf, time_t lastmod)
 #endif
 /****************************************************************/
 /*	PATH_INFOを解析						*/
-/*	/board							*/
+/*	/board/							*/
 /*	/board/							*/
 /*	/board/datnnnnnn/[range] であるとみなす			*/
 /*	return: pathが有効だったら1を返す			*/
@@ -1140,11 +1146,13 @@ static int get_path_info(char const *path_info)
 	path_depth++;
 	/* つぎ… */
 	n = strcspn(++s, "/");
+	if (n == 0)
+		return 0;
+	strncpy(zz_ky, s, n);	/* パラメータかもしれないので取り込む */
 	if (n == 0 || s[n] != '/')
 		return 0;
 	path_depth++;
 	/* スレ */
-	strncpy(zz_ky, s, n);
 	s += n + 1;
 
 	/* strtok()で切り出したバッファは総長制限が
@@ -1371,13 +1379,13 @@ void atexitfunc(void)
 /****************************************************************/
 /*	MAIN							*/
 /****************************************************************/
-int main()
+int main(void)
 {
 #ifdef GZIP
 #ifndef ZLIB
 	int pipefds[2];
-#endif
 	int whitespace = 2048;
+#endif
 #endif
 	char fname[1024];
 
@@ -1520,13 +1528,16 @@ int main()
 		/* gzdopen()で"wb9"を指定したので不要 */
 		/* gzsetparams(pStdout, Z_BEST_COMPRESSION,
 			Z_DEFAULT_STRATEGY); */
-
+#if 0
 		/* put 2048byte */
+		/* もう要らないんじゃないかな、
+		   XXX 追試求む */
 		while (whitespace--)
 			gzputc(pStdout, ' ');
 #endif
+#endif /* ZLIB */
 	}
-#endif
+#endif /* GZIP */
 
 	logOut("");
 
@@ -1539,13 +1550,15 @@ int main()
 	if (rawmode)
 		dat_out_raw();
 #ifdef USE_PATH
-	else if (path_depth == 1)
-		dat_out_index();	/* 板ダイジェスト */
-	else if (path_depth == 2)
-		dat_out_subback();	/* スレ一覧 */
+	else if (path_depth == 2) {
+		if (zz_ky[0] == '-')
+			dat_out_subback();	/* スレ一覧 */
+		else
+			dat_out_index();	/* 板ダイジェスト */
+	}
 #endif
 	else
-		dat_out();
+		dat_out(0);
 #else
 	dat_out();
 #endif
@@ -1856,7 +1869,7 @@ void dump_out16(char const *d)
 /****************************************************************/
 /*								*/
 /****************************************************************/
-int IsBusy2ch()
+int IsBusy2ch(void)
 {
 	if (tm_now.tm_hour < LIMIT_AM || LIMIT_PM <= tm_now.tm_hour)
 		return 1;
@@ -1879,18 +1892,24 @@ char const *LastChar(char const *src, char c)
 /****************************************************************/
 /*	HTML HEADER						*/
 /****************************************************************/
-void html_head(char *title, int line)
+void html_head(int level, char const *title, int line)
 {
 #ifdef CHUNK_ANCHOR
 	int i;
 #endif
+	if (level) {
+		pPrintf(pStdout,
+			R2CH_HTML_DIGEST_HEADER_2("%s"),
+			title);
+		/* これだけ出力してもどる */
+		return;
+	}
 
 	if (!is_imode()) {	/* no imode       */
 		if (path_depth)
 			pPrintf(pStdout,
-				R2CH_HTML_HEADER_1("%s", "../../%s"),
-				title,
-				zz_bs);
+				R2CH_HTML_HEADER_1("%s", "../"),
+				title);
 		else
 			pPrintf(pStdout,
 				R2CH_HTML_HEADER_1("%s", "/%s/index2.html"),
@@ -1949,7 +1968,10 @@ void html_head(char *title, int line)
 			RES_RED);
 	}
 
-	pPrintf(pStdout, R2CH_HTML_HEADER_2, title);
+	if (is_imode())
+		pPrintf(pStdout, R2CH_HTML_HEADER_2_I, title);
+	else
+		pPrintf(pStdout, R2CH_HTML_HEADER_2, title);
 }
 #if (defined(CHUNK_ANCHOR) && CHUNK_NUM > RES_NORMAL) 
 # error "Too large CHUNK_NUM!!"
@@ -1979,14 +2001,26 @@ void html_reload(int startline)
 /****************************************************************/
 /*	HTML FOOTER						*/
 /****************************************************************/
-void html_foot(int line, int stopped )
+static void html_foot(int level, int line, int stopped)
 {
+	out_resN = 0;	/* ここで初期化するといいらしい? */
+
 	if (is_imode())
 		return html_foot_im(line,stopped);
 	if (line <= RES_RED && !stopped) {
-#ifndef COOKIE		
-		pPrintf(pStdout, R2CH_HTML_FORM, zz_bs, zz_ky,
-			currentTime);
+#ifndef COOKIE
+		if (path_depth == 3)
+			pPrintf(pStdout,
+				R2CH_HTML_FORM("../../../", "%s", "%s", "%ld"),
+				zz_bs, zz_ky, currentTime);
+		else if (path_depth == 2)
+			pPrintf(pStdout,
+				R2CH_HTML_FORM("../../", "%s", "%s", "%ld"),
+				zz_bs, zz_ky, currentTime);
+		else
+			pPrintf(pStdout,
+				R2CH_HTML_FORM("", "%s", "%s", "%ld"),
+				zz_bs, zz_ky, currentTime);
 #else
 		pPrintf(pStdout, R2CH_HTML_FORM, form_name,
 			form_mail, zz_bs, zz_ky,
@@ -1994,7 +2028,10 @@ void html_foot(int line, int stopped )
 #endif
 		}
 
-	pPrintf(pStdout, R2CH_HTML_FOOTER);
+	if (level)
+		pPrintf(pStdout, R2CH_HTML_DIGEST_FOOTER);
+	else
+		pPrintf(pStdout, R2CH_HTML_FOOTER);
 }
 /****************************************************************/
 /*	HTML FOOTER(i-MODE)					*/

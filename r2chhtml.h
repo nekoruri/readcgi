@@ -357,6 +357,10 @@
 
 /* スレ名: %s=スレ名 */
 #define R2CH_HTML_HEADER_2 \
+	"<p><font size=+1 color=red>%s</font>" \
+	"<DL>"
+
+#define R2CH_HTML_HEADER_2_I \
 	"<p><font size=+1 color=red>%s</font>"
 
 /*
@@ -380,8 +384,8 @@
  */
 #ifndef COOKIE
 /* %s=板 %s=スレ %ld=現在時刻 */
-#define R2CH_HTML_FORM \
-	"<form method=post action=\"bbs.cgi\">" \
+#define R2CH_HTML_FORM(depth, bs, ky, tm) \
+	"<form method=post action=\"" depth "bbs.cgi\">" \
 	"<input type=submit value=\"書き込む\" name=submit> 名前： " \
 	"<script language=JavaScript>" \
 	"<!--\n" \
@@ -394,9 +398,9 @@
 	"<input type=text name=mail size=19>" \
 	"</noscript>" \
 	"<br><textarea rows=5 cols=70 wrap=off name=MESSAGE></textarea>" \
-	"<input type=hidden name=bbs value=%s>" \
-	"<input type=hidden name=key value=%s>" \
-	"<input type=hidden name=time value=%ld>" \
+	"<input type=hidden name=bbs value=" bs ">" \
+	"<input type=hidden name=key value=" ky ">" \
+	"<input type=hidden name=time value=" tm ">" \
 	"</form>"
 #else
 #define R2CH_HTML_FORM \
@@ -455,9 +459,20 @@
 #define R2CH_HTML_INDEX_ANCHOR(anchor, num, title) \
 	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
 
-#define R2CH_HTML_INDEX_AD(board) \
-	"<DIV align=right><A href=\"" board "\">スレ一覧はこちら</A></DIV>\n" \
+#define R2CH_HTML_INDEX_AD \
+	"<DIV align=right><A href=\"-\">スレ一覧はこちら</A></DIV>\n" \
 	"<HR><H2>広告などが入る</H2><HR>"
+
+#define R2CH_HTML_DIGEST_HEADER_1(label) \
+	"<HR><p>" \
+	"<a name=\"#" label "\">"
+
+#define R2CH_HTML_DIGEST_HEADER_2(title) \
+	"<font size=+1 color=red>" title "</font></a>" \
+	"<DL>"
+
+#define R2CH_HTML_DIGEST_FOOTER \
+	"</DL><P>ひとつおわり</P><HR>"
 
 #define R2CH_HTML_INDEX_FOOTER \
 	"<HR><H2>フッタはここ</H2><HR></BODY></HTML>"
