@@ -3161,13 +3161,13 @@ void html_foot_im(int line, int stopped)
 /****************************************************************/
 void kako_dirname(char *buf, const char *key)
 {
-	int tm = atoi(key)/(1000*1000);
-	if (tm<1000) {
+	int tm = atoi(key) / 100000;
+	if (tm<10000) {
 	    /*  9aabbbbbb -> 9aa */
-	    sprintf(buf, "%03d", tm);
+	    sprintf(buf, "%03d", tm / 10);
 	} else {
-	    /* 1abbcccccc -> 1a/abb */
-	    sprintf(buf, "%d/%03d", tm/100, tm%1000);
+	    /* 1aaabccccc -> 1aaa/1aaab */
+	    sprintf(buf, "%d/%d", tm / 10, tm);
 	}
 }
 
