@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.3 2001/09/01 05:36:48 2ch Exp $ */
+ *  $Id: datindex.c,v 1.4 2001/09/02 15:04:44 2ch Exp $ */
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -13,6 +13,12 @@
 #include <sys/mman.h>
 #include "datindex.h"
 #include "read.h"
+
+/* /board/dat/idx/XXXXXXXXXX.idx */
+#define DATINDEX_PATH "dat/idx"
+
+/* version が 0 のときの、作り直し時間(sec) */
+#define DATINDEX_EXPIRATION 60
 
 /****************************************************************
  *	日付を解析する
@@ -55,7 +61,7 @@ static int get_date(struct tm *datetime,
 		return 0;
 	datetime->tm_mday = atoi(dp);
 
-	/* hhmmssを得る */
+	/* hhmm[ss]を得る */
 	ofs += strcspn(&p[ofs], "<>\n0123456789");
 	if (!isdigit(p[ofs]))
 		return 0;
@@ -189,7 +195,9 @@ static int create_index(DATINDEX_OBJ *dat,
 	int fd;
 	DATINDEX *tidx;
 
-	/* まず、ローカルにインデクスを作ってみる */
+	/* まず、ローカルにインデクスを作ってみる
+	   dat中各フィールドは、ローカル内容で
+	   満たされるので、このまま帰っても氏なない。 */
 	if (!create_local_index(dat)) {
 		/* .datファイルが不正だったとみなす */
 		return 0;
@@ -197,6 +205,9 @@ static int create_index(DATINDEX_OBJ *dat,
 
 	fd = open(fn, O_CREAT | O_EXCL | O_RDWR, 0666);
 	if (fd < 0) {
+		/* たとえば、idxディレクトリが
+		   存在しなかった場合でも、open(2)は
+		   失敗する。インデクスはローカルに作成される */
 		return 0;
 	}
 
@@ -223,19 +234,17 @@ static int create_index(DATINDEX_OBJ *dat,
 	return 1;
 }
 /****************************************************************
- *	インデクスファイルをメモリに固定する
- *	固定できないときは、エラーを返す
+ *	本体.datがメモリに
+ *	固定できるかどうか挑戦してみる
+ *	いまはBigBufferのことは考慮してない
+ *	.datを開くモジュールは、これだけである。
  ****************************************************************/
-int read_index(DATINDEX_OBJ *dat,
-	       char const *bs, long ky)
+static int open_dat(DATINDEX_OBJ *dat,
+		    char const *bs, long ky)
 {
-	char fn[64];
 	int fd;
-	int ver;
+	char fn[64];
 
-	/* まずは本体.datがメモリに
-	   固定できるかどうか挑戦してみる
-	   いまはBigBufferのことは考慮してない */
 	sprintf(fn, "../%.64s/dat/%ld.dat", bs, ky);
 	fd = open(fn, O_RDONLY);
 	if (fd < 0)
@@ -251,13 +260,36 @@ int read_index(DATINDEX_OBJ *dat,
 	if (dat->private_dat == MAP_FAILED)
 		return 0;
 
-	/* もちろんfdの後始末はサボる XXX */
+	/* 成功したということにしておこう
+	   もちろん fd の後始末はサボる XXX */
 
-	/* idxのファイルハンドルをオープン */
-	sprintf(fn, "../%.64s/dat/%ld.idx", bs, ky);
+	return 1;
+}
+/****************************************************************
+ *	インデクスファイルをメモリに固定する
+ *	固定できないときは、エラーを返す
+ ****************************************************************/
+int open_index(DATINDEX_OBJ *dat,
+	       char const *bs, long ky)
+{
+	int fd;
+	int ver;
+
+	char fn[64];
+
+	/* まずは本体.datがメモリに
+	   固定できるかどうか挑戦してみる
+	   いまはBigBufferのことは考慮してない */
+	if (!open_dat(dat, bs, ky))
+		return 0;
+
+	/* idx のファイルハンドルをオープン */
+	sprintf(fn, "../%.64s/" DATINDEX_PATH "/%ld.idx", bs, ky);
 	fd = open(fn, O_RDWR);
 	if (fd < 0) {
-		/* インデクスを作成 */
+		/* インデクスを作成
+		   (もしかするとローカルに
+		   作られるかもしれない) */
 		return create_index(dat, fn);
 	}
 
@@ -277,6 +309,15 @@ int read_index(DATINDEX_OBJ *dat,
 	ver = dat->private_idx->version;
 	if (ver == 0) {
 		/* 思いっきり時間が経ってないかい? */
+		struct stat idx_stat;
+		if (fstat(fd, &idx_stat) >= 0
+		    && time(NULL) >= idx_stat.st_mtime + DATINDEX_EXPIRATION
+		    && unlink(fn) >= 0) {
+			/* あまり時間が経ちすぎなヤツは、
+			   造り損ねと考え、
+			   もいちど作成を試みる */
+			return create_index(dat, fn);
+		}
 
 		/* 自力でインデクス作れや */
 		return create_local_index(dat);
@@ -286,7 +327,8 @@ int read_index(DATINDEX_OBJ *dat,
 	} else if (ver < DATINDEX_VERSION
 		   || dat->private_idx->signature != DATINDEX_VERSION) {
 		/* 潰して作り直しや */
-
+		if (unlink(fn) >= 0)
+			return create_index(dat, fn);
 	}
 
 	/* これでやっと、shared mapが与えられる */

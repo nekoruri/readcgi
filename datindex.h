@@ -2,7 +2,7 @@
  *
  *  世界共通インデクスの定義
  *
- *  $Id: datindex.h,v 1.2 2001/08/31 20:38:52 2ch Exp $ */
+ *  $Id: datindex.h,v 1.3 2001/09/02 15:04:44 2ch Exp $ */
 
 #ifndef DATINDEX_H__
 #define DATINDEX_H__
@@ -81,7 +81,14 @@ typedef struct DATINDEX
 	/* スレタイトルへのオフセット */
 	unsigned title_ofs;
 
-	/* インデクス */
+	/* インデクス
+	   本来ならば、全記事に対して
+	   L-Mを持ちたいところなのだが、
+	   そうするとサイズが大きくなりすぎて鬱だ…
+
+	   各記事のL-Mは、chunk L-Mからの差分(16bit)で
+	   持つようにし、差が18時間以上あるものは
+	   特別扱いする、というkludgeも考えられるが… */
 	struct
 	{
 		time_t lastmod;
@@ -132,7 +139,7 @@ typedef struct DATINDEX_OBJ
 		eax; \
 	 }) : 0)
 
-extern int read_index(DATINDEX_OBJ *dat,
+extern int open_index(DATINDEX_OBJ *dat,
 		      char const *bs, long ky);
 
 #endif /* DATINDEX_H__ */
