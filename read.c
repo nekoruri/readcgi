@@ -46,24 +46,24 @@
 #define	LIMIT_PM	23
 #define	LIMIT_AM	3
 
-char *zz_remote_addr;
-char *zz_remote_host;
-char *zz_http_referer;
-char *zz_http_cookie;
+char const *zz_remote_addr;
+char const *zz_remote_host;
+char const *zz_http_referer;
+char const *zz_http_cookie;
 #ifdef USE_PATH
-char *zz_path_info;
+char const *zz_path_info;
 #endif
-char *zz_query_string;
+char const *zz_query_string;
 char *zz_temp;
-char *zz_http_user_agent;
-char *zz_http_language;
+char const *zz_http_user_agent;
+char const *zz_http_language;
 #ifdef GZIP
-char *zz_http_encoding;
+char const *zz_http_encoding;
 int gzip_flag;
 #endif
 
 #ifdef LASTMOD
-char *zz_http_if_modified_since;
+char const *zz_http_if_modified_since;
 time_t zz_fileLastmod;
 char lastmod_str[1024];
 #endif
@@ -221,7 +221,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 	char *bufp = *This->buffers;
 	int bufrest = This->rest;
 	while (--bufrest > 0) {
-		int ch = *(unsigned char *)p;
+		int ch = *(unsigned char const *)p;
 		if (isCheck(ch)) {
 			switch (ch) {
 			case ' ':
@@ -402,7 +402,7 @@ void SetFormName(void)
 {
 	/* HTTP_COOKIE= FROM=......;MAIL=......Ç∆Ç¢Ç¡ÇΩå`éÆ
 	 (&Ç≈ãÊêÿÇÍÇŒzz_GetStringÇ™égÇ¶ÇÈÇÒÇæÇØÇ«ÇÀ...) */
-	char *p = zz_http_cookie;
+	char const *p = zz_http_cookie;
 	strcpy(form_name, KARA);
 	strcpy(form_mail, KARA);
 	while(p && *p) {
@@ -1212,7 +1212,7 @@ char *zz_GetString(char *dst, char *tgt)
 	int len;
 	int ch = (int) '&';
 	int ch2 = (int) '=';
-	char *kk = zz_query_string;
+	char const *kk = zz_query_string;
 	char *kk0;
 	char *kk1;
 	for (i = 0; i < 200; i++) {
