@@ -9,6 +9,9 @@
 /* Last-Modified を追加する */
 #define LASTMOD
 
+/* Last-Modified に併せて、Expires: も出力してみる */
+/* #define EXPIRES */
+
 /* 最適化された BadAccess を使用する */
 #define NEWBA
 

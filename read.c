@@ -72,6 +72,7 @@ int gzip_flag;
 char const *zz_http_if_modified_since;
 time_t zz_fileLastmod;
 char lastmod_str[1024];
+char expires_str[1024];
 #endif
 
 char zz_bs[1024];
@@ -1128,9 +1129,9 @@ time_t getFileLastmod(char *file)
 /****************************************************************/
 /*	Get file last-modified(get_lastmod_str)			*/
 /****************************************************************/
-int get_lastmod_str(time_t lastmod)
+int get_lastmod_str(char *buf, time_t lastmod)
 {
-	strftime(lastmod_str, 1024, "%a, %d %b %Y %H:%M:%S GMT",
+	strftime(buf, 1024, "%a, %d %b %Y %H:%M:%S GMT",
 		 gmtime(&lastmod));
 	return (1);
 }
@@ -1433,7 +1434,17 @@ int main()
 	}
 
 	zz_fileLastmod = getFileLastmod(fname);
-	get_lastmod_str(zz_fileLastmod);
+	get_lastmod_str(lastmod_str, zz_fileLastmod);
+#if 1
+	get_lastmod_str(expires_str, zz_fileLastmod + 5);
+#else
+	{
+	  /* ÇΩÇﬂÇµÇ…îpä¸ä˙å¿ÇÇøÇÂÇ¡Ç∆30ïbêÊÇ…ê›íËÇµÇƒÇ›ÇÈ */
+	  time_t nw;
+	  time(&nw);
+	  get_lastmod_str(expires_str, nw + 30);
+	}
+#endif
 #ifdef PREVENTRELOAD
 	if (zz_http_if_modified_since) {
 		time_t modtime = ap_parseHTTPdate(zz_http_if_modified_since);
@@ -1478,6 +1489,10 @@ int main()
 /*  Get Last-Modified Date */
 #ifdef LASTMOD
 	pPrintf(pStdout, "Last-Modified: %.256s\n", lastmod_str);
+#ifdef EXPIRES
+	/* ExpiresÇìfÇ¢ÇƒÇ›ÇÈ */
+	pPrintf(pStdout, "Expires: %.256s\n", expires_str);
+#endif
 #endif
 
 #ifdef ZLIB
