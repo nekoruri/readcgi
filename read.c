@@ -518,8 +518,111 @@ int geturltaillen(const char *p)
 int urlcopy(char *bufp, const char *url, int urllen)
 {
 	return sprintf(bufp,
-		"<A HREF=\"%.*s\" TARGET=\"_blank\">%.*s</A>", 
+		"<a href=\"%.*s\" target=\"_blank\">%.*s</a>", 
+		/* 小文字にしてすこーーーしだけ圧縮効果を期待したり */
+		/* "<A HREF=\"%.*s\" TARGET=\"_blank\">%.*s</A>", */
 		urllen, url, urllen, url);
+}
+
+/*
+	resnoが、
+	出力されるレス番号である場合true
+	範囲外である場合false
+	判定はdat_out()を基本に
+*/
+static int isprinted(int lineNo)
+{
+	if (lineNo == 1) {
+		if (*zz_nf == 't')
+			return false;
+	} else {
+		if (nn_st && lineNo < nn_st)
+			return false;
+		if (nn_to && lineNo > nn_to)
+			return false;
+		if (nn_ls && (lineNo-1) < lineMax - nn_ls)
+			return false;
+	}
+	return true;
+}
+
+/*
+	rewrite_href()と同じようなことをしてるので、
+	rewrite_href()が、path_depth == 0 時に対応したら、
+	こっちは不要。
+*/
+static int rewrite_href2(char **dp,		/* 書き込みポインタ */
+			 char const **sp,	/* 読み出しポインタ */
+			 int istagcut)		/* タグカットしていいか? */
+{
+	/*	全てCHUNK仕様に書き換えるのは、
+		追加書きこみがある場合に常にIf-Modified-Sinceが成立し、
+		転送量を増やしてしまいそうなので、
+		L-M対応が煮詰まるまであとまわし */
+	char bbs[30];	/* bbs=xxx, key=nnn は、bbs.cgiで書きこまれるので、*/
+	char key[20];	/* 必要充分で良い。(key=../kako/nnn/nnnの可能性も無い) */
+	int st;
+	int to;
+	char last;
+	
+	/* >>nnは、bbs.cgiで範囲チェックをあまりしてないようで、
+	   相当長い桁数がst=やto=に渡される場合がある
+	   長過ぎるかどうかは&gt;&gt;と'<'の長さで調べ、
+	   長過ぎればリンクしない。
+	   また、(st==0 || to == 0) || (st > lineMax || to > lineMax)も
+	   リンクしない。
+	   レス番号が表示範囲内におさまっているかの判断は
+	   dat_out()に準じる */
+	/* 手抜き */
+	if ((sscanf(*sp, 
+		"<a href=\"../test/read.cgi?bbs=%20[a-zA-Z0-9_]&key=%12[0-9]"
+		"&st=%u&to=%u&nofirst=true\" target=\"_blank\">&gt;&gt;%*u</a%c"
+		, bbs, key, &st, &to, &last) == 5 && last == '>')	/* >>nn */
+	|| (sscanf(*sp, 
+		"<a href=\"../test/read.cgi?bbs=%20[a-zA-Z0-9_]&key=%12[0-9]"
+		"&st=%u&to=%u\" target=\"_blank\">&gt;&gt;%*u-%*u</a%c"
+		, bbs, key, &st, &to, &last) == 5 && last == '>')) {	/* >>nn-nn */
+		const char *pr_start = strstr(*sp + 50, "&gt;&gt;");
+		const char *pr_end = strchr(pr_start, '<');
+		if (is_imode()
+		|| pr_end - pr_start > 8 + 4 * 2 + 1
+		|| (st == 0 || to == 0 || st > lineMax || to > lineMax)
+#if	1	/* #ifndef USE_PATH */
+		/* #ifndef を生かせば、isbusytimeでもa name=へのリンクがつく*/
+		/* USE_PATHでなくても、a name=のanchorがつくようになった??	*/
+		|| (istagcut && isprinted(st) && isprinted(to))
+#endif
+		) {
+			/* タグを全部はずしてコピー */
+			memcpy(*dp, pr_start, pr_end - pr_start);
+			*dp += pr_end - pr_start;
+			*sp = strchr(pr_end, '>') + 1;
+			return 1;
+		}
+#ifdef	USE_PATH
+		if (isprinted(st) && isprinted(to)) {
+			/* <a href="#123">&gt;&gt;123<> に書き換え */
+			*dp += sprintf(*dp, "<a href=#%u>%.*s</a>", st, pr_end - pr_start, pr_start);
+			*sp = strchr(pr_end, '>') + 1;
+		} else {
+			/* PATH形式に書き換え */
+			*dp += sprintf(*dp, st == to ? 
+				"<a href=\"../test/read.cgi/%s/%s/%u\">":
+				"<a href=\"../test/read.cgi/%s/%s/%u-%u\">",
+				bbs, key, st, to);
+			*dp += sprintf(*dp, "%.*s</a>", pr_end - pr_start, pr_start);
+			*sp = strchr(pr_end, '>') + 1;
+		}
+#else
+		/* そのままコピー */
+		pr_end = strchr(pr_end, '>') + 1;
+		memcpy(*dp, *sp, pr_end - *sp);
+		*dp += pr_end - *sp;
+		*sp += pr_end - *sp;
+#endif
+		return 1;
+	}
+	return 0;
 }
 
 /*
@@ -535,7 +638,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 {
 	char *bufp = *This->buffers;
 	int bufrest = This->rest;
-	int istagcut = (LINKTAGCUT && isbusytime && resnumber > 1) || rawmode || is_imode();
+	int istagcut = (LINKTAGCUT && isbusytime && resnumber > 1) || is_imode();
 	/*	ループ中、*This->Buffersはバッファの先頭を保持している	*/
 	while (--bufrest > 0) {
 		int ch = *p;
@@ -553,7 +656,6 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 					p += 3;
 					goto Teri_Break;
 				}
-				
 				if (memcmp(p, " <br> ", 6) == 0) {
 					if (bufp != *This->buffers && isSJIS1(*(bufp-1))) {
 						*bufp++ = ' ';
@@ -570,31 +672,25 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 					p += 2;
 					goto Teri_Break;
 				}
-				if (resnumber) {
-					if (path_depth
-					    && p[1] == 'a'
-					    && isspace(p[2])) {
-						char *tdp = bufp;
-						char const *tsp = p;
+#ifdef	RAWOUT
+				/* rawmode != 0 の時は呼ばれていないように思うけど・・?? */
+				if (rawmode)
+					break;
+#endif
+				if (resnumber && p[1] == 'a' && isspace(p[2])) {
+					char *tdp = bufp;
+					char const *tsp = p;
+					if (path_depth && !is_imode()) {
 						if (!rewrite_href(&tdp, &tsp, istagcut))
 							goto Break;
-						bufp = tdp;
-						p = tsp;
-						continue;
-					} else if (istagcut) {
-						/* if (*(p+1) != 'b' || *(p+2) != 'r') { */
-						/* <a ....> </a> をサパーリ削るらしい */
-						if ((*(p+1) == 'a' && *(p+2) == ' ')
-						    || (*(p+1) == '/' && *(p+2) == 'a')) {
-							while (*p != '>') {
-								if (*p == '\n')
-									goto Break;
-								++p;
-							}
-							++p;
-							continue;
-						}
+					} else {
+						if (!rewrite_href2(&tdp, &tsp, istagcut))
+							break;	/* そのままコピーを続ける */
 					}
+					bufrest -= tdp - bufp;
+					bufp = tdp;
+					p = tsp;
+					continue;
 				}
 				break;
 			case '&':
@@ -602,6 +698,8 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 					if (*(p + 4) != ';')
 						p += 4 - 1;
 				}
+				/* &MAIL->&amp;MAILの変換は、dat直読みのかちゅ～しゃが対応しないと無理
+				   もし変換するならbbs.cgi */
 				break;
 			case ':':
 #if	1
@@ -634,7 +732,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				goto Break;
 				/*	break;	*/
 #ifndef TYPE_TERI
-			case 0x81: /*  *"＠"(8197) */
+			case 0x81: /*  *"＠"(8197)  "｀"(814d) */
 				/* if (!This->isTeri) { */
 				if (memcmp(p+1, "\x97｀", 3) == 0) {
 					ch = ',';
@@ -650,6 +748,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				/* break; */
 #endif
 			case '\0':
+				/* 読み飛ばしのほうが、動作としては適切かも */
 				ch = '*';
 				break;
 			default:
