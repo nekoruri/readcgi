@@ -952,9 +952,9 @@ int dat_read()
 	zz_fileSize = getFileSize(fname);
 
 	if (zz_fileSize > MAX_FILESIZE)
-		html_error("このスレッド大きすぎます。");
+		html_error(ERROR_TOO_HUGE);
 	if (*zz_ky == '.')
-		html_error("そんな板orスレッドないです。");
+		html_error(ERROR_NOT_FOUND);
 
 	nn_st = atoi(zz_st);
 	nn_to = atoi(zz_to);
@@ -976,12 +976,12 @@ int dat_read()
 
 	BigBuffer = malloc(zz_fileSize + 32);
 	if (!BigBuffer)
-		html_error("メモリの確保に失敗しました。");
+		html_error(ERROR_NO_MEMORY);
 
 	in = open(fname, O_RDONLY);
 	if (in < 0)
 	{
-		html_error("そんな板orスレッドないです。");
+		html_error(ERROR_NOT_FOUND);
 		return 0;
 	}
 	read(in, BigBuffer, zz_fileSize);
@@ -994,7 +994,7 @@ int dat_read()
 
 	lineMax = getLineMax();
 /*
-html_error("調整中。。。");
+html_error(ERROR_MAINTENANCE);
 */
 	return 0;
 }

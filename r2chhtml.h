@@ -433,3 +433,8 @@
 #define R2CH_HTML_FOOTER_IMODE \
 	"<p>" CGIVER "</body></html>"
 
+/* html_error()用エラーメッセージ */
+#define ERROR_TOO_HUGE "このスレッド大きすぎます。"
+#define ERROR_NOT_FOUND "そんな板orスレッドないです。"
+#define ERROR_NO_MEMORY "メモリの確保に失敗しました。"
+#define ERROR_MAINTENANCE "調整中。。。"
