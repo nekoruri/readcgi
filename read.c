@@ -1017,7 +1017,7 @@ int BadAccess(void)
 	if ( rawmode ) {
 #if	0	/*#ifdef	Katjusha_DLL_REPLY*/
 		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
-			&& strstr(zz_http_user_agent, "Katjusha"));
+			/*&& strstr(zz_http_user_agent, "Katjusha")*/);
 #endif
 		return !gzip_flag;
 	}
@@ -2379,13 +2379,18 @@ int main(void)
 #endif
 
 #ifdef	RAWOUT
-	/* ここまでで既にzz_fileSizeは(ファイルが見つかれば)設定されている */
+	/* この部分は、主にIf-Modified-Sinceをつけずに
+	   ファイルサイズ丁度のリクエストを送って来る、
+	   かちゅ～しゃによる負荷増加への対策	*/
 	if (rawmode) {
+		/* ここまでで既にzz_fileSizeは(ファイルが見つかれば)設定されている */
 		if (zz_fileSize && zz_fileSize == raw_lastsize) {
 			if (!zz_http_if_modified_since) {	/* NULLだよね？KARA入れたら変えてね */
-				/* LastModifiedを出力せず、非圧縮で返す */
-				/*printf("Last-Modified: %s\n", lastmod_str);*/
-				printf("\n" "+OK 0/%dK\n", MAX_FILESIZE / 1024);
+				/* 非圧縮で返す */
+				char buff[120];
+				printf("Last-Modified: %s\n", lastmod_str);
+				printf("Content-Length: %d\n""\n""%s", 
+					sprintf(buff, "+OK 0/%dK\n", MAX_FILESIZE / 1024), buff);
 				return 0;
 			}
 		}
@@ -2396,16 +2401,15 @@ int main(void)
 	/* BadAccess中で設定すると、早目のファイルサイズ判定が出来ないので */
 	if (rawmode && gzip_flag)
 		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
-			&& strstr(zz_http_user_agent, "Katjusha"));
+			/*&& strstr(zz_http_user_agent, "Katjusha")*/);
 	if (zz_katjusha_raw && zz_fileSize) {
 		if (zz_fileSize < raw_lastsize) {
 			/* ここでhtml_error()を呼ぶと非圧縮のテキストを返すが、構わないはず。
-			   Content-EncodingもLastModifiedも出力しないが、必要ないと思う。
-			   wsockspyのソースをちらっと見た限り、copy_bodyは
-			   Content-Encodingの有無に限らず-ERR等のヘッダを判定していると思うので。
-			   zz_katjusha_raw関係はできるだけ近い場所にまとめたい。*/
-			putchar('\n');
-			html_error(ERROR_ABORNED);
+			   Content-EncodingもLastModifiedも出力しない。*/
+			char buff[120];
+			printf("Content-Length: %d\n""\n""%s",
+				sprintf(buff, "-ERR %s\n", ERRORMES_ABORNED), buff);
+			/*html_error(ERROR_ABORNED);*/
 			return 0;
 		}
 	}

@@ -18,6 +18,9 @@ tag: HEAD
       (subject.txt取得時のみ、ls=??はto=??として扱う)
     △Katjusha_DLL_REPLY かちゅ〜しゃgzip対応DLLのリクエストに応答する
   PATH形式の末尾に'/'が含まれるとき、BASE_DEFINEを出力するようにした
+  rawモードでファイルサイズジャストの時にも
+  Last-ModifiedとContent-Lengthを出すようにした。
+  raw=.nnn形式のUAチェックを外した。
 
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。
