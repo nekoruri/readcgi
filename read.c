@@ -912,19 +912,73 @@ int dat_out_raw()
 #endif
 
 /****************************************************************/
-/*	スレ一覧(index2.html, subback.html相当)			*/
-/*	を出力してみる。せっかくだから。			*/
-/*	path_depth に動作が依存する				*/
+/*	スレダイジェスト(index2.html)を出力してみる。		*/
+/*	path_depth == 1 のはず					*/
 /****************************************************************/
-static void dat_out_subject(void)
+static void dat_out_index(void)
 {
 	int i;
 
-	/* /board の形、うしろに '/' ついてない */
-	if (path_depth < 2)
-		pPrintf(pStdout, "<H1>未実装だから、パスおかしいど</H1>");
-	else
-		pPrintf(pStdout, R2CH_HTML_SUBBACK_HEADER);
+	pPrintf(pStdout,
+		R2CH_HTML_INDEX_HEADER("%s", "%s"),
+		"プログラム技術＠2ch掲示板",
+		"プログラム技術＠2ch掲示板");
+
+	/* スレ一覧の出力
+	   この時点ではまだメモリ上に subject.txt が存在。*/
+	for (i = 0; i < N_INDEX_THREADS && i < lineMax; i++) {
+		char const *p = BigLine[i];
+		char const *subj;
+		int datn, subjn;
+		datn = strspn(p, "0123456789");
+		if (datn == 0)
+			continue;
+		if (memcmp(&p[datn], ".dat<>", 6) != 0)
+			continue;
+		subj = p + datn + 6;
+		subjn = strcspn(subj, "\r\n");
+		if (subjn == 0)
+			continue;
+		if (i < N_INDEX_DIGESTS)
+			pPrintf(pStdout,
+				R2CH_HTML_INDEX_LABEL("%.64s/%.*s",
+						      "%d",
+						      "#%d",
+						      "%.*s"),
+				zz_bs,
+				datn, p,
+				1 + i,
+				1 + i,
+				subjn, subj);
+		else
+			pPrintf(pStdout,
+				R2CH_HTML_INDEX_ANCHOR("%.64s/%.*s",
+						       "%d",
+						       "%.*s"),
+				zz_bs,
+				datn, p,
+				1 + i,
+				subjn, subj);
+	}
+
+	pPrintf(pStdout,
+		R2CH_HTML_INDEX_AD("%.64s/"),
+		zz_bs);
+
+	/* スレダイジェストの出力 */
+
+	pPrintf(pStdout,
+		R2CH_HTML_INDEX_FOOTER);
+}
+/****************************************************************/
+/*	スレ一覧(subback.html相当)を出力してみる。		*/
+/*	path_depth == 2 のはず					*/
+/****************************************************************/
+static void dat_out_subback(void)
+{
+	int i;
+
+	pPrintf(pStdout, R2CH_HTML_SUBBACK_HEADER);
 
 	/* 行を読み込んで解析していく
 	   BigLine[]の情報をとりあえず信用しておくことにする */
@@ -934,14 +988,13 @@ static void dat_out_subject(void)
 		int datn, subjn;
 		datn = strspn(p, "0123456789");
 		if (datn == 0)
-			break;
+			continue;
 		if (memcmp(&p[datn], ".dat<>", 6) != 0)
-			break;
+			continue;
 		subj = p + datn + 6;
 		subjn = strcspn(subj, "\r\n");
 		if (subjn == 0)
-			break;
-		/* path_depth == 2 */
+			continue;
 		pPrintf(pStdout,
 			R2CH_HTML_SUBBACK_ITEM("%.*s", "%d", "%.*s"),
 			datn, p,
@@ -1546,8 +1599,10 @@ int main()
 	if (rawmode)
 		dat_out_raw();
 #ifdef USE_PATH
-	else if (1 <= path_depth && path_depth < 3)
-		dat_out_subject();
+	else if (path_depth == 1)
+		dat_out_index();	/* 板ダイジェスト */
+	else if (path_depth == 2)
+		dat_out_subback();	/* スレ一覧 */
 #endif
 	else
 		dat_out();
@@ -1918,7 +1973,16 @@ void html_head(char *title, int line)
 #endif
 
 	if (!is_imode()) {	/* no imode       */
-		pPrintf(pStdout, R2CH_HTML_HEADER_1, title, zz_bs);
+		if (path_depth)
+			pPrintf(pStdout,
+				R2CH_HTML_HEADER_1("%s", "../../%s"),
+				title,
+				zz_bs);
+		else
+			pPrintf(pStdout,
+				R2CH_HTML_HEADER_1("%s", "/%s/index2.html"),
+				title,
+				zz_bs);
 #ifdef ALL_ANCHOR
 		if (path_depth)
 			pPrintf(pStdout,

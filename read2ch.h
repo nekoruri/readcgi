@@ -74,6 +74,11 @@
    資源の開放は積極的にサボりたい。 */
 #define USE_MMAP
 
+/* スレダイジェスト出力パラメータ
+   本来ならばどこかから取得できる? */
+#define N_INDEX_DIGESTS	10
+#define N_INDEX_THREADS	30
+
 /*
  *  どーでもいーんですが、Cソース中、
  *  このファイルだけEUCですな(藁

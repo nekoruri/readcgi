@@ -278,15 +278,15 @@
 #endif
 
 /* ブラウザで見たとき: %s=スレ名 %s=板 */
-#define R2CH_HTML_HEADER_1 \
+#define R2CH_HTML_HEADER_1(title, board) \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
-	"<title>%s</title>" \
+	"<title>" title "</title>" \
 	R2CH_HTML_COOKIE_SCRIPT \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
-	"<a href=\"/%s/index2.html\">■掲示板に戻る■</a>"
+	"<a href=\"" board "\">■掲示板に戻る■</a>"
 
 /* path=生成するURL */
 #define R2CH_HTML_T_ALL_ANCHOR(path) \
@@ -440,7 +440,31 @@
 #define ERRORMES_MAINTENANCE "調整中。。。"
 #define ERRORMES_LOGOUT "なんか不調です。"
 
+
+/* スレダイジェスト用HTML */
+
+#define R2CH_HTML_INDEX_HEADER(title1, title2) \
+	"<HTML><TITLE>" title1 "</TITLE></HEAD>\n" \
+	"<BODY><H1>" title2 "</H1>" \
+	"<H2>各種ヘッダ、ここ</H2><HR>"
+
+#define R2CH_HTML_INDEX_LABEL(anchor, num, label, title) \
+	"<a href=\"" anchor "/?ls=50\">" num ":</a> " \
+	"<a href=\"" label "\">" title "</a>\n"
+
+#define R2CH_HTML_INDEX_ANCHOR(anchor, num, title) \
+	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
+
+#define R2CH_HTML_INDEX_AD(board) \
+	"<DIV align=right><A href=\"" board "\">スレ一覧はこちら</A></DIV>\n" \
+	"<HR><H2>広告などが入る</H2><HR>"
+
+#define R2CH_HTML_INDEX_FOOTER \
+	"<HR><H2>フッタはここ</H2><HR></BODY></HTML>"
+
+
 /* スレインデクス用HTML */
+
 #define R2CH_HTML_SUBBACK_HEADER \
 	"<html><head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=x-sjis\">" \
@@ -448,8 +472,6 @@
 	"<body target=\"body\">" \
 	"<font size=-1>\n"
 
-/* %.*s=(スレ文字数, スレ文字列)
-   %.*s=(タイトル文字数, タイトル文字列) */
 #define R2CH_HTML_SUBBACK_ITEM(anchor, num, title) \
 	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
 
