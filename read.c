@@ -898,9 +898,9 @@ int get_lastmod_str(time_t lastmod)
 void zz_GetEnv(void)
 {
 	currentTime = (long) time(&t_now);
-	time(&t_now);
-	t_now += 9 * 60 * 60;
-	tm_now = *gmtime(&t_now);
+	putenv("TZ=JST-9");
+	tzset();
+	localtime_r(&t_now, &tm_now);
 
 	zz_remote_addr = getenv("REMOTE_ADDR");
 	zz_remote_host = getenv("REMOTE_HOST");
@@ -1030,7 +1030,7 @@ int main()
 		 *  ‚È‚¢‚©‚à)
 		 */
 		if(modtime != BAD_DATE
-		   && (modtime + FORCE_304_TIME >= time(NULL)
+		   && (modtime + FORCE_304_TIME >= t_now
 		       || modtime >= zz_fileLastmod))
 #else
 	if (zz_http_if_modified_since
