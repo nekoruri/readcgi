@@ -417,13 +417,19 @@ static void add_range( struct range *range, const char *st, const char *to )
 	}
 
 	/* merge */
-	for ( i = 0 ; i < range->count ; ++i ) {
+	for ( i = range->count - 1 ; i >= 0 ; --i ) {
 		if ( i_st <= (range->array[i].to + 1) && (range->array[i].from - 1) <= i_to ) {
 			if ( range->array[i].from > i_st )
 				range->array[i].from = i_st;
 			if ( range->array[i].to < i_to )
 				range->array[i].to = i_to;
-			return;
+
+			if ( i == 0 || i < (range->count - 1) )
+				return;
+
+			i_st = range->array[i].from;
+			i_to = range->array[i].to;
+			--range->count;
 		}
 	}
 
