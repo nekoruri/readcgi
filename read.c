@@ -394,6 +394,7 @@ static void add_range( struct range *range, const char *st, const char *to )
 	int i_st;
 	int i_to;
 	int i;
+	int hole;
 
 	if ( *st == '-' && *to == '-' )
 		return;
@@ -417,29 +418,30 @@ static void add_range( struct range *range, const char *st, const char *to )
 	}
 
 	/* merge */
+	hole = -1;
 	for ( i = range->count - 1 ; i >= 0 ; --i ) {
 		if ( i_st <= (range->array[i].to + 1) && (range->array[i].from - 1) <= i_to ) {
-			if ( range->array[i].from > i_st )
-				range->array[i].from = i_st;
-			if ( range->array[i].to < i_to )
-				range->array[i].to = i_to;
+			if ( i_st > range->array[i].from )
+				i_st = range->array[i].from;
+			if ( i_to < range->array[i].to )
+				i_to = range->array[i].to;
 
-			if ( i == 0 || i < (range->count - 1) )
-				return;
+			if ( hole >= 0 )
+				range->array[hole] = range->array[--range->count];
 
-			i_st = range->array[i].from;
-			i_to = range->array[i].to;
-			--range->count;
+			hole = i;
 		}
 	}
 
 	/* append */
-	if ( range->count >= MAX_RANGE )
-		return;
+	if ( hole < 0 ) {
+		if ( range->count >= MAX_RANGE )
+			return;
+		hole = range->count++;
+	}
 
-	range->array[range->count].from = i_st;
-	range->array[range->count].to = i_to;
-	range->count++;
+	range->array[hole].from = i_st;
+	range->array[hole].to = i_to;
 }
 
 /* range‚Ìã‰ºŒÀæ“¾
