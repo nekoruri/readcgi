@@ -1648,8 +1648,8 @@ void readSettingFile(const char *bbsname)
 	fd = open(fname, O_RDONLY);
 	if (fd >= 0) {
 		/* SETTING_R.TXT‚ð“Ç‚Þ */
-		char *cptr;
-		char *endp;
+		char const *cptr;
+		char const *endp;
 		struct stat st;
 #ifdef	USE_MMAP
 		void *mmptr;
@@ -1670,7 +1670,8 @@ void readSettingFile(const char *bbsname)
 				for (i = 0; i < sizeof(SettingParam)
 					     / sizeof(SettingParam[0]); i++) {
 					int len = strlen(SettingParam[i].str);
-					if (cptr[len] == '='
+					if (cptr + len < endp 
+					    && cptr[len] == '='
 					    && strncmp(cptr,
 						       SettingParam[i].str,
 						       len) == 0) {
