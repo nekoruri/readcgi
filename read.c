@@ -1466,12 +1466,16 @@ void zz_GetEnv(void)
 }
 
 #ifdef ZLIB
+/****************************************************************/
+/* receive gzipped data from zlib/gzio.c                        */
+/****************************************************************/
+
 int gzipped_fwrite(char *buf, int n, int m, void *dummy)
 {
 	int l = n*m;
 
 	if ( outlen+l > outalloc ) {
-		outalloc = outlen+l+40960;  /* 多めに */
+		outalloc = outlen + l + 40960;  /* 多めに */
 		if ( outlen == 0 ) {
 			outbuf = malloc(outalloc);
 		} else {
@@ -1490,7 +1494,6 @@ int gzipped_fwrite(char *buf, int n, int m, void *dummy)
 /*----------------------------------------------------------------------
 	終了処理
 ----------------------------------------------------------------------*/
-#ifdef GZIP
 void atexitfunc(void)
 {
 	/* html_error()での二重呼び出し防止 */
@@ -1531,13 +1534,12 @@ void atexitfunc(void)
 
 		fwrite(outbuf,1,outlen,stdout);
 	}
-#else
+#elif defined(GZIP)
 	fflush(stdout);
 	close(1);
 	waitpid(pid, NULL, 0);
 #endif
 }
-#endif
 
 /****************************************************************/
 /*	MAIN							*/
@@ -1660,6 +1662,8 @@ int main(void)
 #endif
 	fflush(stdout);
 
+	/*  終了処理登録 */
+	atexit(atexitfunc);
 #ifdef GZIP
 	if (gzip_flag) {
 #ifndef ZLIB
@@ -1685,11 +1689,10 @@ int main(void)
 		fflush(stdout);
 
 		/*  prepare zlib */
-		/* dup()しないとgzclose()でstdoutを閉じてしまうので */
-		pStdout = gzdopen(dup(1), "wb9");
+		/* 引数1はzlib/gzio.cで特別扱い
+		   仮にstdoutを設定し、closeしない */
+		pStdout = gzdopen(1, "wb9");
 
-		/*  終了処理登録 */
-		atexit(atexitfunc);
 		pPrintf = gzprintf;
 		/* gzdopen()で"wb9"を指定したので不要 */
 		/* gzsetparams(pStdout, Z_BEST_COMPRESSION,
