@@ -117,6 +117,7 @@ char read_kako[256] = "";
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
+char zz_title[256];
 
 #define is_imode() (*zz_im == 't')
 #define is_nofirst() (*zz_nf == 't')
@@ -865,6 +866,37 @@ void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 	p = ressplitter_split(&res, p, false); /* title */
 }
 
+/* タイトルを取得してzz_titleにコピー
+*/
+static void get_title()
+{
+	char *s[20];
+	char p[SIZE_BUF];
+	
+	if (lineMax) {
+		splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
+		strncpy(zz_title, s[4], sizeof(zz_title)-1);
+	}
+}
+
+/* ストッパー・1000 Overの判定
+*/
+static int isthreadstopped()
+{
+	char *s[20];
+	char p[SIZE_BUF];
+	
+	if (lineMax >= RES_RED)
+		return 1;
+	if (lineMax) {
+		splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
+		if (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" ))
+			return 1;
+		return 0;
+	}
+	return 1;
+}
+
 
 /****************************************************************/
 /*	BadAccess						*/
@@ -956,15 +988,9 @@ void html_bannerNew(void)
 /****************************************************************/
 static int out_html1(int level)
 {
-	char *s[20];
-	char p[SIZE_BUF];
-
 	if (out_resN)
 		return 0;
-	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
-	if (!*p)
-		return 1; 
-	html_head(level, s[4], lineMax);
+	html_head(level, zz_title, lineMax);
 	out_resN++;
 	return 0;
 }
@@ -974,7 +1000,7 @@ static int out_html1(int level)
 static int out_html(int level, int line, int lineNo)
 {
 	char *s[20];
-	char *r0, *r1, *r3, *r4;
+	char *r0, *r1, *r3;
 	char p[SIZE_BUF];
 
 #ifdef	CREATE_NAME_ANCHOR
@@ -986,11 +1012,7 @@ static int out_html(int level, int line, int lineNo)
 /*printf("line=%d[%s]<P>\n",line,BigLine[line]);return 0;*/
 
 	if (!out_resN) {	/* Can I write header ?   */
-		splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
-		if (!*p)
-			return 1; 
-		r4 = s[4];
-		html_head(level, r4, lineMax);
+		html_head(level, zz_title, lineMax);
 	}
 	out_resN++;
 
@@ -1120,8 +1142,6 @@ int dat_out(int level)
 { 
 	int line; 
 	int threadStopped=0; 
-	char *s[20]; 
-	char p[SIZE_BUF]; 
 
 #ifdef READ_KAKO
 	if (read_kako[0]) {
@@ -1142,11 +1162,8 @@ int dat_out(int level)
 	} 
 	out_html1(level); /* レスが１つも表示されていない時にレス１を表示する */ 
 
-	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
-	if (!*p)
-		return 1; 
-	if( s[2]!=0 && (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" )) ) threadStopped=1;
-
+	if (isthreadstopped())
+		threadStopped=1;
 	if ( !is_imode() )
 		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
@@ -1154,7 +1171,7 @@ int dat_out(int level)
 #ifdef USE_INDEX
 	    !level && 
 #endif
-	    lineMax == line && lineMax <= RES_RED && !threadStopped) {
+	    lineMax == line && !threadStopped) {
 	
 		html_reload(line);	/*  Button: Reload */
 	}
@@ -1216,6 +1233,7 @@ int dat_read(char const *fname,
 #endif
 
 	lineMax = getLineMax();
+	get_title();
 /*
 html_error(ERROR_MAINTENANCE);
 */
@@ -1865,16 +1883,11 @@ int can_simplehtml(void)
 
 int out_simplehtml(void)
 {
-	char *s[20];
-	char p[SIZE_BUF];
 	int n = nn_st;
 	
 	/* html_head() */
-	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
-	if (!*p)
-		return 1;
-	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s", ""), s[4]);
-	pPrintf(pStdout, R2CH_HTML_HEADER_2("%s"), s[4]);
+	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s", ""), zz_title);
+	pPrintf(pStdout, R2CH_HTML_HEADER_2("%s"), zz_title);
 	
 	out_resN++;	/* ヘッダ出力を抑止 */
 	if (!is_nofirst()) {
