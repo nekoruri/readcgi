@@ -34,6 +34,10 @@ CHUNK_ANCHORとの併用で効果を発揮する。
 http:://piza2.2ch.net/test/read.cgi/tech/
 時に、板のスレ一覧を表示するため、負荷が増える可能性あり。
 
+▲ALWAYS_PATH
+(USE_PATH定義時のみ機能)
+非パス仕様のURLで呼ばれたときはBASEを出力して、常にパス仕様でリンクを生成する。
+
 ◎PREVENTRELOAD
 書き込み直後のリロードを防止する
 FORCE_304_TIMEで指定された時間の間、304 Not Modifiedを返す
