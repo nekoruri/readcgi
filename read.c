@@ -1114,10 +1114,12 @@ int dat_read(char const *fname,
 		if (!nn_st && !nn_to && !nn_ls)
 			nn_ls = RES_IMODE;
 	}
-	if (strncmp(zz_nf, "t", 1)) {
+	if (zz_nf[0] != 't' && nn_ls > 0) {
 		nn_ls--;
-		if(nn_ls == 0)
-			nn_ls = -1;
+		if(nn_ls == 0) {
+			nn_ls = 1;
+			strcpy(zz_nf, "true");
+		}
 	} else if (nn_ls < 0)
 		nn_ls = 0;
 
