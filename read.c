@@ -1461,18 +1461,25 @@ void atexitfunc(void)
 			/* 圧縮中にmallocエラー発生 */
 			pPrintf = (zz_printf_t) fprintf;
 			pStdout = (gzFile) stdout;
-			pPrintf(pStdout,"\n");
+			putchar('\n');
 			html_error(ERROR_NO_MEMORY);
 		}
 		if ( gzip_flag == 2 ) {
-			fprintf(stdout,"Content-Encoding: x-gzip\n");
+			puts("Content-Encoding: x-gzip");
 		} else {
-			fprintf(stdout,"Content-Encoding: gzip\n");
+			puts("Content-Encoding: gzip");
 		}
-		fprintf(stdout,"Content-Length: %d\n\n",outlen);
+#ifdef NN4_LM_WORKAROUND
+		if (!memcmp(zz_http_user_agent, "Mozilla/", 8)
+		    && zz_http_user_agent[8] <= '4'
+		    && !strstr(zz_http_user_agent, "MSIE"))
+			putchar('\n');
+		else
+#endif
+			printf("Content-Length: %d\n\n", outlen);
 
 		fwrite(outbuf,1,outlen,stdout);
-		fflush(stdout);
+		/* fflush(stdout); XXX このfflush()って必要？ */
 		/* free(outbuf); outbufはfreeすべき物 exitなのでほっとく */
 	}
 #elif defined(GZIP)
@@ -1506,8 +1513,7 @@ int main(void)
 #error	-funsigned-char required.
 	/* このシステムでは、-funsigned-charを要求する */
 	if ((char)0xFF != (unsigned char)0xFF) {
-		puts("Content-Type: text/html\n"
-		     "\n"
+		puts("Content-Type: text/plain\n\n"
 		     "-funsigned-char required.");
 		return 0;
 	}
@@ -1548,21 +1554,20 @@ int main(void)
 	   近いウチにBigBufferは用済みになってしまう鴨 */
 	if (nn_ky && !datindex_open(&dat, zz_bs, nn_ky)) {
 		printf("Content-Type: text/plain\n\n%s/%s/%ld/", zz_bs, zz_ky, nn_ky);
-		printf("error");
+		puts("error");
 		return 0;
 	}
 #endif
 
 #ifdef RAWOUT
-	if(!rawmode)
-#endif
-		pPrintf(pStdout, "Content-Type: text/html\n");
-#ifdef RAWOUT
-	else
-		/* pPrintf(pStdout, "Content-Type: application/octet-stream\n"); */
+	if(rawmode)
+		/* puts("Content-Type: application/octet-stream"); */
 		/* 現在の.datの MIME type に合わせる．テキストデータだし... */
-		pPrintf(pStdout, "Content-Type: text/plain\n");
+		puts("Content-Type: text/plain");
+	else
 #endif
+		puts("Content-Type: text/html");
+
 	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
@@ -1610,9 +1615,8 @@ int main(void)
 	    && strstr(zz_http_if_modified_since, lastmod_str))
 #endif
 	{
-		pPrintf(pStdout, "Status: 304\n");
-		pPrintf(pStdout, "\n");
-		return (0);
+		puts("Status: 304 Not Modified\n");
+		return 0;
 	}
 #ifdef PREVENTRELOAD
 	}
@@ -1628,20 +1632,20 @@ int main(void)
 	}
 #ifndef ZLIB
 	if ( gzip_flag == 2 ) {
-		pPrintf(pStdout, "Content-Encoding: x-gzip\n");
+		puts("Content-Encoding: x-gzip");
 	} else if ( gzip_flag == 1 ) {
-		pPrintf(pStdout, "Content-Encoding: gzip\n");
+		puts("Content-Encoding: gzip");
 	}
 #endif
 #endif
 
 /*  Get Last-Modified Date */
-	pPrintf(pStdout, "Last-Modified: %.256s\n", lastmod_str);
+	printf("Last-Modified: %s\n", lastmod_str);
 
 #ifdef ZLIB
-	if ( gzip_flag == 0 ) pPrintf(pStdout, "\n");
+	if ( gzip_flag == 0 ) putchar('\n');
 #else
-	pPrintf(pStdout, "\n");
+	putchar('\n');
 #endif
 #ifdef DEBUG
 	sleep(1);

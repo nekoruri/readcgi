@@ -110,4 +110,8 @@
 /* デバッグ用 
 #define MAX_FILESIZE_BUSY (MAX_FILESIZE - 64 * 1024) */ 
 
+/* NN4.xでgzip圧縮時にContent-Lengthがあると
+  Last-Modifiedが無効になる問題の対策 */
+#define NN4_LM_WORKAROUND
+
 #endif /* READ2CH_H__ */

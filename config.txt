@@ -93,6 +93,10 @@ CHUNK_ANCHORとの併用でキャッシュ効果が上がる可能性があるが、
 各種リンクに付く"&nofirst=true"を置きかえる。
 #define NO_FIRST "&n=t"
 
+△NN4_LM_WORKAROUND
+NN4.xでgzip圧縮時にContent-Lengthがあると
+Last-Modifiedが無効になる問題の対策
+
 △USE_SETTING_FILE
 板毎に設定が書いてあるファイルを使用する。
 板のディレクトリにSETTING_FILE_NAMEのファイルがあり(SETTING.TXTと同じ場所)、
