@@ -120,12 +120,12 @@ enum html_error_t {
 	ERROR_LOGOUT,
 };
 void html_error(enum html_error_t errorcode);
-void html_foot_im(int);
+void html_foot_im(int,int);
 void html_head(char *title, int line);
 int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
 void hlinkReplace(char *src);
-void html_foot(int line);
+void html_foot(int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
 int getFileSize(char const *file);
@@ -401,15 +401,15 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 				}
 				break;
 			case '&':
-				if (memcmp(p, "&amp", 4) == 0) {
+				if (memcmp(p+1, "amp", 3) == 0) {
 					if (*(p + 4) != ';')
 						p += 4 - 1;
 				}
 				break;
 #ifndef TYPE_TERI
-			case 0x81: /*  *"＠" */
+			case 0x81: /*  *"＠"(8197) */
 				/* if (!This->isTeri) { */
-				if (memcmp(p, "＠｀", 4) == 0) {
+				if (memcmp(p+1, "\x97｀", 3) == 0) {
 					ch = ',';
 					p += 4 - 1;
 				}
@@ -928,6 +928,9 @@ int dat_out(void)
 #ifdef RELOADLINK
 	int lineLast = lineMax;
 #endif
+	int threadStopped=0;
+	char *s[20];
+	char p[SIZE_BUF];
 	
 	for (line = 0; line < lineMax; line++) {
 		lineNo = line + 1;
@@ -956,7 +959,19 @@ int dat_out(void)
 		html_reload(lineLast);	/*  Button: Reload */
 	}
 #endif
-	html_foot(lineMax);
+#ifndef CUTRESLINK
+	strncpy(p, BigLine[lineMax-1], 1024);
+	p[1024 - 1] = '\0';
+	if (!*p)
+		return 1;
+	res_split(s, p);
+#else
+	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20);
+	if (!*p)
+		return 1; 
+#endif
+	if( s[2]!=0 && strstr( s[2], "ストッパー" )) threadStopped=1;
+	html_foot(lineMax, threadStopped);
 
 	return 0;
 }
@@ -1977,11 +1992,11 @@ void html_reload(int startline)
 /****************************************************************/
 /*	HTML FOOTER						*/
 /****************************************************************/
-void html_foot(int line)
+void html_foot(int line, int stopped )
 {
 	if (is_imode())
-		return html_foot_im(line);
-	if (line <= RES_RED) {
+		return html_foot_im(line,stopped);
+	if (line <= RES_RED && !stopped) {
 #ifndef COOKIE		
 		pPrintf(pStdout, R2CH_HTML_FORM, zz_bs, zz_ky,
 			currentTime);
@@ -1997,9 +2012,9 @@ void html_foot(int line)
 /****************************************************************/
 /*	HTML FOOTER(i-MODE)					*/
 /****************************************************************/
-void html_foot_im(int line)
+void html_foot_im(int line, int stopped)
 {
-	if (line <= RES_RED) {
+	if (line <= RES_RED && !stopped ) {
 		pPrintf(pStdout, R2CH_HTML_FORM_IMODE, zz_bs, zz_ky, currentTime);
 	}
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
