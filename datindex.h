@@ -2,7 +2,7 @@
  *
  *  世界共通インデクスの定義
  *
- *  $Id: datindex.h,v 1.5 2001/09/03 14:50:37 2ch Exp $ */
+ *  $Id: datindex.h,v 1.6 2001/09/03 14:53:57 2ch Exp $ */
 
 #ifndef DATINDEX_H__
 #define DATINDEX_H__
@@ -99,7 +99,7 @@ typedef struct DATINDEX
 	} idx[DATINDEX_IDX_SIZE];
 
 	/* XXX うめぐさ1 */
-	unsigned pad1[615];
+	unsigned pad1[607];
 #if 0
 	/* 有効発言 bitmap
 	   little endian なので、LSBから数えること。
