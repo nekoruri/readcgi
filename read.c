@@ -1335,7 +1335,7 @@ int html_error999(char *mes)
 #ifdef RAWOUT
 	if(rawmode) {
 		/* ?....ÇÕÉGÉâÅ[ÅB */
-		pPrintf(pStdout, "?%s\n", mes);
+		pPrintf(pStdout, "-ERR %s\n", mes);
 		if (BigBuffer)
 			free(BigBuffer);
 		BigBuffer = NULL;
