@@ -324,6 +324,12 @@ typedef struct { /*  class... */
 	int isTeri;
 } ressplitter;
 
+/* read.cgi呼び出しのLINK先作成 */
+/* 一つの pPrintf() で一度しか使ってはいけない */
+/* st,to,ls,nfは、それぞれの呼び先。nf=1でnofirst=true
+** 使わないものは、0にして呼ぶ
+** sstは、CHUNK_LINKの場合の#番号
+*/
 char *create_link(int st, int to, int ls, int nf, int sst)
 {
 	static char url_expr[128];
@@ -337,7 +343,7 @@ char *create_link(int st, int to, int ls, int nf, int sst)
 			strncpy(url_expr,
 				zz_ky,
 				sizeof(url_expr) - 4);
-			depth_expr[sizeof(url_expr) - 4] = 0;
+			url_expr[sizeof(url_expr) - 4] = 0;
 			p = url_expr;
 			while (*p) ++p;
 			*p++= '/';
@@ -352,17 +358,17 @@ char *create_link(int st, int to, int ls, int nf, int sst)
 #ifdef USE_INDEX
 				if(path_depth!=2)
 #endif
-					strcpy(p,"./");
+					strcpy(p,"./");	/* 全部 */
 			} else
 				sprintf(p,"%d-",st);
 		} else if (st<=1) {
-			sprintf(p,"-%d",to);
+			sprintf(p,"-%d",to);	/* 始点は不要 */
 		} else if (st==to) {
-			sprintf(p,"%d",st);
+			sprintf(p,"%d",st);	/* 単点呼び出しに */
 		} else {
 			sprintf(p,"%d-%d",st,to);
 		}
-		if (nf && (st!=to || ls))
+		if (nf && (st!=to || ls))	/* 単点は'n'不要 */
 			strcat(p,"n");
 		if (is_imode())
 			strcat(p,"i");
@@ -375,8 +381,8 @@ char *create_link(int st, int to, int ls, int nf, int sst)
 	} else
 #endif	/* USE_PATH */
 	{
-		if (url_p==NULL) {
-			sprintf(url_expr, "\"" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky);
+		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
+			sprintf(url_expr, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, zz_ky);
 			url_p = url_expr;
 			while (*url_p) ++url_p;
 		}
@@ -388,12 +394,12 @@ char *create_link(int st, int to, int ls, int nf, int sst)
 			if (st>1)
 				sprintf(p,"&st=%d",st);
 		} else if (st<=1) {
-			sprintf(p,"&to=%d",to);
+			sprintf(p,"&to=%d",to);		/* 始点は不要 */
 		} else {
 			sprintf(p,"&st=%d&to=%d",st,to);
 		}
 		while (*p) ++p;
-		if (nf && (st>1 || ls) ) {
+		if (nf && (st>1 || ls) ) {		/* 1を含むときは不要 */
 			strcpy(p, NO_FIRST);
 			p += sizeof(NO_FIRST)-1;
 		}
@@ -413,11 +419,12 @@ char *create_link(int st, int to, int ls, int nf, int sst)
 	return url_expr;
 }
 
+/* 掲示板に戻るのLINK先作成 */
 char *create_parent_link(void)
 {
 	static char url_expr[128] = "";
 
-	if (url_expr[0]) return url_expr;
+	if (url_expr[0]) return url_expr;	/* 既に作成済み */
 #ifdef USE_PATH
 	if (path_depth)
 		sprintf(url_expr,"../../../../%s/",zz_bs);
@@ -2062,7 +2069,7 @@ int main(void)
 	if (rawmode) {
 		dat_out_raw();
 		return 0;
-	} else
+	}
 #endif
 #ifdef USE_PATH
 	if (path_depth && path_depth!=3) {
