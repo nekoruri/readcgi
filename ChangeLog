@@ -27,7 +27,9 @@ tag: HEAD
     USE_PATH
     ALWAYS_PATH
     bbs.cgiの採用により、ON固定
+  index.htmに戻らないようにした
   User-Agentを見て携帯と判定したら自動的に初期値としてimode=trueと見なすようにした。
+  1001レスオーバーのdatがあってもそこでファイルが終了したものと見なすようにした。
 
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。

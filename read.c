@@ -130,7 +130,7 @@ int zz_katjusha_raw;
 #endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
-char const *BigLine[RES_RED + 16];
+char const *BigLine[RES_RED + 2];
 char zz_title[256];
 
 #define is_imode() (*zz_im == 't')
@@ -1445,9 +1445,16 @@ int getLineMax(void)
 	if (p1 - p < 10)	/* 適当だけど、問題は出ないはず */
 		return -8;
 	do {
-		BigLine[line] = p;
-		if (line > RES_RED)
+		if ( line >= (sizeof BigLine) / (sizeof BigLine[0]) - 1 )
+		{
+			/* 上限行数を超えるようなら、ここを以ってファイル末尾とみなす
+			   こうすることによって溢れた分すべてを巨大な1行として処理して
+			   しまわないようにする
+			*/
+			zz_fileSize = p - BigBuffer;
 			break;
+		}
+		BigLine[line] = p;
 		++line;
 		p = (char *)memchr(p, '\n', p1-p);
 		if (p == NULL)

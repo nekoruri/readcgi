@@ -46,7 +46,7 @@ extern char zz_bs[1024];
 extern char zz_ky[1024];
 extern char zz_nf[1024];
 extern char *BigBuffer;
-extern char const *BigLine[RES_RED + 16];
+extern char const *BigLine[RES_RED + 2];
 
 extern int dat_read(char const *fname,
 		    int st,
