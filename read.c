@@ -474,6 +474,37 @@ int in_range( const struct range * range, int lineNo )
 	return false;
 }
 
+/* 数字、ハイフン、カンマだけからなる文字列からrangeを組み立てる
+ */
+const char *add_ranges_simple( struct range *range, const char *p )
+{
+	int st, to;
+	for (;;) {
+		char w_st[12];
+		char w_to[12];
+		while ( *p == ',' )
+			++p;
+		if ( *p != '-' && !isdigit(*p) )
+			break;
+		st = to = atoi(p);
+		sprintf( w_st, "%d", st );
+		sprintf( w_to, "%d", to );
+		while ( isdigit(*p) )
+			++p;
+		if (*p == '-') {
+			to = atoi(++p);
+			if ( to < 0 )
+				w_to[0] = '\0';
+			else
+				sprintf( w_to, "%d", to );
+			while (isdigit(*p))
+				++p;
+		}
+		add_range( range, w_st, w_to );
+	} 
+	return p;
+}
+
 /****************************************************************/
 /* linkの先頭部分(板まで)の生成
  * 戻り値は終端null文字を指す
@@ -753,29 +784,10 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		s += 9;
 	copy_start = s;
 
-	for (;;) {
-		char w_st[12];
-		char w_to[12];
-		while ( *s == ',' )
-			++s;
-		if ( *s != '-' && !isdigit(*s) )
-			break;
-		st = to = atoi(s);
-		sprintf( w_st, "%d", st );
-		sprintf( w_to, "%d", to );
-		while ( isdigit(*s) )
-			++s;
-		if (*s == '-') {
-			to = atoi(++s);
-			if ( to < 0 )
-				w_to[0] = '\0';
-			else
-				sprintf( w_to, "%d", to );
-			while (isdigit(*s))
-				s++;
-		}
-		add_range( &range, w_st, w_to );
-	} 
+	s = add_ranges_simple(&range, s);
+	if ( memcmp(s, "</a>", 4) == 0 )
+		add_ranges_simple(&range, s + 4);
+
 	st = to = -1;
  	if ( range.count > 0 )
 		get_range_minmax( &range, &st, &to );
