@@ -1318,7 +1318,7 @@ static int get_path_info(char const *path_info)
 #endif
 
 /****************************************************************/
-/*	SETTING_R.TXTÇÃì«Ç›Ç±Ç›							*/
+/*	SETTING_R.TXTÇÃì«Ç›Ç±Ç›					*/
 /****************************************************************/
 #ifdef	USE_SETTING_FILE
 void readSettingFile(const char *bbsname)
@@ -1332,33 +1332,43 @@ void readSettingFile(const char *bbsname)
 		/* SETTING_R.TXTÇì«Çﬁ */
 		char *cptr;
 		char *endp;
-		void *mmptr;
 		struct stat st;
-		fstat(fd, &st);
 #ifdef	USE_MMAP
+		void *mmptr;
+		fstat(fd, &st);
 		mmptr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 #else
-		mmptr = malloc(st.st_size);
-		read(fd, mmptr, st.st_size);
+		/* Ç‹Ç†ê›íËÉtÉ@ÉCÉãÇ™8kà»è„ê¿Ç©Ç»ÇØÇÍÇŒÇ¢Ç¢Ç∆Ç¢Ç§Ç±Ç∆Ç≈ */
+		char mmptr[8192];
+		st.st_size = read(fd, mmptr, 8192);
 #endif
-		for (cptr = mmptr, endp = cptr + st.st_size - 1; cptr < endp && *endp != '\n'; endp--)
+		for (cptr = mmptr, endp = cptr + st.st_size - 1;
+		     cptr < endp && *endp != '\n'; endp--)
 			;
-		for ( ; cptr && cptr < endp; cptr = memchr(cptr, '\n', endp - cptr), cptr?cptr++:0) {
+		for ( ; cptr && cptr < endp;
+		      cptr = memchr(cptr, '\n', endp - cptr), cptr?cptr++:0) {
 			if (*cptr != '\n' && *cptr != '#' && *cptr != ';') {
 				int i;
-				for (i = 0; i < sizeof(SettingParam)/sizeof(SettingParam[0]); i++) {
+				for (i = 0; i < sizeof(SettingParam)
+					     / sizeof(SettingParam[0]); i++) {
 					int len = strlen(SettingParam[i].str);
-					if (cptr[len] == '=' && strncmp(cptr, SettingParam[i].str, len) == 0) {
-						*SettingParam[i].val = atoi(cptr + len + 1);
+					if (cptr[len] == '='
+					    && strncmp(cptr,
+						       SettingParam[i].str,
+						       len) == 0) {
+						*SettingParam[i].val
+							= atoi(cptr + len + 1);
 						break;
 					}
 				}
 			}
 		}
+#if 0
 #ifdef	USE_MMAP
 		munmap(mmptr, st.st_size);
 #else
 		free(mmptr);
+#endif
 #endif
 		close(fd);
 	}
@@ -1535,9 +1545,11 @@ void atexitfunc(void)
 		fwrite(outbuf,1,outlen,stdout);
 	}
 #elif defined(GZIP)
-	fflush(stdout);
-	close(1);
-	waitpid(pid, NULL, 0);
+	if(gzip_flag) {
+		fflush(stdout);
+		close(1);
+		waitpid(pid, NULL, 0);
+	}
 #endif
 }
 
