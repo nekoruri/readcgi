@@ -4,7 +4,7 @@
 #define CUTRESLINK
 
 /* 一番最後に、「更新したレスを表示」のリンクを表示する */
-/* #define RELOADLINK */
+#define RELOADLINK
 
 /* Last-Modified を追加する */
 #define LASTMOD
@@ -33,7 +33,7 @@
 #define PREVENTRELOAD
 
 /* 上記の PREVENTRELOAD を指定したときに、更新されていても 304 を返す秒数 */
-#define FORCE_304_TIME 30
+#define FORCE_304_TIME 60
 
 /* gzip を使用して圧縮する */
 #define GZIP
@@ -48,3 +48,6 @@
  *     [-ERR (テキスト)]の場合はなんかエラーが起きた。
  */
 #define RAWOUT
+
+/* sageレスのとき、名前を太字にしない */
+/* #define SAGE_IS_PLAIN */
