@@ -997,7 +997,10 @@ int dat_out_raw(void)
 
 	/* もし報告された最終レス番号およびサイズが一致していなけ
 	   れば、最初の行にその旨を示す */
-	if(raw_lastnum > 0 && raw_lastsize > 0
+	/* raw_lastsize > 0 にするとnnn.0であぼーん検出を無効にできるが
+	   サーバーで削除したものはクライアントでも削除されるべきである */
+	if(raw_lastnum > 0
+	   && raw_lastsize >= 0
 	   && !(raw_lastnum <= lineMax
 		&& (BigLine[raw_lastnum - 1]
 			+ (BigLine[raw_lastnum] - BigLine[raw_lastnum - 1])
@@ -1454,11 +1457,13 @@ void zz_GetEnv(void)
 		char *p = strchr(zz_rw, '.');
 		if(p) {
 			/* raw=(last_article_no).(local_dat_size) */
-			raw_lastnum = atoi(zz_rw);
 			raw_lastsize = atoi(p + 1);
 		}
-		if(!p || raw_lastnum < 1 || raw_lastsize < 0) {
-			raw_lastnum = raw_lastsize = 0;
+		raw_lastnum = atoi(zz_rw);
+		if(raw_lastnum<0)
+			raw_lastnum = 0;
+		if(!p || raw_lastsize < 0) {
+			raw_lastsize = 0;	/* -INCR を返すため */
 		}
 	}
 #endif
