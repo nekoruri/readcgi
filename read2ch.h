@@ -87,7 +87,7 @@
 /** Header custumization **/
 
 /* 「全部読む」をつける */
-#undef ALL_ANCHOR 
+/* #define ALL_ANCHOR 常にON */
 
 /* pageの topに、CHUNK_NUM番ごとに区切ったレスへの anchorをつける
  */

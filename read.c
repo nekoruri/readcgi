@@ -436,16 +436,13 @@ const char *create_parent_link(void)
 		return url_expr;
 	}
 #ifdef CHECK_MOD_GZIP
-	if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
+	if (zz_server_software && strstr(zz_server_software,"mod_gzip/")!=NULL)
 		return url_expr;
-	} else
 #endif
 #ifdef GZIP
-	if (!gzip_flag)
-		strcpy(p,"index.html");
-	else
-#endif
+	if (gzip_flag)
 		strcpy(p,"index.htm");
+#endif
 	return url_expr;
 }
 
@@ -1409,7 +1406,7 @@ static int get_path_info(char const *path_info)
 	}
 	if (zz_st[0] == '-') {
 		/* stÇ™Ç»Ç¢éûÇÕ1Ç©ÇÁ */
-		strcpy(zz_st,"1");
+		zz_st[0] = '\0';
 	}
 	if (zz_ls[0]) {
 		/* lsÇóDêÊ */
@@ -1499,7 +1496,9 @@ void zz_GetEnv(void)
 	zz_remote_host = getenv("REMOTE_HOST");
 	zz_http_referer = getenv("HTTP_REFERER");
 #ifdef ALWAYS_PATH
-	zz_server_name = getenv("SERVER_NAME");
+	zz_server_name = getenv("HTTP_HOST");
+	if (!zz_server_name)
+		zz_server_name = getenv("SERVER_NAME");
 	zz_script_name = getenv("SCRIPT_NAME");
 #endif
 

@@ -70,10 +70,8 @@ CGIプロセスが終了すれば、資源は解放されるので明示的な解放は不要。
 read.cgi側によるindexの実装(experimental)
 /board/dat/idx/ディレクトリがあれば、各レスのindexを作成する。
 
-×ALL_ANCHOR
 △CHUNK_ANCHOR
-トップに「全部読む」/CHUNK_NUM毎に区切ったレスへのanchorをつける
-どちらかはあった方がよさそうだけど、
+トップにCHUNK_NUM毎に区切ったレスへのanchorをつける
 
 ▲SEPARATE_CHUNK_ANCHOR
 要CHUNK_ANCHOR
@@ -192,6 +190,8 @@ BadAccessの新しいバージョンを使う。
 
 ◎LASTMOD
 導入済み。ほぼ必須。
+
+△ALL_ANCHOR
 
 △LATEST_ANCHOR
 「最新レス LATEST_NUM」をつける
