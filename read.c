@@ -810,7 +810,7 @@ int dat_out()
 	out_html1();
 #ifdef RELOADLINK
 	if (lineMax == lineLast) {
-		html_reload(lineLast + 1);	/*  Button: Reload */
+		html_reload(lineLast);	/*  Button: Reload */
 	}
 #endif
 	html_foot(lineMax);
