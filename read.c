@@ -1164,6 +1164,8 @@ int dat_out(int level)
 
 		if (out_html(level, line, lineNo))
 			break;
+		if (lineNo==1 && is_imode() && nn_st==1)
+			++out_resN; 
 #ifdef RELOADLINK
 		lineLast = lineNo;
 #endif
