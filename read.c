@@ -32,9 +32,6 @@ static int pid;
 
 #include	"r2chhtml.h"
 #ifdef PREVENTRELOAD
-# ifndef LASTMOD
-#  define LASTMOD
-# endif
 # ifndef FORCE_304_TIME
 #  define FORCE_304_TIME  30    /* 秒で指定 */
 # endif
@@ -72,12 +69,10 @@ int gzip_flag;
 char const *zz_server_software;
 #endif
 
-#ifdef LASTMOD
 char const *zz_http_if_modified_since;
 time_t zz_fileLastmod;
 char lastmod_str[1024];
 char expires_str[1024];
-#endif
 
 #ifdef USE_MMAP
 static int zz_mmap_fd;
@@ -1236,7 +1231,6 @@ int getFileSize(char const *file)
 /****************************************************************/
 /*	Get file last-modified(getFileLastmod)			*/
 /****************************************************************/
-#ifdef LASTMOD
 time_t getFileLastmod(char *file)
 {
 	struct stat CountStat;
@@ -1257,7 +1251,6 @@ int get_lastmod_str(char *buf, time_t lastmod)
 		 gmtime(&lastmod));
 	return (1);
 }
-#endif
 /****************************************************************/
 /*	PATH_INFOを解析						*/
 /*	/board/							*/
@@ -1447,9 +1440,7 @@ void zz_GetEnv(void)
 #ifdef CHECK_MOD_GZIP
 	zz_server_software = getenv("SERVER_SOFTWARE");
 #endif
-#ifdef LASTMOD
 	zz_http_if_modified_since = getenv("HTTP_IF_MODIFIED_SINCE");
-#endif
 
 	if (!zz_remote_addr)
 		zz_remote_addr = KARA;
@@ -1646,7 +1637,6 @@ int main(void)
 		/* 現在の.datの MIME type に合わせる．テキストデータだし... */
 		pPrintf(pStdout, "Content-Type: text/plain\n");
 #endif
-#ifdef LASTMOD
 	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
@@ -1713,7 +1703,6 @@ int main(void)
 #ifdef PREVENTRELOAD
 	}
 #endif
-#endif
 
 #ifdef GZIP
 	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
@@ -1733,9 +1722,7 @@ int main(void)
 #endif
 
 /*  Get Last-Modified Date */
-#ifdef LASTMOD
 	pPrintf(pStdout, "Last-Modified: %.256s\n", lastmod_str);
-#endif
 
 #ifdef ZLIB
 	if ( gzip_flag == 0 ) pPrintf(pStdout, "\n");

@@ -22,9 +22,6 @@
 /* 一番最後に、「更新したレスを表示」のリンクを表示する */
 #define RELOADLINK
 
-/* Last-Modified を追加する */
-#define LASTMOD
-
 /* nofirst → n など、短縮形で指示できるようにする */
 #define GSTR2
 
