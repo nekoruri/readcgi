@@ -119,6 +119,12 @@
 #define	USE_SETTING_FILE
 #define	SETTING_FILE_NAME	"SETTING_R.TXT"
 
+/* 設定にSETTINGファイルではなく、SPECIAL_SETTINGを利用する */
+#define USE_INTERNAL_SETTINGS
+#define SPECIAL_SETTING \
+	{ "saku", "LINKTAGCUT=0" "\n" }, \
+/*	{ "dancesite", "FORCE_304_TIME=3" "\n" }, */
+
 /* check server use mod_gzip? */
 #define CHECK_MOD_GZIP
 

@@ -225,6 +225,7 @@ struct {
 struct {
 	const char *str;
 	int *val;
+	int len;
 	/*	文字列の長さをあらかじめ数えたり、２分探索用に並べておくのは、
 		拡張する時にちょっと。
 		負荷が限界にきていたら考えるべし。
@@ -1273,9 +1274,9 @@ int dat_read(char const *fname,
 	}
 #ifdef USE_MMAP
 	BigBuffer = mmap(NULL,
-			 zz_mmap_size = zz_fileSize + 0x10000,
-			 PROT_READ | PROT_WRITE,
-			 MAP_PRIVATE,
+			 zz_mmap_size = zz_fileSize,
+			 PROT_READ,
+			 MAP_SHARED,	/* MAP_PRIVATE */
 			 zz_mmap_fd = in,
 			 0);
 	if (BigBuffer == MAP_FAILED)
@@ -1531,60 +1532,86 @@ static int get_path_info(char const *path_info)
 /*	SETTING_R.TXTの読みこみ					*/
 /****************************************************************/
 #ifdef	USE_SETTING_FILE
-void readSettingFile(const char *bbsname)
+static void parseSetting(const void *mmptr, int size)
 {
-	char fname[1024];
-	int fd;
-	
-	sprintf(fname, "../%.256s/%s", bbsname, SETTING_FILE_NAME);
-	fd = open(fname, O_RDONLY);
-	if (fd >= 0) {
-		/* SETTING_R.TXTを読む */
-		char const *cptr;
-		char const *endp;
-		struct stat st;
-#ifdef	USE_MMAP
-		void *mmptr;
-		fstat(fd, &st);
-		mmptr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-#else
-		/* まあ設定ファイルが8k以上逝かなければいいということで */
-		char mmptr[8192];
-		st.st_size = read(fd, mmptr, 8192);
-#endif
-		for (cptr = mmptr, endp = cptr + st.st_size - 1;
-		     cptr < endp && *endp != '\n'; endp--)
-			;
-		for ( ; cptr && cptr < endp;
-		      cptr = memchr(cptr, '\n', endp - cptr), cptr?cptr++:0) {
-			if (*cptr != '\n' && *cptr != '#' && *cptr != ';') {
-				int i;
-				for (i = 0; i < sizeof(SettingParam)
-					     / sizeof(SettingParam[0]); i++) {
-					int len = strlen(SettingParam[i].str);
-					if (cptr + len < endp 
-					    && cptr[len] == '='
-					    && strncmp(cptr,
-						       SettingParam[i].str,
-						       len) == 0) {
-						*SettingParam[i].val
-							= atoi(cptr + len + 1);
-						break;
-					}
+	/* SETTING_R.TXTを読む */
+	char const *cptr;
+	char const *endp;
+	int i;
+	for (i = 0; i < sizeof(SettingParam) / sizeof(SettingParam[0]); i++)
+		SettingParam[i].len = strlen(SettingParam[i].str);
+	for (cptr = mmptr, endp = cptr + size - 1;
+	     cptr < endp && *endp != '\n'; endp--)
+		;
+	for ( ; cptr && cptr < endp;
+	      cptr = memchr(cptr, '\n', endp - cptr), cptr?cptr++:0) {
+		if (*cptr != '\n' && *cptr != '#' && *cptr != ';') {
+			int i;
+			for (i = 0; i < sizeof(SettingParam)
+				     / sizeof(SettingParam[0]); i++) {
+				int len = SettingParam[i].len;
+				if (cptr + len < endp 
+				    && cptr[len] == '='
+				    && strncmp(cptr,
+					       SettingParam[i].str,
+					       len) == 0) {
+					*SettingParam[i].val
+						= atoi(cptr + len + 1);
+					break;
 				}
 			}
 		}
+	}
+}
+
+void readSettingFile(const char *bbsname)
+{
+#ifndef USE_INTERNAL_SETTINGS
+	char fname[1024];
+	int fd;
+	sprintf(fname, "../%.256s/%s", bbsname, SETTING_FILE_NAME);
+	fd = open(fname, O_RDONLY);
+	if (fd < 0)
+		return;
 #ifdef	USE_MMAP
+	{
+		struct stat st;
+		void *mmptr;
+		fstat(fd, &st);
+		mmptr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+		parseSetting(mmptr, st.st_size);
 #ifdef  EXPLICIT_RELEASE
 		munmap(mmptr, st.st_size);
 		close(fd);
 #endif
-#else
-		/* mmptr == automatic variable... */
-		/* free(mmptr); */
-		close(fd);
-#endif  /* USE_MMAP */
 	}
+#else
+	{
+		/* まあ設定ファイルが8k以上逝かなければいいということで */
+		char mmbuf[8192];
+		int size = read(fd, mmbuf, sizeof(mmbuf));
+		parseSetting(mmbuf, size);
+		close(fd);
+	}
+#endif	/* USE_MMAP */
+#else
+	struct _setting {
+		char *board_name;
+		char *settings;
+	};
+	static struct _setting special_setting[] = {
+		SPECIAL_SETTING
+		{ NULL, },
+	};
+	struct _setting *setting;
+	for (setting = special_setting; setting->board_name; setting++) {
+		if (!strcmp(bbsname, setting->board_name))
+			break;
+	}
+	if (!setting->board_name)
+		return;
+	parseSetting(setting->settings, strlen(setting->settings));
+#endif	/* USE_INTERNAL_SETTINGS */
 }
 #endif	/*	USE_SETTING_FILE	*/
 
@@ -1833,7 +1860,15 @@ static void etag_calc(etagval *v)
 
 int need_etag(int st, int to, int ls)
 {
+	const char *env;
+	
 	if (BadAccess())	/* 「なんか変です」の場合のdatの読みこみを避けるため */
+		return false;
+	
+	env = getenv("SERVER_PROTOCOL");
+	if (!env || !*env)
+		return false;
+	if (strstr(env, "HTTP/1.1") == NULL)
 		return false;
 	/* ここには、If-None-Matchを付加しないUAのリスト
 	   (又は付加するUAのリスト)を置き
@@ -2228,6 +2263,7 @@ int main(void)
 	}
 #endif /* GZIP */
 
+	setvbuf(stdout, NULL, _IOFBF, 64 * 1024);
 	logOut("");
 
 	dat_read(fname, st, to, ls);
