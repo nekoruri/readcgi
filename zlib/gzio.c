@@ -11,6 +11,13 @@
 
 #include "zutil.h"
 
+#define TO_MEMORY
+
+#ifdef TO_MEMORY
+#define fwrite gzipped_fwrite
+extern int gzipped_fwrite(char *buf, int n, int m, FILE *dummy);
+#endif
+
 struct internal_state {int dummy;}; /* for buggy compilers */
 
 #ifndef Z_BUFSIZE
@@ -153,7 +160,15 @@ local gzFile gz_open (path, mode, fd)
     s->stream.avail_out = Z_BUFSIZE;
 
     errno = 0;
+#ifdef TO_MEMORY
+    if ( fd == 1 ) {
+	s->file = stdout;
+    } else {
+	s->file = fd < 0 ? F_OPEN(path, fmode) : (FILE*)fdopen(fd, fmode);
+    }
+#else
     s->file = fd < 0 ? F_OPEN(path, fmode) : (FILE*)fdopen(fd, fmode);
+#endif
 
     if (s->file == NULL) {
         return destroy(s), (gzFile)Z_NULL;
@@ -161,8 +176,15 @@ local gzFile gz_open (path, mode, fd)
     if (s->mode == 'w') {
         /* Write a very simple .gz header:
          */
+#ifdef TO_MEMORY
+	char tbuf[16];
+        sprintf(tbuf, "%c%c%c%c%c%c%c%c%c%c", gz_magic[0], gz_magic[1],
+             Z_DEFLATED, 0 /*flags*/, 0,0,0,0 /*time*/, 0 /*xflags*/, OS_CODE);
+	fwrite(tbuf, 1, 10, s->file);
+#else
         fprintf(s->file, "%c%c%c%c%c%c%c%c%c%c", gz_magic[0], gz_magic[1],
              Z_DEFLATED, 0 /*flags*/, 0,0,0,0 /*time*/, 0 /*xflags*/, OS_CODE);
+#endif
 	s->startpos = 10L;
 	/* We use 10L instead of ftell(s->file) to because ftell causes an
          * fflush on some systems. This version of the library doesn't use
@@ -333,7 +355,11 @@ local int destroy (s)
 	    err = inflateEnd(&(s->stream));
 	}
     }
+#ifdef TO_MEMORY
+    if (s->file != NULL && s->file != stdout && fclose(s->file)) {
+#else
     if (s->file != NULL && fclose(s->file)) {
+#endif
 #ifdef ESPIPE
 	if (errno != ESPIPE) /* fclose is broken for pipes in HP/UX */
 #endif
@@ -791,10 +817,19 @@ local void putLong (file, x)
     uLong x;
 {
     int n;
+#ifdef TO_MEMORY
+    char buf[4];
+    for (n = 0; n < 4; n++) {
+        buf[n] = (x & 0xff);
+        x >>= 8;
+    }
+    fwrite(buf,1,4,file);
+#else
     for (n = 0; n < 4; n++) {
         fputc((int)(x & 0xff), file);
         x >>= 8;
     }
+#endif
 }
 
 /* ===========================================================================

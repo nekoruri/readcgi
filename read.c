@@ -1,7 +1,6 @@
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<string.h>
-#include	<sys/mman.h>
 #include	<sys/stat.h>
 #include	<sys/types.h>
 #include	<ctype.h>
@@ -10,6 +9,9 @@
 #include	<unistd.h>
 #ifdef HAVE_READ2CH_H
 # include	"read2ch.h"
+#endif
+#ifdef USE_MMAP
+#include	<sys/mman.h>
 #endif
 
 #ifdef ZLIB
@@ -136,6 +138,9 @@ int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
 typedef int (*zz_printf_t) (gzFile, const char *, ...);
 static gzFile pStdout; /*  = (gzFile) stdout; */
 static zz_printf_t pPrintf = (zz_printf_t) fprintf;
+char *outbuf;
+int outlen = 0;
+int outalloc = 0;
 #else
 #define pPrintf fprintf
 #define pStdout stdout
@@ -1325,6 +1330,28 @@ void zz_GetEnv(void)
 	isbusytime = IsBusy2ch();
 }
 
+#ifdef ZLIB
+int gzipped_fwrite(char *buf, int n, int m, void *dummy)
+{
+	int l = n*m;
+
+	if ( outlen+l > outalloc ) {
+		outalloc = outlen+l+40960;  /* 多めに */
+		if ( outlen == 0 ) {
+			outbuf = malloc(outalloc);
+		} else {
+			if ( outbuf == NULL ) return m;  /* already error */
+			outbuf = realloc(outbuf, outalloc);
+		}
+	}
+	if ( outbuf != NULL ) {
+		memcpy(outbuf+outlen, buf, l);
+	}
+	outlen += l;
+	return m;
+}
+#endif
+
 /*----------------------------------------------------------------------
 	終了処理
 ----------------------------------------------------------------------*/
@@ -1336,6 +1363,22 @@ void atexitfunc(void)
 		gzflush(pStdout, Z_FINISH);
 		fflush(stdout);
 		gzclose(pStdout);
+
+		if ( outlen != 0 && outbuf == NULL ) {
+			pPrintf = (zz_printf_t) fprintf;
+			pStdout = (gzFile) stdout;
+			pPrintf(pStdout,"\n");
+			html_error(ERROR_NO_MEMORY);
+		}
+		if ( gzip_flag == 2 ) {
+			fprintf(stdout,"Content-Encoding: x-gzip\n");
+		} else {
+			fprintf(stdout,"Content-Encoding: gzip\n");
+		}
+		fprintf(stdout,"Content-Length: %d\n\n",outlen);
+		fflush(stdout);
+
+		fwrite(outbuf,1,outlen,stdout);
 	}
 #else
 	fflush(stdout);
@@ -1417,14 +1460,19 @@ int main()
 
 #ifdef GZIP
 	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
-		gzip_flag = 1;
-		pPrintf(pStdout, "Content-Encoding: x-gzip\n");
+		gzip_flag = 2;
 	} else if (zz_http_encoding && strstr(zz_http_encoding, "gzip")) {
 		gzip_flag = 1;
-		pPrintf(pStdout, "Content-Encoding: gzip\n");
 	} else {
 		gzip_flag = 0;
 	}
+#ifndef ZLIB
+	if ( gzip_flag == 2 ) {
+		pPrintf(pStdout, "Content-Encoding: x-gzip\n");
+	} else if ( gzip_flag == 1 ) {
+		pPrintf(pStdout, "Content-Encoding: gzip\n");
+	}
+#endif
 #endif
 
 /*  Get Last-Modified Date */
@@ -1432,7 +1480,11 @@ int main()
 	pPrintf(pStdout, "Last-Modified: %.256s\n", lastmod_str);
 #endif
 
+#ifdef ZLIB
+	if ( gzip_flag == 0 ) pPrintf(pStdout, "\n");
+#else
 	pPrintf(pStdout, "\n");
+#endif
 #ifdef DEBUG
 	sleep(1);
 #endif
