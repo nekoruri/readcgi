@@ -407,13 +407,13 @@
 	"<hr><center><a href=\"" path "\">新レスの表\示</a></center><hr>"
 
 #define R2CH_HTML_RELOAD \
-	R2CH_HTML_T_RELOAD("read.cgi?bbs=%s&key=%s&st=%d" NO_FIRST)
+	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" NO_FIRST)
 
 #define R2CH_HTML_PATH_RELOAD \
 	R2CH_HTML_T_RELOAD("%d-")
 
 #define R2CH_HTML_RELOAD_I \
-	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&i=t" NO_FIRST "\">新レスの表\示</a></center><hr>"
+	"<hr><center><a href=\""CGINAME"?bbs=%s&key=%s&st=%d&i=t" NO_FIRST "\">新レスの表\示</a></center><hr>"
 
 /*
  * FOOTER
