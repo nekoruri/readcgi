@@ -838,9 +838,15 @@ Break:
 	This->rest -= bufp - *This->buffers;
 	*++This->buffers = bufp;
 	
-	/* ‹æØ‚è––‚Ì‹ó”’‚ğíœ */
-	if (*p == ' ')
-		++p;
+	/* ‹æØ‚è’¼Œã‚Ì‹ó”’‚ğíœ */
+	if (*p == ' ') {
+#ifdef	TYPE_TERI
+		if (!(*(p+1) == '<' && *(p+2) == '>'))
+#else
+		if (!(*(p+1) == ','))
+#endif
+			++p;
+	}
 	return p;
 }
 
