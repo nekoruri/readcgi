@@ -1006,9 +1006,11 @@ int dat_read(char const *fname,
 		if (!nn_st && !nn_to && !nn_ls)
 			nn_ls = RES_IMODE;
 	}
-	if (strncmp(zz_nf, "t", 1))
+	if (strncmp(zz_nf, "t", 1)) {
 		nn_ls--;
-	if (nn_ls < 0)
+		if(nn_ls == 0)
+			nn_ls = -1;
+	} else if (nn_ls < 0)
 		nn_ls = 0;
 
 	in = open(fname, O_RDONLY);
