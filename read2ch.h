@@ -18,6 +18,7 @@
 
 /* 混雑時間帯に、>>000 形式のレスへのリンクを削除する */
 #define CUTRESLINK
+#define LINKTAGCUT (1)
 
 /* 一番最後に、「更新したレスを表示」のリンクを表示する */
 #define RELOADLINK
@@ -62,9 +63,9 @@
 
 /* raw=xxx.yyyを有効にする。 xxx=最終レス番号, yyy=そのときのサイズ。
  * 一行目はステータス:
- *     [+OK] の場合は差分のみを送信する。
- *     [-INCR] (Incorrect)の場合はすべてのデータを送信する。
- *     [-ERR (テキスト)]の場合はなんかエラーが起きた。
+ *	[+OK] の場合は差分のみを送信する。
+ *	[-INCR] (Incorrect)の場合はすべてのデータを送信する。
+ *	[-ERR (テキスト)]の場合はなんかエラーが起きた。
  */
 #define RAWOUT
 
@@ -94,5 +95,9 @@
    本来ならばどこかから取得できる? */
 #define N_INDEX_DIGESTS	10
 #define N_INDEX_THREADS	30
+
+/* 板毎に設定が書いてあるファイル、使うけ？ */
+#define	USE_SETTING_FILE
+#define	SETTING_FILE_NAME	"SETTING_R.TXT"
 
 #endif /* READ2CH_H__ */

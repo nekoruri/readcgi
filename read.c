@@ -39,6 +39,10 @@
 # include        "util_date.h" /* from Apache 1.3.20 */
 #endif
 
+#if	(defined(CHUNK_ANCHOR) && CHUNK_NUM > RES_NORMAL) 
+# error "Too large CHUNK_NUM!!"
+#endif
+
 char const *zz_remote_addr;
 char const *zz_remote_host;
 char const *zz_http_referer;
@@ -131,6 +135,111 @@ int outalloc = 0;
 static int pid;
 #endif
 
+#ifdef	USE_SETTING_FILE
+/*
+	SETTING_R.TXTは
+	---
+	FORCE_304_TIME=30
+	LIMIT_PM=23
+	RES_NORMAL=50
+	MAX_FILESIZE=512
+	LINKTAGCUT=0
+	---
+	など。空行可。
+	#と;から開始はコメント・・・というより、
+	=がなかったり、マッチしなかったりしたら無視
+	最後の行に改行が入ってなかったら、それも無視される(バグと書いて仕様と読む)
+	
+	RES_YELLOW-RES_NORMALまでは、#defineのままでいいかも。
+*/
+struct {
+	int	Res_Yellow;
+	int Res_RedZone;
+	int	Res_Imode;
+	int Res_Normal;
+	int Max_FileSize;	/*	こいつだけ、KByte単位	*/
+	int Limit_PM;
+	int Limit_AM;
+#ifdef PREVENTRELOAD
+	int Force_304_Time;
+#endif
+#ifdef	LATEST_ANCHOR
+	int Latest_Num;
+#endif
+#ifdef	CUTRESLINK
+	int LinkTagCut;
+#endif
+} Settings = {
+	RES_YELLOW,
+	RES_REDZONE,
+	RES_IMODE,
+	RES_NORMAL,
+	MAX_FILESIZE / 1024,
+	LIMIT_PM,
+	LIMIT_AM,
+#ifdef	PREVENTRELOAD
+	FORCE_304_TIME,
+#endif
+#ifdef	LATEST_ANCHOR
+	LATEST_NUM,
+#endif
+#ifdef	CUTRESLINK
+	LINKTAGCUT,
+#endif
+};
+struct {
+	const char *str;
+	int *val;
+	/*	文字列の長さをあらかじめ数えたり、２分探索用に並べておくのは、
+		拡張する時にちょっと。
+		負荷が限界にきていたら考えるべし。
+	*/
+} SettingParam[] = {
+	{	"RES_YELLOW",	&Settings.Res_Yellow,	},
+	{	"RES_REDZONE",	&Settings.Res_RedZone,	},
+	{	"RES_IMODE",	&Settings.Res_Imode,	},
+	{	"RES_NORMAL",	&Settings.Res_Normal,	},
+	{	"MAX_FILESIZE",	&Settings.Max_FileSize,	},
+	{	"LIMIT_PM",		&Settings.Limit_PM,		},
+	{	"LIMIT_AM",		&Settings.Limit_AM,		},
+#ifdef	PREVENTRELOAD
+	{	"FORCE_304_TIME",	&Settings.Force_304_Time,	},
+#endif
+#ifdef	LATEST_ANCHOR
+	{	"LATEST_NUM",	&Settings.Latest_Num,	},
+#endif
+#ifdef	CUTRESLINK
+	{	"LINKTAGCUT",	&Settings.LinkTagCut	},
+#endif
+};
+#undef	RES_YELLOW
+#define	RES_YELLOW	Settings.Res_Yellow
+#undef	RES_REDZONE
+#define	RES_REDZONE	Settings.Res_RedZone
+#undef	RES_IMODE
+#define	RES_IMODE	Settings.Res_Imode
+#undef	RES_NORMAL
+#define	RES_NORMAL	Settings.Res_Normal
+#undef	MAX_FILESIZE
+#define	MAX_FILESIZE	(Settings.Max_FileSize * 1024)
+#undef	LIMIT_PM
+#define	LIMIT_PM	Settings.Limit_PM
+#undef	LIMIT_AM
+#define	LIMIT_AM	Settings.Limit_AM
+#ifdef	PREVENTRELOAD
+#undef	FORCE_304_TIME
+#define	FORCE_304_TIME	Settings.Force_304_Time
+#endif
+#ifdef	LATEST_ANCHOR
+#undef	LATEST_NUM
+#define	LATEST_NUM	Settings.Latest_Num
+#endif
+#ifdef	CUTRESLINK
+#undef	LINKTAGCUT
+#define	LINKTAGCUT	Settings.LinkTagCut
+#endif
+#endif	/*	USE_SETTING_FILE	*/
+
 #ifdef CUTRESLINK
 /* <ctype.h>等とかぶってたら、要置換 */
 #define false (0)
@@ -138,7 +247,6 @@ static int pid;
 #define _C_ (1<<0) /* datチェック用区切り文字等 */
 #define _U_ (1<<1) /* URLに使う文字 */
 #define _S_ (1<<2) /* SJIS1バイト目＝<br>タグ直前の空白が削除可かを適当に判定 */
-#define LINKTAGCUT (1)
 
 /* #define isCheck(c) (flagtable[(unsigned char)(c)] & _C_) */
 #define isCheck(c) (flagtable[/*(unsigned char)*/(c)] & _C_)
@@ -1006,11 +1114,9 @@ int dat_read(char const *fname,
 		if (!nn_st && !nn_to && !nn_ls)
 			nn_ls = RES_IMODE;
 	}
-	if (strncmp(zz_nf, "t", 1)) {
+	if (strncmp(zz_nf, "t", 1))
 		nn_ls--;
-		if(nn_ls == 0)
-			nn_ls = -1;
-	} else if (nn_ls < 0)
+	if (nn_ls < 0)
 		nn_ls = 0;
 
 	in = open(fname, O_RDONLY);
@@ -1093,6 +1199,7 @@ time_t getFileLastmod(char *file)
 	time_t ccc;
 	if (!stat(file, &CountStat)) {
 		ccc = CountStat.st_mtime;
+		zz_fileSize = CountStat.st_size;
 		return ccc;
 	} else
 		return -1;
@@ -1207,6 +1314,55 @@ static int get_path_info(char const *path_info)
 	return 1;
 }
 #endif
+
+/****************************************************************/
+/*	SETTING_R.TXTの読みこみ							*/
+/****************************************************************/
+#ifdef	USE_SETTING_FILE
+void readSettingFile(const char *bbsname)
+{
+	char fname[1024];
+	int fd;
+	
+	sprintf(fname, "../%.256s/%s", bbsname, SETTING_FILE_NAME);
+	fd = open(fname, O_RDONLY);
+	if (fd >= 0) {
+		/* SETTING_R.TXTを読む */
+		char *cptr;
+		char *endp;
+		void *mmptr;
+		struct stat st;
+		fstat(fd, &st);
+#ifdef	USE_MMAP
+		mmptr = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+#else
+		mmptr = malloc(st.st_size);
+		read(fd, mmptr, st.st_size);
+#endif
+		for (cptr = mmptr, endp = cptr + st.st_size - 1; cptr < endp && *endp != '\n'; endp--)
+			;
+		for ( ; cptr && cptr < endp; cptr = memchr(cptr, '\n', endp - cptr), cptr?cptr++:0) {
+			if (*cptr != '\n' && *cptr != '#' && *cptr != ';') {
+				int i;
+				for (i = 0; i < sizeof(SettingParam)/sizeof(SettingParam[0]); i++) {
+					int len = strlen(SettingParam[i].str);
+					if (cptr[len] == '=' && strncmp(cptr, SettingParam[i].str, len) == 0) {
+						*SettingParam[i].val = atoi(cptr + len + 1);
+						break;
+					}
+				}
+			}
+		}
+#ifdef	USE_MMAP
+		munmap(mmptr, st.st_size);
+#else
+		free(mmptr);
+#endif
+		close(fd);
+	}
+}
+#endif	/*	USE_SETTING_FILE	*/
+
 /****************************************************************/
 /*	GET Env							*/
 /****************************************************************/
@@ -1301,6 +1457,9 @@ void zz_GetEnv(void)
 		}
 	}
 #endif
+#ifdef	USE_SETTING_FILE
+	readSettingFile(zz_bs);
+#endif
 	isbusytime = IsBusy2ch();
 }
 
@@ -1391,6 +1550,8 @@ int main(void)
 #endif
 	char fname[1024];
 
+#if	('\xFF' != 0xFF)
+#error	-funsigned-char required.
 	/* このシステムでは、-funsigned-charを要求する */
 	if ((char)0xFF != (unsigned char)0xFF) {
 		puts("Content-Type: text/html\n"
@@ -1398,6 +1559,7 @@ int main(void)
 		     "-funsigned-char required.");
 		return 0;
 	}
+#endif
 
 #ifdef ZLIB
 	pStdout = (gzFile) stdout;
@@ -1975,9 +2137,7 @@ void html_head(int level, char const *title, int line)
 	else
 		pPrintf(pStdout, R2CH_HTML_HEADER_2, title);
 }
-#if (defined(CHUNK_ANCHOR) && CHUNK_NUM > RES_NORMAL) 
-# error "Too large CHUNK_NUM!!"
-#endif
+
 /****************************************************************/
 /*	RELOAD						        */
 /****************************************************************/
