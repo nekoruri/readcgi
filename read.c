@@ -103,6 +103,8 @@ char zz_st[1024];
 char zz_to[1024];
 char zz_nf[1024];
 char zz_im[1024];
+char zz_parent_link[128];
+char zz_cgi_path[128];
 long nn_ky;	/* zz_kyを数字にしたもの */
 #ifdef RAWOUT
 char zz_rw[1024];
@@ -414,12 +416,10 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 }
 
 /* 掲示板に戻るのLINK先作成 */
-const char *create_parent_link(void)
+void zz_init_parent_link(void)
 {
-	static char url_expr[128] = "";
-	char * p = url_expr;
+	char * p = zz_parent_link;
 
-	if (url_expr[0]) return url_expr;	/* 既に作成済み */
 #ifdef USE_PATH
 #ifdef USE_INDEX
 	if (path_depth==2)
@@ -433,26 +433,22 @@ const char *create_parent_link(void)
 		p += sprintf(p,"../%.20s/",zz_bs);
 	if (is_imode() ) {
 		strcpy(p,"i/");
-		return url_expr;
+		return;
 	}
 #ifdef CHECK_MOD_GZIP
 	if (zz_server_software && strstr(zz_server_software,"mod_gzip/")!=NULL)
-		return url_expr;
+		return;
 #endif
 #ifdef GZIP
 	if (gzip_flag)
 		strcpy(p,"index.htm");
 #endif
-	return url_expr;
 }
 
 /* bbs.cgiのLINK先作成 */
-const char *create_bbs_path(void)
+void zz_init_cgi_path(void)
 {
-	static char url_expr[128] = "";
-	char * p = url_expr;
-
-	if (url_expr[0]) return url_expr;	/* 既に作成済み */
+	char * p = zz_cgi_path;
 #ifdef USE_PATH
 #ifdef USE_INDEX
 	if (path_depth==2)
@@ -464,7 +460,6 @@ const char *create_bbs_path(void)
 	else
 #endif
 		*p = '\0';
-	return url_expr;
 }
 
 /*
@@ -1090,7 +1085,7 @@ int dat_out_raw(void)
 		/* 差分送信用に先頭を設定 */
 		begin = BigLine[raw_lastnum];
 	}
-	pPrintf(pStdout, " %d\n", end - begin);
+	pPrintf(pStdout, " %d/%dK\n", end - begin, MAX_FILESIZE / 1024);
 	/* raw_lastnum から全部を送信する */
 #ifdef ZLIB
 	if (gzip_flag)
@@ -1916,6 +1911,9 @@ int main(void)
 		st = to = 0;
 	}
 
+	zz_init_parent_link();
+	zz_init_cgi_path();
+
 #ifdef USE_INDEX
 	/* ここでindexを読み込んでくる
 	   実はすでに、.datもマッピングされちゃってるので、
@@ -2195,13 +2193,13 @@ void html_error(enum html_error_t errorcode)
 			zz_soko, tmp);
 		if (!stat(doko, &CountStat)) {
 			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, 
-				create_bbs_path(), doko, tmp);
+				zz_cgi_path, doko, tmp);
 		} else {
 			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					create_bbs_path(), doko, tmp);
+					zz_cgi_path, doko, tmp);
 			} else {
 				sprintf(doko, TEMP_DIR "%.50s.dat",
 					zz_bs, tmp);
@@ -2210,7 +2208,7 @@ void html_error(enum html_error_t errorcode)
 						tmp);
 				} else {
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
-						create_bbs_path(), zz_bs);
+						zz_cgi_path, zz_bs);
 				}
 			}
 		}
@@ -2466,7 +2464,7 @@ void html_head(int level, char const *title, int line)
 #endif
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1("%s", "%s"),
-			title, create_parent_link());
+			title, zz_parent_link);
 
 	/* ALL_ANCHOR は常に生きにする
 	   ただし、CHUNK_ANCHORが生きで、かつisbusytimeには表示しない */
@@ -2504,7 +2502,7 @@ void html_head(int level, char const *title, int line)
 	} else {
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1("%s", "%s", "%s"),
 			title,
-			create_parent_link(),
+			zz_parent_link,
 			create_link(1,RES_IMODE, 0,0,0) );
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_2("%s", "%d"),
 			create_link(0,0, RES_IMODE, 1,0),
@@ -2587,7 +2585,7 @@ static void html_foot(int level, int line, int stopped)
 #ifdef PREV_NEXT_ANCHOR
 	if (!isbusytime) {
 		pPrintf(pStdout, R2CH_HTML_RETURN_BOARD("%s"),
-			create_parent_link());
+			zz_parent_link);
 		pPrintf(pStdout, R2CH_HTML_ALL_ANCHOR("%s"),
 			create_link(0,0,0,0,0) );
 	}
@@ -2657,7 +2655,7 @@ static void html_foot(int level, int line, int stopped)
 #endif
 	if (line <= RES_RED && !stopped) {
 		pPrintf(pStdout, R2CH_HTML_FORM("%s", "%s", "%s", "%ld"),
-			create_bbs_path(),
+			zz_cgi_path,
 			zz_bs, zz_ky, currentTime);
 	}
 
@@ -2673,7 +2671,7 @@ void html_foot_im(int line, int stopped)
 {
 	if (line <= RES_RED && !stopped ) {
 		pPrintf(pStdout, R2CH_HTML_FORM_IMODE("%s", "%s", "%s", "%ld"),
-			create_bbs_path(),
+			zz_cgi_path,
 			zz_bs, zz_ky, currentTime); 
 	}
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
