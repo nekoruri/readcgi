@@ -1164,7 +1164,11 @@ int dat_out_raw(void)
 	}
 	/* raw_lastnum ‚©‚ç‘S•”‚ğ‘—M‚·‚é */
 	for(i = raw_lastnum; i < lineMax; i++) {
+#ifndef CUTRESLINK
 		pPrintf(pStdout, "%s\n", BigLine[i]);
+#else
+		pPrintf(pStdout, "%.*s\n", BigLine[i+1] - BigLine[i], BigLine[i]);
+#endif 
 	}
 	return 1;
 }
