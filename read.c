@@ -64,6 +64,9 @@ static int pid;
 #if !defined(READ_KAKO)
 # undef READ_TEMP
 #endif
+#if	defined(RAWOUT_MULTI) && !(defined(RAWOUT) && defined(Katjusha_DLL_REPLY))
+# undef RAWOUT_MULTI
+#endif
 
 int zz_head_request; /* !0 = HEAD request */
 char const *zz_remote_addr;
@@ -160,7 +163,10 @@ long currentTime;
 int isbusytime = 0;
 
 char const *LastChar(char const *src, char c);
-char *GetString(char const *line, char *dst, size_t dst_size, char const *tgt);
+char const *GetString(char const *line, char *dst, size_t dst_size, char const *tgt);
+time_t getFileLastmod(char const *file);
+int print_error(enum html_error_t errorcode, int isshowcode, const char *extinfo);
+static void create_fname(char *fname, const char *bbs, const char *key);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
 static void html_foot(int level, int line,int);
@@ -1271,6 +1277,143 @@ int dat_out_raw(void)
 
 	return 1;
 }
+
+#ifdef	RAWOUT_MULTI
+static int split_multireq(const char *req, char *bbs, char *key)
+{
+	const char *p;
+	p = strchr(req, '/');
+	if (p) {
+		memcpy(bbs, req, p-req);
+		bbs[p-req] = '\0';
+		req = p + 1;
+	}
+	*key = '\0';
+	p = strchr(req, '.');
+	if (!p)
+		return 0;
+	memcpy(key, req, p-req);
+	key[p-req] = '\0';
+	return atoi(p+1);
+}
+
+/* エラー処理で楽をするため */
+struct multiout_resource {
+	char *Buffer;
+	int fd;
+	int fileSize;
+	char *info;
+};
+
+/* 戻り値は
+   0   正常終了
+   -1  未更新or取得済みの範囲が0以下  ("+OK 0/512K"を返す)
+   正  html_error_tのエラーコード +1  ("-ERR ..."を返す) */
+static int exec_multiout(struct multiout_resource *rp, const char *req)
+{
+	int lastsize;
+	char fname[1024];
+	time_t lastmod;
+	char *ip = rp->info;
+	
+	lastsize = split_multireq(req, zz_bs, zz_ky);
+	ip += sprintf(ip, "\t""Request:%s/%s.%u", zz_bs, zz_ky, lastsize);
+	if (lastsize <= 0)
+		return -1;
+	
+	create_fname(fname, zz_bs, zz_ky);
+	lastmod = getFileLastmod(fname);
+	rp->fileSize = zz_fileSize;
+	if (lastmod == -1 || rp->fileSize == 0)
+		return 1 + ERROR_NOT_FOUND;
+	ip += sprintf(ip, "\t""LastModify:%u", (unsigned)lastmod);
+	
+	if (rp->fileSize > MAX_FILESIZE)
+		return 1 + ERROR_TOO_HUGE;
+	if (rp->fileSize == lastsize)
+		return -1;
+	if (rp->fileSize < lastsize)
+		return 1 + ERROR_ABORNED;
+	
+	rp->fd = open(fname, O_RDONLY);
+	if (rp->fd < 0)
+		return 1 + ERROR_NOT_FOUND;
+	
+#ifdef USE_MMAP
+	rp->Buffer = mmap(NULL, rp->fileSize, PROT_READ, MAP_PRIVATE, rp->fd, 0);
+	if (rp->Buffer == MAP_FAILED)
+		return 1 + ERROR_NO_MEMORY;
+#else
+	rp->Buffer = malloc(rp->fileSize);
+	if (!rp->Buffer)
+		return 1 + ERROR_NO_MEMORY;
+	/* 全部読むのは無駄だが、基本的にmmapが使われるはずなので気にしない */
+	read(rp->fd, rp->Buffer, rp->fileSize);
+#endif
+	if (rp->Buffer[lastsize-1] != '\n')
+		return 1 + ERROR_ABORNED;
+	
+	pPrintf(pStdout, "+OK %d/%dK%s\n",
+		rp->fileSize - lastsize, MAX_FILESIZE / 1024, rp->info);
+	
+#ifdef ZLIB
+	if (gzip_flag)
+		gzwrite(pStdout, (const voidp)(rp->Buffer + lastsize), rp->fileSize - lastsize);
+	else
+#endif
+		fwrite(rp->Buffer + lastsize, 1, rp->fileSize - lastsize, pStdout);
+	
+	/* 資源の解放は戻ってから */
+	return 0;
+}
+
+/* 処理した個数を返す
+*/
+int rawout_multi()
+{
+	char buff[256];
+	char info[512];
+	struct multiout_resource res;
+	int count = 0;
+	const char *query = zz_query_string;
+	
+	while ((query = GetString(query, buff, sizeof(buff), "dat")) != NULL) {
+		int retcode;
+		buff[40] = '\0';
+		/* 手抜き用の初期化 */
+		res.Buffer = NULL;
+		res.fd = -1;
+		res.fileSize = 0;
+		res.info = info;
+		
+		retcode = exec_multiout(&res, buff);
+		if (retcode) {
+			/* エラー時の処理 */
+			if (retcode < 0) {
+				pPrintf(pStdout, "+OK 0/%dK" "%s" "\n", MAX_FILESIZE / 1024, info);
+			} else {
+				print_error((enum html_error_t)(retcode-1), true, info);
+			}
+		}
+		
+		/* 手抜きの資源解放 */
+		if (res.fd >= 0)
+			close(res.fd);
+#ifdef	USE_MMAP
+		if (res.Buffer && res.Buffer != MAP_FAILED)
+			munmap(res.Buffer, res.fileSize);
+#else
+		if (res.Buffer)
+			free(res.Buffer);
+#endif
+		
+		if (++count > RAWOUT_MULTI_MAX)
+			break;
+	}
+	return count;
+}
+#endif
+
 #endif
 
 /****************************************************************/
@@ -2503,6 +2646,14 @@ int main(void)
 
 	setvbuf(stdout, NULL, _IOFBF, 64 * 1024);
 	logOut("");
+#ifdef	RAWOUT_MULTI
+	if (rawmode && !*zz_bs && !*zz_ky && !raw_lastnum && !raw_lastsize && !path_depth) {
+		/* path_depthが１以上だと、create_fnameがsubject取得モードになってしまう */
+		/* zz_bsの初期値の設定も考えられるが、Last-Modifiedの出力が嫌 */
+		if (rawout_multi())
+			return 0;	/* １つでも処理していたら、ここで終わり */
+	}
+#endif
 
 	dat_read(fname, st, to, ls);
 
@@ -2588,8 +2739,9 @@ const char * create_kako_link(const char * dir_type, const char * key)
 #endif
 /****************************************************************/
 /*	ERROR END(html_error)					*/
+/* isshowcodeとextinfoはRAWOUT時しか使わない */
 /****************************************************************/
-void html_error(enum html_error_t errorcode)
+int print_error(enum html_error_t errorcode, int isshowcode, const char *extinfo)
 {
 	char tmp[256];
 	char doko[256];
@@ -2625,17 +2777,23 @@ void html_error(enum html_error_t errorcode)
 #ifdef RAWOUT
 	if(rawmode) {
 		/* -ERR (message)はエラー。 */
+		char str[512];
+		int retcode = (errorcode + 1) * 100;
 		if (errorcode == ERROR_NOT_FOUND) {
 			if (find_kakodir(doko, tmp, "dat") || find_kakodir(doko, tmp, "dat.gz")) {
-				pPrintf(pStdout, "-ERR " ERRORMES_DAT_FOUND "\n", doko);
+				sprintf(str, ERRORMES_DAT_FOUND " %s", doko);
+				mes = str;
+				retcode += 1;
 			} else if (find_tempdir(doko, tmp, "dat")) {
-				pPrintf(pStdout, "-ERR %s\n", ERRORMES_TEMP_FOUND);
-			} else {
-				pPrintf(pStdout, "-ERR %s\n", mes);
+				mes = ERRORMES_TEMP_FOUND;
+				retcode += 2;
 			}
-		} else
+		}
+		if (isshowcode)
+			pPrintf(pStdout, "-ERR %d %s%s\n", retcode, mes, extinfo);
+		else
 			pPrintf(pStdout, "-ERR %s\n", mes);
-		exit(0);
+		return 0;
 	}
 #endif
 	
@@ -2684,6 +2842,11 @@ void html_error(enum html_error_t errorcode)
 
 	pPrintf(pStdout, R2CH_HTML_ERROR_6);
 
+	return 0;
+}
+void html_error(enum html_error_t errorcode)
+{
+	print_error(errorcode, false, "");
 	exit(0);
 }
 #if 0
@@ -2731,7 +2894,11 @@ int html_error999(char const *mes)
 #define GETSTRING_LINE_DELIM '&'
 #define GETSTRING_VALUE_DELIM '='
 #define MAX_QUERY_STRING 200
-char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
+/* 仕様変更
+   戻り値として、dstではなく(使われていないので)
+   line内の次の位置を返すようにした。
+   tgtが見つからない時はNULLを返す。 */
+char const *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 {
 	int	i;
 
@@ -2744,6 +2911,7 @@ char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 	int value_len;
 	int value_start;
 
+	*dst = '\0';
 	for(i=0;i<MAX_QUERY_STRING;i++)
 	{
 		/* 行末を見つける */
@@ -2776,16 +2944,16 @@ char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 				memcpy( dst, line + value_start, value_len );
 				dst[value_len] = '\0';
 
-				return dst;
+				return line + line_len + (delim_ptr != NULL);	/* skip delim */
 			}
 		}
 
 		if ( !delim_ptr )
 			break;
 
-		line += line_len + 1; /* skip delim */
+		line = delim_ptr + 1;	/* skip delim */
 	}
-	return	dst;
+	return	NULL;
 }
 /****************************************************************/
 /*								*/

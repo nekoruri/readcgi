@@ -95,6 +95,27 @@
  */
 #define	RAWOUT_PARTIAL
 
+/* raw=0.0でbbsとkeyが指定されていない時、
+ * dat=board/key.size形式での複数のリクエストを有効にする
+ * 受け付けるのは差分のみで、sizeが0の場合は
+ * +OK 0/maxK
+ * の行を返す。
+ * 同じ板が連続する時はboard/を省略可能。
+ * あぼーん時の返信はKatjusha_DLL_REPLYに倣う。
+ *
+ * 返信のステータス行に以下の情報が追加される場合がある。
+ * Request:board/key.size
+ *     個々のリクエストをそのまま返す。
+ * LastModify:time
+ *     Last-Modified:で返すべき値をtime()値のまま返す。
+ *
+ * また、-ERR は
+ * -ERR 200 そんな板orスレッド・・・
+ * 等として返される。
+ */
+#define	RAWOUT_MULTI
+#define	RAWOUT_MULTI_MAX	50
+
 /* mmap(2) を活用。
    資源の開放は積極的にサボりたい。 */
 #define USE_MMAP

@@ -54,6 +54,11 @@ rawmodeでは、Accept-Encoding: (gzip|x-gzip)でないと「ブラウザが変です」
 △RAWOUT_PARCIAL
 raw=0.0のリクエスト時、st=nn, to=nn, ls=nnを参照して部分取得可能にする
 
+△RAWOUT_MULTI
+raw=0.0でbbsもkeyも指定されていない時、dat=board/key.size形式で
+複数のdat差分の一括取得を可能にする。
+要RAWOUT,Katjusha_DLL_REPLY
+
 △USE_MMAP
 fread(read)の代わりにmmapを使用する。
 負荷の低減が期待できる。

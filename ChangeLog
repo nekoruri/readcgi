@@ -1,5 +1,8 @@
 tag: HEAD
 
+  RAWOUT_MULTIを実装。
+
+
 tag: YAKIN20011021: 実験サーバ choco.2ch.net および piza, teri2 にて ver 5.26として採用。
 (chocoはmod_gzipがないため、CHECK_MOD_GZIPをoffにして導入
 mod_gzipがあるサーバはCHECK_MOD_GZIPをon)
