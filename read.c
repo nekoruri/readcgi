@@ -118,6 +118,9 @@ char zz_rw[1024];
 #ifdef READ_KAKO
 char read_kako[256] = "";
 #endif
+#ifdef	AUTO_KAKO
+int zz_dat_where;	/* 0: dat/  1: temp/  2: kako/ */
+#endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
@@ -1162,6 +1165,16 @@ int dat_out_raw(void)
 {
 	const char *begin = BigLine[0];
 	const char *end = BigLine[lineMax];
+#ifdef	AUTO_KAKO
+	int where = zz_dat_where;
+	static char *messages[] = {
+		"",
+		" Stopped",
+		" Found at temp/",
+		" Found at kako/",
+		/* 正確な位置を知らせる必要はないはず */
+	};
+#endif
 	/* もし報告された最終レス番号およびサイズが一致していなけ
 	   れば、最初の行にその旨を示す */
 	/* raw_lastsize > 0 にするとnnn.0であぼーん検出を無効にできるが
@@ -1177,7 +1190,13 @@ int dat_out_raw(void)
 		/* 差分送信用に先頭を設定 */
 		begin = BigLine[raw_lastnum];
 	}
+#ifdef	AUTO_KAKO
+	if (where || isthreadstopped())
+		where++;
+	pPrintf(pStdout, " %d/%dK%s\n", end - begin, MAX_FILESIZE / 1024, messages[where]);
+#else
 	pPrintf(pStdout, " %d/%dK\n", end - begin, MAX_FILESIZE / 1024);
+#endif
 	/* raw_lastnum から全部を送信する */
 #ifdef ZLIB
 	if (gzip_flag)
@@ -1206,6 +1225,10 @@ int dat_out(int level)
 		threadStopped = 1;
 		/* 過去ログはFORMもRELOADLINKも非表示にするため */
 	}
+#endif
+#ifdef	AUTO_KAKO
+	if (zz_dat_where)
+		threadStopped = 1;
 #endif
 	for (line = 0; line < lineMax; line++) { 
 		int lineNo = line + 1; 
@@ -1571,10 +1594,8 @@ void readSettingFile(const char *bbsname)
 	int fd;
 	sprintf(fname, "../%.256s/%s", bbsname, SETTING_FILE_NAME);
 	fd = open(fname, O_RDONLY);
-	if (fd < 0)
-		return;
+	if (fd >= 0) {
 #ifdef	USE_MMAP
-	{
 		struct stat st;
 		void *mmptr;
 		fstat(fd, &st);
@@ -1584,33 +1605,29 @@ void readSettingFile(const char *bbsname)
 		munmap(mmptr, st.st_size);
 		close(fd);
 #endif
-	}
 #else
-	{
 		/* まあ設定ファイルが8k以上逝かなければいいということで */
 		char mmbuf[8192];
 		int size = read(fd, mmbuf, sizeof(mmbuf));
 		parseSetting(mmbuf, size);
 		close(fd);
-	}
 #endif	/* USE_MMAP */
-#else
-	struct _setting {
+	}
+#else	/* USE_INTERNAL_SETTINGS */
+	static struct _setting {
 		char *board_name;
 		char *settings;
-	};
-	static struct _setting special_setting[] = {
+	} special_setting[] = {
 		SPECIAL_SETTING
 		{ NULL, },
 	};
 	struct _setting *setting;
 	for (setting = special_setting; setting->board_name; setting++) {
-		if (!strcmp(bbsname, setting->board_name))
+		if (!strcmp(bbsname, setting->board_name)) {
+			parseSetting(setting->settings, strlen(setting->settings));
 			break;
+		}
 	}
-	if (!setting->board_name)
-		return;
-	parseSetting(setting->settings, strlen(setting->settings));
 #endif	/* USE_INTERNAL_SETTINGS */
 }
 #endif	/*	USE_SETTING_FILE	*/
@@ -1948,11 +1965,14 @@ int can_simplehtml(void)
 		return false;
 	if (nn_st > nn_to || nn_to > lineMax)
 		return false;
+#if	1
 	/* とりあえず、リンク先のレスが１つの場合だけ */
 	if (nn_st != nn_to || !is_nofirst())
 		return false;
-	/*if (!(nn_st + 10 <= nn_to))
-		return false; */
+#else
+	if (!(nn_st + 10 <= nn_to))
+		return false;
+#endif
 	ref = getenv("HTTP_REFERER");
 	if (!ref || !*ref)
 		return false;
@@ -1964,6 +1984,11 @@ int can_simplehtml(void)
 			char bbs[sizeof(zz_bs)];
 			char key[sizeof(zz_ky)];
 			const char * query_string = p+1;
+#if	0
+			/* 一部でREQUEST_URIがREFERERに設定されるらしいので */
+			if (strcmp(zz_query_string, p + 1) == 0)
+				return false;
+#endif
 			bbs[0] = key[0] = '\0';
 			GetString(query_string, bbs, sizeof(bbs), "bbs");
 			GetString(query_string, key, sizeof(key), "key");
@@ -2018,9 +2043,85 @@ int out_simplehtml(void)
 /* 旧形式 /bbs/kako/100/1000888777.*に対応。 dokoにpathを作成する */
 static int find_old_kakodir(char *doko, const char *key, const char *ext)
 {
-	struct stat CountStat;
 	sprintf(doko, KAKO_DIR "%.3s/%.50s.%s", zz_bs, key, key, ext);
-	return stat(doko, &CountStat) == 0;
+	return access(doko, 00) == 0;
+}
+
+static int find_kakodir(char *doko, const char *key, const char *ext)
+{
+	static char soko[256];
+	if (soko[0] == '\0')
+		kako_dirname(soko, key);
+	sprintf(doko, KAKO_DIR "%s/%.50s.%s", zz_bs, soko, key, ext);
+	return access(doko, 00) == 0 || find_old_kakodir(doko, key, ext);
+}
+static int find_tempdir(char *doko, const char *key, const char *ext)
+{
+	sprintf(doko, TEMP_DIR "%.50s.%s", zz_bs, key, ext);
+	return access(doko, 00) == 0;
+}
+
+static void create_fname(char *fname, const char *bbs, const char *key)
+{
+#ifdef READ_KAKO
+	if (read_kako[0] == 'k') {
+		find_kakodir(fname, key, "dat");
+# ifdef READ_TEMP
+	} else if (read_kako[0] == 't') {
+		find_tempdir(fname, key, "dat");
+# endif
+	} else
+#endif
+		sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
+
+#ifdef	AUTO_KAKO
+	if (zz_ky[0] && access(fname, 00) != 0) {
+		/* zz_kyチェックは、subject.txt取得時を除外するため */
+		char buff[1024];
+		const char *keybase = LastChar(key, '/');
+		int mode = AUTO_KAKO_MODE;
+#if	1
+		/* 混雑時間帯以外のみ、temp/,kako/の閲覧を許可する場合 */
+		if (isbusytime)
+			mode = 0;
+#endif
+#ifdef	RAWOUT
+		if (rawmode)
+			mode = 2;	/* everywhere */
+#endif
+		if (mode >= 2 && find_kakodir(buff, keybase, "dat")) {
+			zz_dat_where = 2;
+		} else if (mode >= 1 && find_tempdir(buff, keybase, "dat")) {
+			zz_dat_where = 1;
+		}
+		if (zz_dat_where)
+			strcpy(fname, buff);
+	}
+#endif
+
+#ifdef DEBUG
+	sprintf(fname, "998695422.dat");
+#endif
+
+#ifdef	USE_PATH
+	/* スレ一覧を取りに逝くモード */
+	if (1 <= path_depth && path_depth < 3
+#ifndef USE_INDEX
+	&& rawmode
+	/* rawmodeに限り、subject.txtを返すことを可能とする。
+	   GZIP併用でトラフィック削減を狙う。
+
+	   ところで rawのパラメータは、通常末尾追加しか行われないことを前提とした仕組み
+	   であるため、毎回全体が更新される subject.txtには適切ではない。従って現状は
+	   raw=0.0 に限定して使うべきである。
+	   subject.txtを読み出すモードのときには、rawのパラメータルールを変更し、
+	   先頭から指定数のみを取得可能にすれば有用ではないか?
+	 */ 
+#endif
+	) {
+		sprintf(fname, "../%.256s/subject.txt", zz_bs);
+	}
+#endif
 }
 
 /****************************************************************/
@@ -2107,43 +2208,7 @@ int main(void)
 #endif
 		puts("Content-Type: text/html");
 
-#ifdef READ_KAKO
-	if (read_kako[0] == 'k') {
-		if (!find_old_kakodir(fname, zz_ky, "dat")) {
-			char buf[256];
-			kako_dirname(buf, zz_ky);
-			sprintf(fname, KAKO_DIR "%.20s/%.20s.dat", zz_bs, buf, zz_ky);
-		}
-# ifdef READ_TEMP
-	} else if (read_kako[0] == 't') {
-		sprintf(fname, TEMP_DIR "%.20s.dat", zz_bs, zz_ky);
-# endif
-	} else
-#endif
-		sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
-
-#ifdef DEBUG
-	sprintf(fname, "998695422.dat");
-#endif
-	/* スレ一覧を取りに逝くモード */
-	if (1 <= path_depth && path_depth < 3
-#ifndef USE_INDEX
-	&& rawmode
-	/* rawmodeに限り、subject.txtを返すことを可能とする。
-	   GZIP併用でトラフィック削減を狙う。
-
-	   ところで rawのパラメータは、通常末尾追加しか行われないことを前提とした仕組み
-	   であるため、毎回全体が更新される subject.txtには適切ではない。従って現状は
-	   raw=0.0 に限定して使うべきである。
-	   subject.txtを読み出すモードのときには、rawのパラメータルールを変更し、
-	   先頭から指定数のみを取得可能にすれば有用ではないか?
-	 */ 
-#endif
-	) {
-		sprintf(fname, "../%.256s/subject.txt", zz_bs);
-		zz_fileLastmod = getFileLastmod(fname);
-	}
-
+	create_fname(fname, zz_bs, zz_ky);
 	zz_fileLastmod = getFileLastmod(fname);
 #ifdef USE_INDEX
 	/* 実験仕様: 各種パラメータをいじる
@@ -2171,7 +2236,7 @@ int main(void)
 		 * (zz_http_if_modified_since基準にすると永久に記事が取れ
 		 *  ないかも)
 		 */
-		if(modtime != BAD_DATE
+		if(modtime != BAD_DATE && zz_fileLastmod != -1
 		   && (modtime + FORCE_304_TIME >= t_now
 		       || modtime >= zz_fileLastmod))
 #else
@@ -2224,7 +2289,8 @@ int main(void)
 #endif
 
 /*  Get Last-Modified Date */
-	printf("Last-Modified: %s\n", lastmod_str);
+	if (zz_fileLastmod != -1)	/* getFileLastmod のエラー時は-1が返る */
+		printf("Last-Modified: %s\n", lastmod_str);
 
 #ifdef ZLIB
 	if ( is_head() || gzip_flag == compress_none )
@@ -2328,7 +2394,7 @@ int main(void)
 	return 0;
 }
 
-#ifdef READ_KAKO
+#if	defined(READ_KAKO) || defined(READ_TEMP)
 /* 過去ログへのリンク作成
  *
  * path_depth, zz_kyを書き換えてしまうので注意
@@ -2385,10 +2451,8 @@ const char * create_kako_link(const char * dir_type, const char * key)
 /****************************************************************/
 void html_error(enum html_error_t errorcode)
 {
-	char zz_soko[256];
 	char tmp[256];
 	char doko[256];
-	struct stat CountStat;
 	char comcom[256];
 	const char * mes;
 	switch ( errorcode ) {
@@ -2413,21 +2477,16 @@ void html_error(enum html_error_t errorcode)
 
 	*tmp = '\0';
 	strcpy(tmp, LastChar(zz_ky, '/'));
-	kako_dirname(zz_soko, tmp);
 #ifdef RAWOUT
 	if(rawmode) {
 		/* -ERR (message)はエラー。 */
 		if (errorcode == ERROR_NOT_FOUND) {
-			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat", zz_bs, zz_soko, tmp);
-			if (!stat(doko, &CountStat) || find_old_kakodir(doko, tmp, "dat")) {
+			if (find_kakodir(doko, tmp, "dat")) {
 				pPrintf(pStdout, "-ERR " ERRORMES_DAT_FOUND "\n", doko);
+			} else if (find_tempdir(doko, tmp, "dat")) {
+				pPrintf(pStdout, "-ERR %s\n", ERRORMES_TEMP_FOUND);
 			} else {
-				sprintf(doko, TEMP_DIR "%.50s.dat", zz_bs, tmp);
-				if (!stat(doko, &CountStat)) {
-					pPrintf(pStdout, "-ERR %s\n", ERRORMES_TEMP_FOUND);
-				} else {
-					pPrintf(pStdout, "-ERR %s\n", mes);
-				}
+				pPrintf(pStdout, "-ERR %s\n", mes);
 			}
 		} else
 			pPrintf(pStdout, "-ERR %s\n", mes);
@@ -2451,40 +2510,30 @@ void html_error(enum html_error_t errorcode)
 	pPrintf(pStdout, R2CH_HTML_ERROR_4);
 
 	if (errorcode == ERROR_NOT_FOUND) {
-		sprintf(doko, KAKO_DIR "%.50s/%.50s.html", zz_bs,
-			zz_soko, tmp);
-		if (!stat(doko, &CountStat) || find_old_kakodir(doko, tmp, "html")) {
+		if (find_kakodir(doko, tmp, "html")) {
 			/* 過去ログ倉庫にhtml発見 */
 			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, 
 				zz_cgi_path, doko, tmp);
-		} else {
-			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
-				zz_bs, zz_soko, tmp);
-			if (!stat(doko, &CountStat) || find_old_kakodir(doko, tmp, "dat")) {
-				/* 過去ログ倉庫にdat発見 */
+		} else if (find_kakodir(doko, tmp, "dat")) {
+			/* 過去ログ倉庫にdat発見 */
 #ifdef READ_KAKO
- 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT("%s","%s"),
-					create_kako_link("kako", tmp), tmp);
+ 			pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT("%s","%s"),
+				create_kako_link("kako", tmp), tmp);
 #else
-				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					zz_cgi_path, doko, tmp);
+			pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
+				zz_cgi_path, doko, tmp);
 #endif
-			} else {
-				sprintf(doko, TEMP_DIR "%.50s.dat",
-					zz_bs, tmp);
-				if (!stat(doko, &CountStat)) {
+		} else if (find_tempdir(doko, tmp, "dat")) {
 #ifdef READ_TEMP
- 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP("%s","%s"),
-						create_kako_link("temp",tmp), tmp);
+			pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP("%s","%s"),
+				create_kako_link("kako",tmp), tmp);
 #else
-					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
-						tmp);
+			pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
+				tmp);
 #endif
-				} else {
-					pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
-						zz_cgi_path, zz_bs);
-				}
-			}
+		} else {
+			pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
+				zz_cgi_path, zz_bs);
 		}
 	}
 
