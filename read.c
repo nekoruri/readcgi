@@ -1366,8 +1366,8 @@ html_error(ERROR_MAINTENANCE);
 int getLineMax(void)
 {
 	int line = 0;
-	char *p = BigBuffer;
-	char *p1;
+	const char *p = BigBuffer;
+	const char *p1;
 
 	if (!p)
 		return -8;
@@ -1382,8 +1382,11 @@ int getLineMax(void)
 		if (line > RES_RED)
 			break;
 		++line;
-		p = (char *)memchr(p, '\n', p1-p) + 1;
-	} while(p != p1);
+		p = (char *)memchr(p, '\n', p1-p);
+		if (p == NULL)
+			break;
+		++p;
+	} while (p < p1);
 	
 	/*
 		最後のレスの次に、ファイル末へのポインタを入れておく。
@@ -1393,6 +1396,7 @@ int getLineMax(void)
 	BigLine[line] = BigBuffer + zz_fileSize;
 	return line;
 }
+
 /****************************************************************/
 /*	Get file size						*/
 /****************************************************************/
