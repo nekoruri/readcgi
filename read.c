@@ -481,23 +481,23 @@ static int rewrite_href(char **dp,		/* ‘‚«‚İƒ|ƒCƒ“ƒ^ */
 					mto = to;
 				}
 
+				d += sprintf(d, 
+					     (
 #ifdef USE_PATH
-				d += sprintf(d,
-					     "<a href=\"%s%d-%d",
-					     depth_expr,
-					     mst, mto);
-#else
-				d += sprintf(d,
-					     "<a href=\"%s&st=%d&to=%d&nofirst=true",
-					     depth_expr,
-					     mst, mto);
+					     (path_depth != 0) ?
+					     "<a href=\"%s%d-%d" : 
 #endif
+					     "<a href=\"%s&st=%d&to=%d&nofirst=true"
+					     ),
+					     depth_expr,
+					     mst, mto);
 
 #ifdef CREATE_NAME_ANCHOR
-				d += sprintf(d, "#%d\">", st);
-#else
-				d += sprintf(d, "\">");
+				if ( mst != st )
+					d += sprintf(d, "#%d\">", st);
+				else
 #endif
+					d += sprintf(d, "\">");
 
 			}
 		}
