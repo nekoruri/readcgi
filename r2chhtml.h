@@ -62,23 +62,36 @@
 	"</center><p>"
 
 /*
+ * 名前ラベル
+ */
+#define R2CH_HTML_NAME "名前："
+/*
+ * 投稿日ラベル
+ */
+#ifdef CUT_DATE_STRING
+#define R2CH_HTML_DATE ""
+#else
+#define R2CH_HTML_DATE "投稿日："
+#endif
+
+/*
  * BROWSERでレスを表示。
  */
 /* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_MAIL(n, l, m, nm, d, t) \
-	"<dt>" n " 名前：<a name=" l " href=\"mailto:" m " \"><b>" nm " </b></a> 投稿日：" d "<dd>" t "<br><br>"
+	"<dt>" n " " R2CH_HTML_NAME "<a name=" l " href=\"mailto:" m " \"><b>" nm " </b></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 
 /* レス(mailto無し): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_NOMAIL(n, l, nm, d, t) \
-	"<dt>" n " <a name=" l ">名前：<font color=green><b>" nm " </b></font></a> 投稿日：" d "<dd>" t "<br><br>"
+	"<dt>" n " <a name=" l ">" R2CH_HTML_NAME "<font color=green><b>" nm " </b></font></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_SAGE(n, l, nm, d, t) \
-	"<dt>" n " <a name=" l ">名前：<font color=#0000c0><b>" nm " </b></font></a> 投稿日：" d "<dd>" t "<br><br>"
+	"<dt>" n " <a name=" l ">" R2CH_HTML_NAME "<font color=#0000c0><b>" nm " </b></font></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 
 /* レス(ここ壊れています): %d=レス番号 */
-#define R2CH_HTML_RES_BROKEN_HERE \
-	"<dt>%d 名前： 投稿日：[ここ壊れています]<dd>[ここ壊れています]<br><br>"
+#define R2CH_HTML_RES_BROKEN_HERE(n) \
+	"<dt>" n " " R2CH_HTML_NAME " " R2CH_HTML_DATE "[ここ壊れています]<dd>[ここ壊れています]<br><br>"
 
 /* tail: npath=生成するURLその1 nst=次のxxxレス
 	 lpath=生成するURLその2 ls=最新レスxxx

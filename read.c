@@ -1225,7 +1225,7 @@ static int out_html(int level, int line, int lineNo)
 					lineNo, lineNo, r0, s[2], r3);
 			}
 		} else {
-			pPrintf(pStdout, R2CH_HTML_RES_BROKEN_HERE,
+			pPrintf(pStdout, R2CH_HTML_RES_BROKEN_HERE("%d"),
 				lineNo);
 		}
 		if (isbusytime && out_resN > RES_NORMAL) {
