@@ -109,4 +109,7 @@
 /* check server use mod_gzip? */
 #define CHECK_MOD_GZIP
 
+/* rewrite_href2を復活させる場合に定義 */
+/* #define REWRITE_HREF2 */
+
 #endif /* READ2CH_H__ */

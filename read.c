@@ -436,38 +436,49 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		s += 4;
 		copy_len = s - copy_start;
 
-		/* chunk仕様を生かすためのkludgeは以下に。 */
-		mst = (st - 1) / CHUNK_NUM;
-		mto = (to - 1) / CHUNK_NUM;
-
-		if (mst == mto) {
-			/* chunk範囲 */
-			mst = 1 + CHUNK_NUM * mst;
-			mto = CHUNK_NUM * (mto + 1);
-		} else {
-			/* chunkをまたぎそうなので、最小単位を。*/
-			mst = st;
-			mto = to;
-		}
-
-		/* 新しい表現をブチ込む */
-		if (isprinted(st) && isprinted(to)) {
-			d += sprintf(d,
-				     "<a href=#%u>", 
-				     st);
+		if (is_imode()
+		|| (st == 0 || to == 0 || st > lineMax || to > lineMax)
+#if	1	/* #ifndef USE_PATH */
+		/* #ifndef を生かせば、isbusytimeでもa name=へのリンクがつく*/
+		/* USE_PATHでなくても、a name=のanchorがつくようになった??	*/
+		|| (istagcut && isprinted(st) && isprinted(to))
+#endif
+		)
+		{
+			// タグ除去 /
 		} else
 		{
+			/* 新しい表現をブチ込む */
+			if (isprinted(st) && isprinted(to))
+			{
+				d += sprintf(d,
+					     "<a href=#%u>", 
+					     st);
+			} else
+			{
+				/* chunk仕様を生かすためのkludgeは以下に。 */
+				mst = (st - 1) / CHUNK_NUM;
+				mto = (to - 1) / CHUNK_NUM;
+
+				if (mst == mto) {
+					/* chunk範囲 */
+					mst = 1 + CHUNK_NUM * mst;
+					mto = CHUNK_NUM * (mto + 1);
+				} else {
+					/* chunkをまたぎそうなので、最小単位を。*/
+					mst = st;
+					mto = to;
+				}
+
+				d += sprintf(d,
 #ifdef USE_PATH
-			d += sprintf(d,
-				     "<a href=\"%s%d-%d#%d\">",
-				     depth_expr,
-				     mst, mto, st );
+					     "<a href=\"%s%d-%d#%d\">",
 #else
-			d += sprintf(d,
-				     "<a href=\"%s&st=%d&to=%d&nofirst=true#%d\">",
-				     depth_expr,
-				     mst, mto, st );
+					     "<a href=\"%s&st=%d&to=%d&nofirst=true#%d\">",
 #endif
+					     depth_expr,
+					     mst, mto, st );
+			}
 		}
 
 		/* "&gt;&gt;".."</a>"を丸写し */
@@ -496,7 +507,6 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	*dp = d;
 	return 1;
 }
-
 /*
 	pは、"http://"の':'を指してるよん
 	何文字さかのぼるかを返す。0ならnon-match
@@ -582,6 +592,7 @@ static int isprinted(int lineNo)
 	rewrite_href()が、path_depth == 0 時に対応したら、
 	こっちは不要。
 */
+#ifdef REWRITE_HREF2
 static int rewrite_href2(char **dp,		/* 書き込みポインタ */
 			 char const **sp,	/* 読み出しポインタ */
 			 int istagcut)		/* タグカットしていいか? */
@@ -655,6 +666,7 @@ static int rewrite_href2(char **dp,		/* 書き込みポインタ */
 	}
 	return 0;
 }
+#endif
 
 /*
 	findSplitterの代わり
@@ -711,13 +723,18 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				if (resnumber && p[1] == 'a' && isspace(p[2])) {
 					char *tdp = bufp;
 					char const *tsp = p;
+#ifdef REWRITE_HREF2 
 					if (path_depth && !is_imode()) {
+#endif
 						if (!rewrite_href(&tdp, &tsp, istagcut))
 							goto Break;
+#ifdef REWRITE_HREF2 
 					} else {
 						if (!rewrite_href2(&tdp, &tsp, istagcut))
 							break;	/* そのままコピーを続ける */
+							/* ↑無限ループにならない? */
 					}
+#endif
 					bufrest -= tdp - bufp;
 					bufp = tdp;
 					p = tsp;
@@ -1210,6 +1227,7 @@ static int out_html(int level, int line, int lineNo)
 				lineNo);
 		}
 		if (isbusytime && out_resN > RES_NORMAL) {
+#ifdef USE_PATH
 			if (path_depth)
 				pPrintf(pStdout,
 					R2CH_HTML_PATH_TAIL,
@@ -1220,6 +1238,7 @@ static int out_html(int level, int line, int lineNo)
 					RES_NORMAL,
 					LIMIT_PM - 12, LIMIT_AM);
 			else
+#endif
 				pPrintf(pStdout,
 					R2CH_HTML_TAIL,
 					CGINAME, zz_bs, zz_ky,
@@ -1890,10 +1909,12 @@ int main(void)
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
+#ifdef USE_PATH
 	/* スレ一覧を取りに逝くモード */
 	if (1 <= path_depth && path_depth < 3) {
 		sprintf(fname, "../%.256s/subject.txt", zz_bs);
 	}
+#endif
 
 	zz_fileLastmod = getFileLastmod(fname);
 	get_lastmod_str(lastmod_str, zz_fileLastmod);
@@ -2382,11 +2403,14 @@ void html_head(int level, char const *title, int line)
 	}
 
 	if (!is_imode()) {	/* no imode       */
+#ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_HEADER_1("%s", "../"),
 				title);
-		else {
+		else 
+#endif
+		{
 #ifdef USE_INDEX2CGI
 			sprintf(fname, "../%.256s/index2.cgi", zz_bs);
 			if (access(fname, S_IXUSR) == -1)
@@ -2415,16 +2439,19 @@ void html_head(int level, char const *title, int line)
 #endif
 		}
 #ifdef ALL_ANCHOR
+#ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_PATH_ALL_ANCHOR); 
 		else
+#endif
 			pPrintf(pStdout,
 				R2CH_HTML_ALL_ANCHOR,
 				zz_bs, zz_ky); 
 #endif
 #ifdef CHUNK_ANCHOR
 		for (i = 1; i <= line; i += CHUNK_NUM) {
+#ifdef USE_PATH
 			if (path_depth)
 				pPrintf(pStdout,
 					R2CH_HTML_PATH_CHUNK_ANCHOR,
@@ -2432,6 +2459,7 @@ void html_head(int level, char const *title, int line)
 					i + CHUNK_NUM - 1, 
 					i);
 			else
+#endif
 				pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
 					zz_bs, zz_ky,
 					i,
@@ -2441,11 +2469,13 @@ void html_head(int level, char const *title, int line)
 		}
 #endif /* CHUNK_ANCHOR */
 #ifdef LATEST_ANCHOR
+#ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_PATH_LATEST_ANCHOR,
 				LATEST_NUM, LATEST_NUM);
 		else
+#endif
 			pPrintf(pStdout,
 				R2CH_HTML_LATEST_ANCHOR,
 				zz_bs, zz_ky,
@@ -2483,11 +2513,13 @@ void html_reload(int startline)
 		pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
 			startline);
 	else {
+#ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout,
 				R2CH_HTML_PATH_RELOAD,
 				startline);
 		else
+#endif
 			pPrintf(pStdout,
 				R2CH_HTML_RELOAD,
 				zz_bs, zz_ky,
@@ -2506,6 +2538,7 @@ static void html_foot(int level, int line, int stopped)
 		return html_foot_im(line,stopped);
 	if (line <= RES_RED && !stopped) {
 #ifndef COOKIE
+#ifdef USE_PATH
 		if (path_depth == 3)
 			pPrintf(pStdout,
 				R2CH_HTML_FORM("../../../", "%s", "%s", "%ld"),
@@ -2515,6 +2548,7 @@ static void html_foot(int level, int line, int stopped)
 				R2CH_HTML_FORM("../../", "%s", "%s", "%ld"),
 				zz_bs, zz_ky, currentTime);
 		else
+#endif
 			pPrintf(pStdout,
 				R2CH_HTML_FORM("", "%s", "%s", "%ld"),
 				zz_bs, zz_ky, currentTime);
