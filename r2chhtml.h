@@ -167,10 +167,25 @@
 /* レス(ここ壊れています): %d=レス番号 */
 #define R2CH_HTML_IMODE_RES_BROKEN_HERE "<p>[%d:ここ壊れています]</p><hr>"
 
-/* tail: %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数 %s=cgi %s=board %s=key %d=レス数 %d=レス数 */
+/* tail: npath=生成するURLその1 nst=次のxxxレス
+	lpath=生成するURLその2 ls=最新レスxxx */
+#define R2CH_HTML_T_IMODE_TAIL(npath, nst, lpath, ls) \
+	" <a href=\"" npath "\">次の" nst "レス</a>" \
+	" <a href=\"" lpath "\">最新レス" ls "</a><br>\n"
+
+/* tail: PATHナシ
+	   %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数
+	   %s=cgi %s=board %s=key %d=レス数 %d=レス数 */
 #define R2CH_HTML_IMODE_TAIL \
-	" <a href=\"%s?bbs=%s&key=%s&st=%d&to=%d&imode=true\">次の%dレス</a>\n" \
-	" <a href=\"%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a><br>\n"
+	   R2CH_HTML_T_IMODE_TAIL("%s?bbs=%s&key=%s&st=%d&to=%d&imode=true", "%d", \
+						  "%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST, "%d")
+
+/* tail: PATH仕様
+	   %d=開始 %d=終了 %d=レス数
+	   %d=レス数 %d=レス数 */
+#define R2CH_HTML_PATH_IMODE_TAIL \
+	R2CH_HTML_T_IMODE_TAIL("%d-%di", "%d", \
+				  "l%di", "%d")
 
 #define R2CH_HTML_TAIL_SIMPLE \
 	" (%02d:00PM - %02d:00AM の間一気に全部は読めません)<br>\n"
@@ -422,19 +437,27 @@
 	R2CH_HTML_T_LATEST_ANCHOR("./l%d", "%d")
 
 
-/* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
-                     %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
 /* </title>の前の空白は削除しないこと */
-#define R2CH_HTML_IMODE_HEADER_1 \
+#define R2CH_HTML_IMODE_HEADER_T(title, board, alllink, latestlink)  \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
-	"<title>%s </title>" \
+	"<title>" title " </title>" \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
-	"<a href=\"/%s/i/\">■掲示板に戻る■</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d&imode=true\">レスを最初から読む</a>" \
-	" <a href=\"" CGINAME "?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a>"
+	"<a href=\"" board "\">■掲示板に戻る■</a>" \
+	" <a href=\"" alllink "\">レスを最初から読む</a>" \
+	" <a href=\"" latestlink "\">最新レス%d</a>"
+
+/* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
+                     %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
+#define R2CH_HTML_IMODE_HEADER_1 \
+	R2CH_HTML_IMODE_HEADER_T("%s", "/%s/i/", \
+		CGINAME "?bbs=%s&key=%s&st=1&to=%d&imode=true", \
+		CGINAME "?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST )
+
+#define R2CH_HTML_PATH_IMODE_HEADER_1 \
+	R2CH_HTML_IMODE_HEADER_T("%s", "../../../../%s/i/", "1-%di", "l%di")
 
 /* レス数オーバー: %d=最大レス数 */
 #define R2CH_HTML_HEADER_RED \
@@ -480,6 +503,9 @@
 
 #define R2CH_HTML_PATH_RELOAD \
 	R2CH_HTML_T_RELOAD("%d-", "新着レスの表\示")
+
+#define R2CH_HTML_PATH_RELOAD_I \
+	"<center><a href=\"%d-i\">新着レスの表\示</a></center><hr>"
 
 #define R2CH_HTML_AFTER \
 	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" /* NO_FIRST */, "続きを読む")
@@ -552,8 +578,8 @@
 	"<p>" CGIVER "</body></html>"
 
 /* i-MODEのときのFORM: %s=板 %s=スレ %ld=現在時刻 */
-#define R2CH_HTML_FORM_IMODE \
-	"<form method=POST action=\"./bbs.cgi\">\n" \
+#define R2CH_HTML_FORM_IMODE(depth) \
+	"<form method=POST action=\"" depth "bbs.cgi\">\n" \
 	"<input type=submit value=\"かきこむ\" name=submit> " \
 	"NAME：<input name=FROM size=20 value=\"\">" \
 	"MAIL：<input name=mail size=20 value=\"\">" \
@@ -562,7 +588,7 @@
 	"<input type=hidden name=key value=%s>" \
 	"<input type=hidden name=time value=%ld>" \
 	"<textarea rows=5 cols=60 wrap=off name=MESSAGE></textarea>" \
-	"</form><br>"
+	"</form><br>" 
 
 /* i-MODEのときのフッタ: %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FOOTER_IMODE \

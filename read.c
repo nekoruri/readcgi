@@ -986,10 +986,17 @@ static int out_html(int level, int line, int lineNo)
 				lineNo);
 		}
 		if (out_resN > RES_IMODE && lineNo != lineMax ) {
-			pPrintf(pStdout, R2CH_HTML_IMODE_TAIL,
-				CGINAME, zz_bs, zz_ky, lineNo,
-				lineNo + RES_IMODE, RES_IMODE, CGINAME,
-				zz_bs, zz_ky, RES_IMODE, RES_IMODE);
+#ifdef USE_PATH
+			if (path_depth)
+				pPrintf(pStdout, R2CH_HTML_PATH_IMODE_TAIL,
+					lineNo, lineNo + RES_IMODE, RES_IMODE,
+					RES_IMODE, RES_IMODE);
+			else
+#endif
+				pPrintf(pStdout, R2CH_HTML_IMODE_TAIL,
+					CGINAME, zz_bs, zz_ky, lineNo,
+					lineNo + RES_IMODE, RES_IMODE, CGINAME,
+					zz_bs, zz_ky, RES_IMODE, RES_IMODE);
 			return 1;
 		}
 	}
@@ -2484,9 +2491,16 @@ void html_head(int level, char const *title, int line)
 				LATEST_NUM, LATEST_NUM);
 #endif	/* LATEST_ANCHOR */
 	} else {
-		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1,
-			title, zz_bs, zz_bs, zz_ky, RES_IMODE, zz_bs,
-			zz_ky, RES_IMODE, RES_IMODE);
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, R2CH_HTML_PATH_IMODE_HEADER_1,
+				title, zz_bs, RES_IMODE,
+				RES_IMODE, RES_IMODE);
+		else
+#endif
+			pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1,
+				title, zz_bs, zz_bs, zz_ky, RES_IMODE, zz_bs,
+				zz_ky, RES_IMODE, RES_IMODE);
 	}
 
 	if (line > RES_RED) {
@@ -2528,8 +2542,13 @@ void html_head(int level, char const *title, int line)
 void html_reload(int startline)
 {
 	if (is_imode())	/*  imode */
-		pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
-			startline);
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, R2CH_HTML_PATH_RELOAD_I, startline);
+		else
+#endif
+			pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
+				startline);
 	else {
 #ifdef PREV_NEXT_ANCHOR
 		if (last_line()<lineMax) {
@@ -2753,7 +2772,12 @@ static void html_foot(int level, int line, int stopped)
 void html_foot_im(int line, int stopped)
 {
 	if (line <= RES_RED && !stopped ) {
-		pPrintf(pStdout, R2CH_HTML_FORM_IMODE, zz_bs, zz_ky, currentTime);
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout, R2CH_HTML_FORM_IMODE("../../../"), zz_bs, zz_ky, currentTime);
+		else
+#endif
+			pPrintf(pStdout, R2CH_HTML_FORM_IMODE(""), zz_bs, zz_ky, currentTime); 
 	}
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
 }
