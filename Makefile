@@ -4,9 +4,8 @@ CC            = gcc
 DEFS          = -DHAVE_READ2CH_H
 # DEFS        = -DCUTRESLINK -DRELOADLINK -DLASTMOD -DNEWBA -DGSTR2 \
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
-CFLAGS        = -I$(zlibdir) -g -O2 -Wall
+CFLAGS        = -I$(zlibdir) -g -O2 -Wall -funsigned-char
 LIBS          = 
-#SOURCES       = read.c util_date.c
 OBJS          = read.o util_date.o $(zlibdir)/libz.a
 INCLUDES      = read2ch.h read2ch.h r2chhtml.h
 
@@ -19,9 +18,6 @@ INCLUDES      = read2ch.h read2ch.h r2chhtml.h
 read.cgi: $(OBJS)
 
 all: read.cgi TAGS
-
-#read.cgi: $(SOURCES) $(INCLUDES)
-#	$(CC) $(LIBS) $(CFLAGS) $(DEFS) -o $@ $(SOURCES)
 
 clean:
 	cd $(zlibdir); make distclean
@@ -40,9 +36,8 @@ dat:
 	wget -O tech/dat/998845501.dat \
 		http://piza2.2ch.net/tech/dat/998845501.dat )
 
-strip:
-	$(MAKE) 'CFLAGS=-O2 -Wall' read.cgi
-	strip read.cgi
+strip: read.cgi
+	strip -v $^ $>
 
 tags: TAGS
 

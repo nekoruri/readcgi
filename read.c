@@ -228,7 +228,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 	char *bufp = *This->buffers;
 	int bufrest = This->rest;
 	while (--bufrest > 0) {
-		int ch = *(unsigned char const *)p;
+		int ch = *p;
 		if (isCheck(ch)) {
 			switch (ch) {
 			case ' ':
@@ -1138,6 +1138,15 @@ int main()
 	int whitespace = 2048;
 #endif
 	char fname[1024];
+
+	/* このシステムでは、-funsigned-charを要求する */
+	if ((char)0xFF != (unsigned char)0xFF) {
+		puts("Content-Type: text/html\n"
+		     "\n"
+		     "-funsigned-char required.");
+		return 0;
+	}
+
 #ifdef ZLIB
 	pStdout = (gzFile) stdout;
 #endif
@@ -1432,7 +1441,7 @@ char *zz_GetString(char *dst, char *tgt)
 /****************************************************************/
 /*								*/
 /****************************************************************/
-int whatKanji(unsigned char *str)
+int whatKanji(char *str)
 {
 	int val = 0;
 	unsigned char b1, b2, b3;
@@ -1469,7 +1478,7 @@ int whatKanji(unsigned char *str)
 #ifdef	TYPE_TERI
 char *findSplitter(char *stt, int sp)
 {
-	unsigned char *p = (unsigned char *) stt;
+	char *p = stt;
 	char ss = (unsigned char) (sp & 0x00ff);
 
 	while (*p) {
@@ -1486,7 +1495,7 @@ char *findSplitter(char *stt, int sp)
 #else
 char *findSplitter(char *stt, int sp)
 {
-	unsigned char *p = (unsigned char *) stt;
+	char *p = stt;
 	char ss = (unsigned char) (sp & 0x00ff);
 
 	while (*p) {
@@ -1545,9 +1554,9 @@ int res_split(char **s, char *p)
 /****************************************************************/
 /*								*/
 /****************************************************************/
-void dump_out16(char *d)
+void dump_out16(char const *d)
 {
-	unsigned char *p = (unsigned char *) d;
+	char const *p = d;
 	pPrintf(pStdout, "\n\n<!-- ");
 	while (*p) {
 		pPrintf(pStdout, ",%02x", *p);

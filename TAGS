@@ -82,54 +82,54 @@ char flagtable[161,3617
 } ressplitter;ressplitter201,6192
 void ressplitter_init(210,6351
 const char *ressplitter_split(226,6848
-void splitting_copy(323,8791
-#define FORM_MAXLEN 339,9242
-char form_name[340,9267
-char form_mail[341,9296
-void Unescape(348,9438
-#define SAFECPY(SAFECPY382,10130
-void SetFormName(409,10561
-int BadAccess(446,11397
-int BadAccess(470,11757
-int logOut(528,13511
-void html_bannerNew(572,14548
-void html_banner(581,14791
-void html_banner(587,14866
-int out_html1(597,15103
-int out_html(634,15856
-int dat_out_raw(746,18290
-int dat_out(774,19017
-int dat_read(815,19810
-int getLineMax(878,21145
-int getFileSize(901,21550
-time_t getFileLastmod(913,21892
-int get_lastmod_str(926,22244
-static int get_path_info(941,22735
-void zz_GetEnv(1015,24324
-void atexitfunc(1113,26684
-int main(1132,27035
-void html_error(1265,29746
-int html_error999(1332,31204
-char *zz_GetString(1369,32133
-char *zz_GetString(1404,32743
-int whatKanji(1435,33359
-char *findSplitter(1470,34171
-char *findSplitter(1487,34527
-int res_split(1513,35098
-void dump_out16(1548,35649
-int IsBusy2ch(1561,35986
-char const *LastChar(1572,36308
-void html_head(1584,36601
-void html_reload(1612,37420
-void html_foot(1625,37780
-void html_foot_im(1645,38272
-char *doReplace(1656,38601
-void someReplace(1684,39282
-int hrefStop(1700,39657
-int cutWordOff(1766,40684
-int ExistHlinkX(1777,40965
-int ExistHlink(1803,41574
-void hlinkReplace(1814,41908
+void splitting_copy(323,8768
+#define FORM_MAXLEN 339,9219
+char form_name[340,9244
+char form_mail[341,9273
+void Unescape(348,9415
+#define SAFECPY(SAFECPY382,10107
+void SetFormName(409,10538
+int BadAccess(446,11374
+int BadAccess(470,11734
+int logOut(528,13488
+void html_bannerNew(572,14525
+void html_banner(581,14768
+void html_banner(587,14843
+int out_html1(597,15080
+int out_html(634,15833
+int dat_out_raw(746,18267
+int dat_out(774,18994
+int dat_read(815,19787
+int getLineMax(878,21122
+int getFileSize(901,21527
+time_t getFileLastmod(913,21869
+int get_lastmod_str(926,22221
+static int get_path_info(941,22712
+void zz_GetEnv(1015,24301
+void atexitfunc(1113,26661
+int main(1132,27012
+void html_error(1274,29917
+int html_error999(1341,31375
+char *zz_GetString(1378,32304
+char *zz_GetString(1413,32914
+int whatKanji(1444,33530
+char *findSplitter(1479,34333
+char *findSplitter(1496,34662
+int res_split(1522,35206
+void dump_out16(1557,35757
+int IsBusy2ch(1570,36079
+char const *LastChar(1581,36401
+void html_head(1593,36694
+void html_reload(1621,37513
+void html_foot(1634,37873
+void html_foot_im(1654,38365
+char *doReplace(1665,38694
+void someReplace(1693,39375
+int hrefStop(1709,39750
+int cutWordOff(1775,40777
+int ExistHlinkX(1786,41058
+int ExistHlink(1812,41667
+void hlinkReplace(1823,42001
 
 util_date.c,203
 #define ap_isupper 75,3236
