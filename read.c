@@ -445,7 +445,7 @@ static int rewrite_href(char **dp,		/* ‘‚«‚İƒ|ƒCƒ“ƒ^ */
 				mst = (st - 1) / CHUNK_NUM;
 				mto = (to - 1) / CHUNK_NUM;
 
-				if (mst == mto) {
+				if (mst == mto && (st != 1 || to != 1) ) {
 					/* chunk”ÍˆÍ */
 					mst = 1 + CHUNK_NUM * mst;
 					mto = CHUNK_NUM * (mto + 1);
