@@ -465,7 +465,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 #endif
 			{
 				/* chunk仕様を生かすためのkludgeは以下に。 */
-#ifdef CHUNK_ANCHOR
+#if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR)
 				mst = (st - 1) / CHUNK_NUM;
 				mto = (to - 1) / CHUNK_NUM;
 
@@ -481,26 +481,24 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mto = to;
 				}
 
-#ifdef CREATE_NAME_ANCHOR
+#ifdef USE_PATH
 				d += sprintf(d,
-# ifdef USE_PATH
-					     "<a href=\"%s%d-%d#%d\">",
-# else
-					     "<a href=\"%s&st=%d&to=%d&nofirst=true#%d\">",
-# endif
+					     "<a href=\"%s%d-%d",
 					     depth_expr,
-					     mst, mto, st );
+					     mst, mto);
 #else
-
 				d += sprintf(d,
-# ifdef USE_PATH
-					     "<a href=\"%s%d-%d\">",
-# else
-					     "<a href=\"%s&st=%d&to=%d&nofirst=true\">",
-# endif
+					     "<a href=\"%s&st=%d&to=%d&nofirst=true",
 					     depth_expr,
-					     mst, mto );
+					     mst, mto);
 #endif
+
+#ifdef CREATE_NAME_ANCHOR
+				d += sprintf(d, "#%d\">", st);
+#else
+				d += sprintf(d, "\">);
+#endif
+
 			}
 		}
 
