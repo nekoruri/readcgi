@@ -101,7 +101,7 @@ long currentTime;
 int isbusytime = 0;
 
 char const *LastChar(char const *src, char c);
-char *zz_GetString(char *dst, char const *tgt);
+char *zz_GetString(char *dst, size_t dst_size, char const *tgt);
 char *doReplace(char *des, char const *str0, char const *str1);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
@@ -1714,28 +1714,15 @@ void zz_GetEnv(void)
 	if (!zz_http_language)
 		zz_http_language = KARA;
 
-#ifdef GSTR2
-	zz_GetString(zz_bs, "b");
-	zz_GetString(zz_ky, "k");
-	zz_GetString(zz_ls, "l");
-	zz_GetString(zz_st, "s");
-	zz_GetString(zz_to, "t");
-	zz_GetString(zz_nf, "n");
-	zz_GetString(zz_im, "i");
+	zz_GetString(zz_bs, sizeof(zz_bs), "bbs");
+	zz_GetString(zz_ky, sizeof(zz_ky), "key");
+	zz_GetString(zz_ls, sizeof(zz_ls), "ls");
+	zz_GetString(zz_st, sizeof(zz_st), "st");
+	zz_GetString(zz_to, sizeof(zz_to), "to");
+	zz_GetString(zz_nf, sizeof(zz_nf), "nofirst");
+	zz_GetString(zz_im, sizeof(zz_im), "imode");
 #ifdef RAWOUT
-	zz_GetString(zz_rw, "r");
-#endif
-#else
-	zz_GetString(zz_bs, "bbs");
-	zz_GetString(zz_ky, "key");
-	zz_GetString(zz_ls, "ls");
-	zz_GetString(zz_st, "st");
-	zz_GetString(zz_to, "to");
-	zz_GetString(zz_nf, "nofirst");
-	zz_GetString(zz_im, "imode");
-#ifdef RAWOUT
-	zz_GetString(zz_rw, "raw");
-#endif
+	zz_GetString(zz_rw, sizeof(zz_rw), "raw");
 #endif
 #ifdef USE_PATH
 	if (!get_path_info(zz_path_info)) {
@@ -2129,70 +2116,67 @@ int html_error999(char *mes)
 /****************************************************************/
 /*								*/
 /****************************************************************/
-#ifdef GSTR2
-char *zz_GetString(char *dst, char const *tgt)
+#define GETSTRING_LINE_DELIM '&'
+#define GETSTRING_VALUE_DELIM '='
+#define MAX_QUERY_STRING 200
+char *zz_GetString(char *dst, size_t dat_size, char const *tgt)
 {
-	int i;
-	int len;
-	int ch = (int) '&';
-	int ch2 = (int) '=';
-	char const *kk = zz_query_string;
-	char *kk0;
-	char *kk1;
-	for (i = 0; i < 200; i++) {
-		if (kk[0] == tgt[0]) {
-			kk0 = strchr(kk, ch);	/* & */
-			if (!kk0)
-				kk0 = strchr(kk, (int) '\0');
-			kk1 = strchr(kk, ch2);	/* = */
-			len = kk0 - kk1 - 1;
-			if (len > 0) {
-				if (kk0)
-					*kk0 = '\0';
-				strncpy(dst, kk1 + 1, 20);
-				dst[20 - 1] = '\0';
-				if (kk0)
-					*kk0 = '&';
+	int	i;
+
+	char const *line = zz_query_string;
+	char const *delim_ptr;
+	char const *value_ptr;
+#ifndef GSTR2
+	int tgt_len = strlen(tgt);
+#endif
+	int line_len;
+	int value_len;
+	int value_start;
+
+	for(i=0;i<MAX_QUERY_STRING;i++)
+	{
+		/* 行末を見つける */
+		delim_ptr = strchr( line, GETSTRING_LINE_DELIM );
+		if ( delim_ptr )
+			line_len = delim_ptr - line;
+		else
+			line_len = strlen(line);
+
+		/* '='を見つける */
+		value_ptr = memchr( line, GETSTRING_VALUE_DELIM, line_len );
+		if ( value_ptr ) {
+			value_start = value_ptr + 1 - line;
+#ifdef GSTR2
+			/* 最初の一文字の一致 */
+			if ( *line == *tgt )
+#else
+			/* 完全一致 */
+			if ( tgt_len == value_start && !memcmp(line, tgt, tgt_len) )
+#endif
+			{
+				/* 値部分の開始位置と長さ */
+				value_len = line_len - value_start;
+
+				/* 長さを丸める */
+				if ( value_len >= dat_size )
+					value_len = dat_size - 1;
+
+				/* 値をコピー */
+				memcpy( dst, line + value_start, value_len );
+				dst[value_len] = '\0';
+
 				return dst;
 			}
 		}
-		kk = strchr(kk, ch);
-		if (!kk)
+
+		if ( !delim_ptr )
 			break;
-		kk++;
+
+		line += line_len + 1; /* skip delim */
 	}
 	*dst = '\0';
-	return dst;
+	return	dst;
 }
-#else
-char *zz_GetString(char *dst, char *tgt)
-{
-	int i;
-	int ch = (int) '&';
-	char *kk0;
-	char *kk1;
-	char *kk = zz_query_string;
-	for (i = 0; i < 200; i++) {
-		if (!strncmp(kk, tgt, strlen(tgt))) {
-			kk0 = kk;
-			kk1 = strchr(kk, ch);
-			if (kk1)
-				*kk1 = '\0';
-			strncpy(dst, kk0 + strlen(tgt) + 1, 1024);
-			dst[1024 - 1] = '\0';
-			if (kk1)
-				*kk1 = ch;
-			return dst;
-		}
-		kk = strchr(kk, ch);
-		if (!kk)
-			break;
-		kk++;
-	}
-	*dst = '\0';
-	return dst;
-}
-#endif
 /****************************************************************/
 /*								*/
 /****************************************************************/
