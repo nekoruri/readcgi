@@ -111,10 +111,6 @@ char const *LastChar(char const *src, char c);
 char *zz_GetString(char *dst, size_t dst_size, char const *tgt);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
-#ifndef TYPE_TERI
-char *doReplace(char *des, char const *str0, char const *str1);
-void someReplace(char const *src, char *des, char const *str0, char const *str1);
-#endif
 static void html_foot(int level, int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
@@ -840,9 +836,6 @@ void html_banner(void)
 static int out_html1(int level)
 {
 	char *s[20];
-#ifndef TYPE_TERI
-	char r4[SIZE_BUF];
-#endif
 	char p[SIZE_BUF];
 
 	if (out_resN)
@@ -850,13 +843,7 @@ static int out_html1(int level)
 	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 	if (!*p)
 		return 1; 
-#ifdef	TYPE_TERI
-	/*someReplace(s[4],r4,COMMA_SUBSTITUTE,",")       ; */
 	html_head(level, s[4], lineMax);
-#else
-	someReplace(s[4], r4, COMMA_SUBSTITUTE, ",");
-	html_head(level, r4, lineMax);
-#endif
 #if 0
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, "<DL>");
@@ -871,12 +858,7 @@ static int out_html1(int level)
 static int out_html(int level, int line, int lineNo)
 {
 	char *s[20];
-#ifdef	TYPE_TERI
 	char *r0, *r1, *r3, *r4;
-#else
-	char r0[SIZE_BUF], r1[SIZE_BUF], r3[SIZE_BUF],
-	    r4[SIZE_BUF];
-#endif
 	char p[SIZE_BUF];
 
 /*printf("line=%d[%s]<P>\n",line,BigLine[line]);return 0;*/
@@ -885,11 +867,7 @@ static int out_html(int level, int line, int lineNo)
 		splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 		if (!*p)
 			return 1; 
-#ifdef	TYPE_TERI
 		r4 = s[4];
-#else
-		someReplace(s[4], r4, COMMA_SUBSTITUTE, ",");
-#endif
 		html_head(level, r4, lineMax);
 #if 0
 		if (!is_imode()) {	/* no imode       */
@@ -903,16 +881,9 @@ static int out_html(int level, int line, int lineNo)
 	if (!*p)
 		return 1; 
 	
-#ifdef	TYPE_TERI
 	r0 = s[0];
 	r1 = s[1];
 	r3 = s[3];
-#else
-	someReplace(s[0], r0, COMMA_SUBSTITUTE, ",");
-	someReplace(s[1], r1, COMMA_SUBSTITUTE, ",");
-	someReplace(s[3], r3, COMMA_SUBSTITUTE, ",");
-	someReplace(r3, r3, "&amp;", "&");
-#endif
 
 	if (!is_imode()) {	/* no imode */
 		if (*r3 && s[4]-r3 < 8192) {
@@ -2234,52 +2205,6 @@ void html_foot_im(int line, int stopped)
 	}
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
 }
-
-#ifndef TYPE_TERI
-/****************************************************************/
-/*	Replace(do)						*/
-/****************************************************************/
-char *doReplace(char *des, char const *str0, char const *str1)
-{
-	char *p; 
-
-	int str0_length; 
-	int str1_length; 
-
-	/* 置き換えるべき文字列の位置を取得 */ 
-	p = strstr(des, str0); 
-	if (p == NULL) { 
-		return NULL; 
-	} 
-
-	str0_length = strlen(str0); 
-	str1_length = strlen(str1); 
-
-	/* 後ろの部分を目的の位置まで移動 */
-	memmove( p + str1_length, p + str0_length, strlen(p + str0_length)+1 );
-
-	/* str1をはめ込む */
-	memcpy( p, str1, str1_length );
-
-	/* 部分文字列以後の文字列の位置を返す */ 
-	return p + str1_length; 
-}
-/****************************************************************/
-/*	Replace(some)						*/
-/****************************************************************/
-void someReplace(char const *src,
-		 char *des,
-		 char const *str0, char const *str1)
-{
-	char *last;
-	strcpy(des, src);
-
-	last = des;
-	while (last) {
-		last = doReplace(last, str0, str1);
-	}
-}
-#endif
 /****************************************************************/
 /*	END OF THIS FILE					*/
 /****************************************************************/
