@@ -2373,9 +2373,11 @@ int main(void)
 	/* ここまでで既にzz_fileSizeは(ファイルが見つかれば)設定されている */
 	if (rawmode) {
 		if (zz_fileSize && zz_fileSize == raw_lastsize) {
-			/* LastModifiedを出力せず、非圧縮で返す */
-			printf("\n" "+OK 0/%dK\n", MAX_FILESIZE / 1024);
-			return 0;
+			if (!zz_http_if_modified_since) {	/* NULLだよね？KARA入れたら変えてね */
+				/* LastModifiedを出力せず、非圧縮で返す */
+				printf("\n" "+OK 0/%dK\n", MAX_FILESIZE / 1024);
+				return 0;
+			}
 		}
 	}
 #endif
