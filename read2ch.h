@@ -4,7 +4,7 @@
 #define READ2CH_H__
 
 #define	CGINAME	"read.cgi"
-#define	CGIVER	"read.cgi ver5.24+ (01/09/25-)"
+#define	CGIVER	"read.cgi ver5.25+ (01/10/12-)"
 #define	RES_YELLOW	900
 #define	RES_REDZONE	950
 #define	RES_RED		1000
