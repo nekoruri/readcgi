@@ -434,8 +434,8 @@
 	"<p>" CGIVER "</body></html>"
 
 /* html_error()用エラーメッセージ */
-#define ERROR_TOO_HUGE "このスレッド大きすぎます。"
-#define ERROR_NOT_FOUND "そんな板orスレッドないです。"
-#define ERROR_NO_MEMORY "メモリの確保に失敗しました。"
-#define ERROR_MAINTENANCE "調整中。。。"
-#define ERROR_LOGOUT "なんか不調です。"
+#define ERRORMES_TOO_HUGE "このスレッド大きすぎます。"
+#define ERRORMES_NOT_FOUND "そんな板orスレッドないです。"
+#define ERRORMES_NO_MEMORY "メモリの確保に失敗しました。"
+#define ERRORMES_MAINTENANCE "調整中。。。"
+#define ERRORMES_LOGOUT "なんか不調です。"

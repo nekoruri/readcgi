@@ -100,7 +100,14 @@ int isbusytime = 0;
 char const *LastChar(char const *src, char c);
 char *zz_GetString(char *dst, char const *tgt);
 char *doReplace(char *des, char const *str0, char const *str1);
-void html_error(char *mes);
+enum html_error_t {
+	ERROR_TOO_HUGE,
+	ERROR_NOT_FOUND,
+	ERROR_NO_MEMORY,
+	ERROR_MAINTENANCE,
+	ERROR_LOGOUT,
+};
+void html_error(enum html_error_t errorcode);
 void html_foot_im(int);
 void html_head(char *title, int line);
 int res_split(char **s, char *p);
@@ -1418,13 +1425,33 @@ int main()
 /****************************************************************/
 /*	ERROR END(html_error)					*/
 /****************************************************************/
-void html_error(char *mes)
+void html_error(enum html_error_t errorcode)
 {
 	char zz_soko[256];
 	char tmp[256];
 	char doko[256];
 	struct stat CountStat;
 	char comcom[256];
+	const char * mes;
+	switch ( errorcode ) {
+	case ERROR_TOO_HUGE:
+		mes = ERRORMES_TOO_HUGE;
+		break;
+	case ERROR_NOT_FOUND:
+		mes = ERRORMES_NOT_FOUND;
+		break;
+	case ERROR_NO_MEMORY:
+		mes = ERRORMES_NO_MEMORY;
+		break;
+	case ERROR_MAINTENANCE:
+		mes = ERRORMES_MAINTENANCE;
+		break;
+	case ERROR_LOGOUT:
+		mes = ERRORMES_LOGOUT;
+		break;
+	default:
+		mes = "";
+	}
 #ifdef RAWOUT
 	if(rawmode) {
 		/* ?....はエラー。 */
@@ -1441,7 +1468,7 @@ void html_error(char *mes)
 	strncpy(zz_soko, tmp, 3);
 
 	*comcom = '\0';
-	if (strstr(mes, "不調")) {
+	if (errorcode == ERROR_LOGOUT) {
 		sprintf(comcom, R2CH_HTML_ERROR_ADMIN);
 	}
 
@@ -1455,7 +1482,7 @@ void html_error(char *mes)
 	html_bannerNew();
 	pPrintf(pStdout, R2CH_HTML_ERROR_4);
 
-	if (strstr(mes, "そんな")) {
+	if (errorcode == ERROR_NOT_FOUND) {
 		sprintf(doko, "../%.50s/kako/%.50s/%.50s.html", zz_bs,
 			zz_soko, tmp);
 		if (!stat(doko, &CountStat)) {
