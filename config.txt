@@ -11,14 +11,13 @@
 「レスを全部読む」の増加への対策として、
 表示範囲外のリンクは削除しないように変更。
 
-○NORMAL_TAGCUT
+×NORMAL_TAGCUT
 時間帯にかかわらず >>000 形式のレスへのリンクを削除。
 表示範囲外のリンクは削除しない。
 
 △RELOADLINK
-一番最後に、「更新したレスを表示」のリンクを表示する
+一番最後に、「新着レスを表示」のリンクを表示する
 連打されてもNotModifiedが返るので、大きな負荷にはならないはず。
-PREV_NEXT_ANCHOR使用時はoff推奨
 
 ◎GSTR2
 nofirst → n など、短縮形で指示できるようにする
@@ -68,7 +67,7 @@ read.cgi側によるindexの実装(experimental)
 /board/dat/idx/ディレクトリがあれば、各レスのindexを作成する。
 
 ×ALL_ANCHOR
-▲CHUNK_ANCHOR
+△CHUNK_ANCHOR
 トップに「全部読む」/CHUNK_NUM毎に区切ったレスへのanchorをつける
 どちらかはあった方がよさそうだけど、
 
@@ -78,7 +77,8 @@ read.cgi側によるindexの実装(experimental)
 
 ▲CHUNKED_ANCHOR_WITH_FORM
 要CHUNK_ANCHOR
-CHUNK_ANCHORをform selectにする
+from select形式で CHUNKED_ANCHORを表示する。
+「掲示板に戻る」「レスを全部」「最新レス」との統一が取れていない。
 
 ▲USE_CHUNK_LINK
 CHUNK_ANCHORとCREATE_NAME_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
@@ -151,17 +151,10 @@ MAX_FILESIZE - CAUTION_FILESIZE*1024 を超えたら警告を表示する。
 NN4.xでgzip圧縮時にContent-LengthがあるとLast-Modifiedが無効になる問
 題の対策を行う。(User-AgentによってはContent-Lengthを出力しない)
 
-×CHUNKED_ANCHOR_WITH_FORM
-select form形式で CHUNKED_ANCHORを表示する。
-「掲示板に戻る」「レスを全部」「最新レス」との統一が取れていない。
-
-？SEPARATE_CHUNK_ANCHOR
-CHUNKED_ANCHOR のリンクを上下に分けて表示する。
-
 △PREV_NEXT_ANCHOR
 「1- 前50 次50」をつける
- CHUNK_ANCHOR類ははずすこと。
- RELOADLINKもはずす方が良い（次50とほぼ同じ）
+ CHUNK_ANCHOR時は下にだけつける
+ RELOADLINKがない場合は、次50と未読に切り替え
  前後の数はCHUNK_NUMで定義
 
 ▲Katjusha_Beta_kisei

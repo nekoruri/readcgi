@@ -380,7 +380,7 @@
 	R2CH_HTML_T_CHUNK_ANCHOR(CGINAME "?bbs=%s&key=%s&st=%d&to=%d%s", "%d")
 /* %s=板 %s=スレ番号 %d=レス個数 %d=レス個数 */
 #define R2CH_HTML_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR(CGINAME "?bbs=%s&key=%s&ls=%d" NO_FIRST, "%d")
+	R2CH_HTML_T_LATEST_ANCHOR(CGINAME "?bbs=%s&key=%s&ls=%d" /*NO_FIRST*/, "%d")
 
 /* 以下のものは、PATH仕様で用いられる
    板・スレ番はすでに決定しているので、埋め込まれない */
@@ -446,17 +446,47 @@
 /*
  * RELOAD
  */
-#define R2CH_HTML_T_RELOAD(path) \
-	"<hr><center><a href=\"" path "\">新レスの表\示</a></center><hr>"
+#define R2CH_HTML_T_RELOAD(path,str) \
+	"<hr><center><a href=\"" path "\">" str "</a></center>"
 
 #define R2CH_HTML_RELOAD \
-	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" NO_FIRST)
+	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" /* NO_FIRST */, "新着レスの表\示")
 
 #define R2CH_HTML_PATH_RELOAD \
-	R2CH_HTML_T_RELOAD("%d-")
+	R2CH_HTML_T_RELOAD("%d-", "新着レスの表\示")
+
+#define R2CH_HTML_AFTER \
+	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" /* NO_FIRST */, "続きを読む")
+
+#define R2CH_HTML_PATH_AFTER \
+	R2CH_HTML_T_RELOAD("%d-", "続きを読む")
 
 #define R2CH_HTML_RELOAD_I \
-	"<hr><center><a href=\""CGINAME"?bbs=%s&key=%s&st=%d&i=t" NO_FIRST "\">新レスの表\示</a></center><hr>"
+	"<center><a href=\""CGINAME"?bbs=%s&key=%s&st=%d&i=t" NO_FIRST "\">新着レスの表\示</a></center><hr>"
+
+/*
+ * PREV_NEXT
+ */
+#define R2CH_HTML_T_PREVNEXT(path,str) \
+	" <a href=\"" path "\">" str "</a>"
+
+#define R2CH_HTML_PREV \
+	R2CH_HTML_T_PREVNEXT(CGINAME "?bbs=%s&key=%s&st=%d&to=%d","前%d")
+
+#define R2CH_HTML_PATH_PREV \
+	R2CH_HTML_T_PREVNEXT("%d-%d","前%d")
+
+#define R2CH_HTML_NEXT \
+	R2CH_HTML_T_PREVNEXT(CGINAME "?bbs=%s&key=%s&st=%d&to=%d","次%d")
+
+#define R2CH_HTML_PATH_NEXT \
+	R2CH_HTML_T_PREVNEXT("%d-%d","次%d")
+
+#define R2CH_HTML_NEW \
+	R2CH_HTML_T_PREVNEXT(CGINAME "?bbs=%s&key=%s&st=%d","未読")
+
+#define R2CH_HTML_PATH_NEW \
+	R2CH_HTML_T_PREVNEXT("%d-","未読")
 
 /*
  * FOOTER

@@ -24,10 +24,10 @@
 #define LINKTAGCUT (1)
 
 /* always LINKTAGCUT */
-#define NORMAL_TAGCUT
+/* #define NORMAL_TAGCUT */
 
 /* 一番最後に、「更新したレスを表示」のリンクを表示する */
-/* #define RELOADLINK */
+#define RELOADLINK
 
 /* nofirst → n など、短縮形で指示できるようにする */
 #define GSTR2
@@ -81,8 +81,8 @@
 
 /* pageの topに、CHUNK_NUM番ごとに区切ったレスへの anchorをつける
  */
-/* #define CHUNK_ANCHOR */
-#define CHUNK_NUM 50
+#define CHUNK_ANCHOR
+#define CHUNK_NUM 100
 
 /* CUUNK_ANCHOR使用時に>>nnをCHUNKごとのリンクにする */
 /* #define USE_CHUNK_LINK */

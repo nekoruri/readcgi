@@ -464,7 +464,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					     (
 #ifdef USE_PATH
 					     (path_depth != 0) ?
-					     "<a href=\"%s%d-%d" : 
+					     "<a href=\"%s%d-%dn" : 
 #endif
 					     "<a href=\"%s&st=%d&to=%d" NO_FIRST
 					     ),
@@ -1800,10 +1800,8 @@ int main(void)
 	}
 #endif
 	else
-		dat_out(0);
-#else
-	dat_out(0);
 #endif
+		dat_out(0);
 	return 0;
 }
 /****************************************************************/
@@ -2094,7 +2092,7 @@ static void html_thread_anchor(int first, int last)
 					zz_bs, zz_ky,
 					line,
 					line + CHUNK_NUM - 1, 
-					(line == 1 ? "" : NO_FIRST),
+					"", /* (line == 1 ? "" : NO_FIRST), */
 					line);
 		}
 #endif
@@ -2195,7 +2193,7 @@ void html_head(int level, char const *title, int line)
 					R2CH_HTML_ALL_ANCHOR,
 					zz_bs, zz_ky); 
 		}
-#ifdef PREV_NEXT_ANCHOR
+#if defined(PREV_NEXT_ANCHOR) && !defined(CHUNK_ANCHOR)
 #ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout, " <a href=\"1-%d\">1-</a>",
@@ -2207,29 +2205,29 @@ void html_head(int level, char const *title, int line)
 		if (first_line()>1) {
 #ifdef USE_PATH
 			if (path_depth)
-				pPrintf(pStdout, " <a href=\"%d-%d\">前%d</a>",
+				pPrintf(pStdout, R2CH_HTML_PATH_PREV,
 					(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-					first_line(),
+					first_line()-1,
 					CHUNK_NUM );
 			else
 #endif
-				pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
+				pPrintf(pStdout, R2CH_HTML_PREV,
 					zz_bs, zz_ky,
 					(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-					first_line(),
+					first_line()-1,
 					CHUNK_NUM );
 		}
 #ifdef USE_PATH
 		if (path_depth)
-			pPrintf(pStdout, " <a href=\"%d-%d\">次%d</a>",
-				last_line(),
+			pPrintf(pStdout, R2CH_HTML_PATH_NEXT,
+				last_line()+1,
 				last_line()+CHUNK_NUM,
 				CHUNK_NUM );
 		else
 #endif
-			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
+			pPrintf(pStdout, R2CH_HTML_NEXT,
 				zz_bs, zz_ky,
-				last_line(),
+				last_line()+1,
 				last_line()+CHUNK_NUM,
 				CHUNK_NUM );
 #endif
@@ -2300,17 +2298,36 @@ void html_reload(int startline)
 		pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
 			startline);
 	else {
+#ifdef PREV_NEXT_ANCHOR
+		if (last_line()<lineMax) {
+			if (isbusytime) return;	/* 混雑時は次100にまかせる */
 #ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout,
-				R2CH_HTML_PATH_RELOAD,
-				startline);
-		else
+			if (path_depth)
+				pPrintf(pStdout,
+					R2CH_HTML_PATH_AFTER,
+					last_line()+1);
+			else
 #endif
-			pPrintf(pStdout,
-				R2CH_HTML_RELOAD,
-				zz_bs, zz_ky,
-				startline);
+				pPrintf(pStdout,
+					R2CH_HTML_AFTER,
+					zz_bs, zz_ky,
+					last_line()+1);
+
+		} else
+#endif
+		{
+#ifdef USE_PATH
+			if (path_depth)
+				pPrintf(pStdout,
+					R2CH_HTML_PATH_RELOAD,
+					startline);
+			else
+#endif
+				pPrintf(pStdout,
+					R2CH_HTML_RELOAD,
+					zz_bs, zz_ky,
+					startline);
+		}
 	}
 }
 #endif
@@ -2328,11 +2345,10 @@ static void html_foot(int level, int line, int stopped)
 		html_foot_im(line,stopped);
 		return;
 	}
-
-#ifdef PREV_NEXT_ANCHOR
-#ifndef RELOADLINK
+#if defined(PREV_NEXT_ANCHOR) || defined(RELOADLINK)
 	pPrintf(pStdout, "<hr>");
 #endif
+#ifdef PREV_NEXT_ANCHOR
 	if (!isbusytime)
 	{
 #ifdef USE_PATH
@@ -2368,6 +2384,7 @@ static void html_foot(int level, int line, int stopped)
 				zz_bs, zz_ky); 
 	}
 
+#ifndef RELOADLINK
 #ifdef USE_PATH
 	if (path_depth)
 		pPrintf(pStdout, " <a href=\"1-%d\">1-</a>",
@@ -2376,53 +2393,58 @@ static void html_foot(int level, int line, int stopped)
 #endif
 		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
 			zz_bs, zz_ky, CHUNK_NUM);
+#endif
 
 	if (!isbusytime && first_line()>1) {
 #ifdef USE_PATH
 		if (path_depth)
-			pPrintf(pStdout, " <a href=\"%d-%d\">前%d</a>",
+			pPrintf(pStdout, R2CH_HTML_PATH_PREV,
 				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-				first_line(),
+				first_line()-1,
 				CHUNK_NUM );
 		else
 #endif
-			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
+			pPrintf(pStdout, R2CH_HTML_PREV,
 				zz_bs, zz_ky,
 				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-				first_line(),
+				first_line()-1,
 				CHUNK_NUM );
 	}
 	if (isbusytime && need_tail_comment)
 		nchunk = RES_NORMAL;
 	else
 		nchunk = CHUNK_NUM;
-	if ( last_line() < lineMax) {
+#ifdef RELOADLINK
+	if (!isbusytime || last_line()<lineMax) {
+#else
+	if (last_line() < lineMax) {
+#endif
 #ifdef USE_PATH
 		if (path_depth)
-			pPrintf(pStdout, " <a href=\"%d-%d\">次%d</a>",
-				last_line(),
+			pPrintf(pStdout, R2CH_HTML_PATH_NEXT,
+				last_line()+1,
 				last_line()+nchunk,
 				nchunk );
 		else
 #endif
-			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
+			pPrintf(pStdout, R2CH_HTML_NEXT,
 				zz_bs, zz_ky,
-				last_line(),
+				last_line()+1,
 				last_line()+nchunk,
 				nchunk );
+#ifndef RELOADLINK
 	} else {
 #ifdef USE_PATH
 		if (path_depth)
-			pPrintf(pStdout, " <a href=\"%d-%d\">未読</a>",
-				last_line(),
-				last_line()+CHUNK_NUM);
+			pPrintf(pStdout, R2CH_HTML_PATH_NEW,
+				last_line());
 		else
 #endif
-			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">未読</a>",
+			pPrintf(pStdout, R2CH_HTML_NEW,
 				zz_bs, zz_ky,
-				last_line(),
-				last_line()+CHUNK_NUM);
+				last_line());
 	}
+#endif
 #ifdef USE_PATH
 	if (path_depth)
 		pPrintf(pStdout,
@@ -2436,6 +2458,9 @@ static void html_foot(int level, int line, int stopped)
 		LATEST_NUM, LATEST_NUM);
 	if (isbusytime && need_tail_comment)
 		pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
+#endif
+#ifdef RELOADLINK
+	}
 #endif
 
 #ifdef	SEPARATE_CHUNK_ANCHOR
