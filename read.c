@@ -1,8 +1,9 @@
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<string.h>
-#include	<sys/types.h>
+#include	<sys/mman.h>
 #include	<sys/stat.h>
+#include	<sys/types.h>
 #include	<ctype.h>
 #include	<fcntl.h>
 #include	<time.h>
@@ -83,7 +84,7 @@ char zz_rw[1024];
 #endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
-char *BigLine[RES_RED + 16];
+char const *BigLine[RES_RED + 16];
 
 #define is_imode() (*zz_im == 't')
 
@@ -905,6 +906,52 @@ int dat_out_raw()
 #endif
 
 /****************************************************************/
+/*	スレ一覧(index2.html, subback.html相当)			*/
+/*	を出力してみる。せっかくだから。			*/
+/*	path_depth に動作が依存する				*/
+/****************************************************************/
+static void dat_out_subject(void)
+{
+	int i;
+
+	/* /board の形、うしろに '/' ついてない */
+	if (path_depth < 2)
+		pPrintf(pStdout, "<H1>未実装だから、パスおかしいど</H1>");
+	else
+		pPrintf(pStdout,
+			"<html><head>"
+			"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=x-sjis\">"
+			"</head>"
+			"<body target=\"body\">"
+			"<font size=-1>");
+
+	/* 行を読み込んで解析していく
+	   BigLine[]の情報をとりあえず信用しておくことにする */
+	for (i = 0; i < lineMax; i++) {
+		char const *p = BigLine[i];
+		char const *subj;
+		int datn, subjn;
+		datn = strspn(p, "0123456789");
+		if (datn == 0)
+			break;
+		if (memcmp(&p[datn], ".dat<>", 6) != 0)
+			break;
+		subj = p + datn + 6;
+		subjn = strcspn(subj, "\r\n");
+		if (subjn == 0)
+			break;
+		/* path_depth == 2 */
+		pPrintf(pStdout,
+			"<a href=\"%.*s/?ls=50\">%d: %.*s</a>\n",
+			datn, p,
+			1 + i,
+			subjn, subj);
+	}
+
+	pPrintf(pStdout,
+		"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></font></body></html>");
+}
+/****************************************************************/
 /*	Get file size(dat_out)					*/
 /****************************************************************/
 int dat_out()
@@ -959,6 +1006,11 @@ int dat_read()
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
+#ifdef USE_PATH
+	/* スレ一覧を取りに逝くモード */
+	if (1 <= path_depth && path_depth < 3)
+		sprintf(fname, "../%.256s/subject.txt", zz_bs);
+#endif
 	zz_fileSize = getFileSize(fname);
 
 	if (zz_fileSize > MAX_FILESIZE)
@@ -984,18 +1036,30 @@ int dat_read()
 	if (nn_ls < 0)
 		nn_ls = 0;
 
-	BigBuffer = malloc(zz_fileSize + 32);
-	if (!BigBuffer)
-		html_error(ERROR_NO_MEMORY);
-
 	in = open(fname, O_RDONLY);
 	if (in < 0)
 	{
 		html_error(ERROR_NOT_FOUND);
 		return 0;
 	}
+#ifdef USE_MMAP
+	BigBuffer = mmap(NULL,
+			 zz_fileSize + 0x10000,
+			 PROT_READ | PROT_WRITE,
+			 MAP_PRIVATE,
+			 in,
+			 0);
+	if (BigBuffer == MAP_FAILED)
+		html_error(ERROR_NO_MEMORY);
+#else
+	BigBuffer = malloc(zz_fileSize + 32);
+	if (!BigBuffer)
+		html_error(ERROR_NO_MEMORY);
+
 	read(in, BigBuffer, zz_fileSize);
 	close(in);
+#endif
+	/* XXX ところどころに 0 が現れるの? */
 	i = strlen(BigBuffer);
 	while(i < zz_fileSize) {
 		BigBuffer[i] = '*';
@@ -1081,6 +1145,7 @@ static int get_path_info(char const *path_info)
 	char const *s = path_info;
 	int n;
 
+	path_depth = 0;
 	/* PATH_INFO は、'/' で始まってるような気がしたり */
 	if (s[0] != '/')
 		return 0;
@@ -1319,6 +1384,11 @@ int main()
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
+	/* スレ一覧を取りに逝くモード */
+	if (1 <= path_depth && path_depth < 3) {
+		sprintf(fname, "../%.256s/subject.txt", zz_bs);
+	}
+
 	zz_fileLastmod = getFileLastmod(fname);
 	get_lastmod_str(zz_fileLastmod);
 #ifdef PREVENTRELOAD
@@ -1412,13 +1482,21 @@ int main()
 
 	dat_read();
 #ifdef RAWOUT
-	rawmode ? dat_out_raw() : dat_out();
+	if (rawmode)
+		dat_out_raw();
+#ifdef USE_PATH
+	else if (1 <= path_depth && path_depth < 3)
+		dat_out_subject();
+#endif
+	else
+		dat_out();
 #else
 	dat_out();
 #endif
-	
+#ifndef USE_MMAP
 	if (BigBuffer)
 		free(BigBuffer);
+#endif
 	BigBuffer = NULL;
 	return 0;
 }
@@ -1456,8 +1534,10 @@ void html_error(enum html_error_t errorcode)
 	if(rawmode) {
 		/* ?....はエラー。 */
 		pPrintf(pStdout, "-ERR %s\n", mes);
+#ifndef USE_MMAP
 		if (BigBuffer)
 			free(BigBuffer);
+#endif
 		BigBuffer = NULL;
 		exit(0);
 	}
@@ -1503,8 +1583,10 @@ void html_error(enum html_error_t errorcode)
 
 	pPrintf(pStdout, R2CH_HTML_ERROR_6);
 
+#ifndef USE_MMAP
 	if (BigBuffer)
 		free(BigBuffer);
+#endif
 	BigBuffer = NULL;
 
 	exit(0);
@@ -1522,8 +1604,10 @@ int html_error999(char *mes)
 	if(rawmode) {
 		/* ?....はエラー。 */
 		pPrintf(pStdout, "-ERR %s\n", mes);
+#ifndef USE_MMAP
 		if (BigBuffer)
 			free(BigBuffer);
+#endif
 		BigBuffer = NULL;
 		exit(0);
 	}
@@ -1539,8 +1623,10 @@ int html_error999(char *mes)
 	html_banner();
 	pPrintf(pStdout, R2CH_HTML_ERROR_999_2);
 
+#ifndef USE_MMAP
 	if (BigBuffer)
 		free(BigBuffer);
+#endif
 	BigBuffer = NULL;
 
 	exit(0);
