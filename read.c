@@ -14,6 +14,7 @@
 #include	<sys/mman.h>
 #endif
 
+#include "datindex.h"
 #include "digest.h"
 #include "read.h"
 
@@ -89,6 +90,7 @@ char zz_st[1024];
 char zz_to[1024];
 char zz_nf[1024];
 char zz_im[1024];
+long nn_ky;	/* zz_kyを数字にしたもの */
 #ifdef RAWOUT
 char zz_rw[1024];
 #endif
@@ -1407,15 +1409,12 @@ int dat_read(char const *fname,
 	if (*zz_ky == '.')
 		html_error(ERROR_NOT_FOUND);
 
-#if 1
 	nn_st = st;
 	nn_to = to;
 	nn_ls = ls;
-#else
-	nn_st = atoi(zz_st);
-	nn_to = atoi(zz_to);
-	nn_ls = atoi(zz_ls);
-#endif
+
+#if 0
+	/* 外側へ移動 */
 	if (nn_st < 0)
 		nn_st = 0;
 	if (nn_to < 0)
@@ -1434,6 +1433,7 @@ int dat_read(char const *fname,
 		}
 	} else if (nn_ls < 0)
 		nn_ls = 0;
+#endif
 
 	in = open(fname, O_RDONLY);
 	if (in < 0)
@@ -1785,6 +1785,9 @@ void zz_GetEnv(void)
 		zz_path_info = NULL;
 	}
 #endif
+	/* zz_ky は単なる32ビット数値なので、
+	   以降、数字でも扱えるようにしておく */
+	nn_ky = atoi(zz_ky);
 #ifdef COOKIE
 	SetFormName();
 #endif
@@ -1876,7 +1879,12 @@ int main(void)
 	int whitespace = 2048;
 #endif
 #endif
+#ifdef USE_INDEX
+	DATINDEX_OBJ dat;
+#endif
 	char fname[1024];
+
+	int st, to, ls;
 
 #if	('\xFF' != 0xFF)
 #error	-funsigned-char required.
@@ -1893,6 +1901,41 @@ int main(void)
 	pStdout = (gzFile) stdout;
 #endif
 	zz_GetEnv();
+
+	/* st, to, lsは、このレベルでいじっておく */
+	st = atoi(zz_st);
+	to = atoi(zz_to);
+	ls = atoi(zz_ls);
+
+	if (st < 0)
+		st = 0;
+	if (to < 0)
+		to = 0;
+	if (st == 1 && to == 1)
+		zz_nf[0] = '\0';
+	if (is_imode()) {	/* imode */
+		if (!st && !to && !ls)
+			ls = RES_IMODE;
+	}
+	if (!is_nofirst() && ls > 0) {
+		ls--;
+		if(ls == 0) {
+			ls = 1;
+			strcpy(zz_nf, "true");
+		}
+	} else if (ls < 0)
+		ls = 0;
+
+#ifdef USE_INDEX
+	/* ここでindexを読み込んでくる
+	   実はすでに、.datもマッピングされちゃってるので、
+	   近いウチにBigBufferは用済みになってしまう鴨 */
+	if (nn_ky && !datindex_open(&dat, zz_bs, nn_ky)) {
+		printf("Content-Type: text/plain\n\n%s/%s/%ld/", zz_bs, zz_ky, nn_ky);
+		printf("error");
+		return 0;
+	}
+#endif
 
 #ifdef RAWOUT
 	if(!rawmode)
@@ -1913,19 +1956,40 @@ int main(void)
 	/* スレ一覧を取りに逝くモード */
 	if (1 <= path_depth && path_depth < 3) {
 		sprintf(fname, "../%.256s/subject.txt", zz_bs);
+		zz_fileLastmod = getFileLastmod(fname);
 	}
 #endif
 
 	zz_fileLastmod = getFileLastmod(fname);
+#ifdef USE_INDEX
+	/* 実験仕様: 各種パラメータをいじる
+	   互いに矛盾するような設定は、
+	   受け入れるべきではない */
+	if (st == 0 && to == 0 && ls) {
+		to = dat.linenum;
+		st = to - ls + 1;
+		ls = 0;
+	}
+
+	/* これをやると、しばらく digest が使えなくなる */
+	zz_fileSize = dat.dat_stat.st_size;
+	if (nn_ky)
+		zz_fileLastmod = datindex_lastmod(&dat,
+						  !is_nofirst(),
+						  st,
+						  to);
+#endif
 	get_lastmod_str(lastmod_str, zz_fileLastmod);
-#if 1
+#if 0
+	/* XXX これはウソ、Expires: は、
+	   現在時間を基準にすべきである */
 	get_lastmod_str(expires_str, zz_fileLastmod + 5);
 #else
 	{
-	  /* ためしに廃棄期限をちょっと30秒先に設定してみる */
-	  time_t nw;
-	  time(&nw);
-	  get_lastmod_str(expires_str, nw + 30);
+		/* ためしに廃棄期限をちょっと先に設定してみる */
+		time_t nw;
+		time(&nw);
+		get_lastmod_str(expires_str, nw + 10);
 	}
 #endif
 #ifdef PREVENTRELOAD
@@ -2037,10 +2101,7 @@ int main(void)
 
 	logOut("");
 
-	dat_read(fname,
-		 atoi(zz_st),
-		 atoi(zz_to),
-		 atoi(zz_ls));
+	dat_read(fname, st, to, ls);
 
 #ifdef RAWOUT
 	if (rawmode)

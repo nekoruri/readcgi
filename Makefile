@@ -6,7 +6,7 @@ DEFS          = -DHAVE_READ2CH_H
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
 CFLAGS        = -I$(zlibdir) -g -O2 -Wall -funsigned-char
 LIBS          = 
-OBJS          = digest.o read.o util_date.o $(zlibdir)/libz.a
+OBJS          = datindex.o digest.o read.o util_date.o $(zlibdir)/libz.a
 SRCS          = datindex.c digest.c read.c util_date.c \
 		r2chhtml.h read2ch.h datindex.h digest.h read.h util_date.h \
 		Makefile

@@ -76,6 +76,10 @@
 /* munmap(2)等の明示的な資源開放 */
 /* #undef EXPLICIT_RELEASE */
 
+/* read.cgi側によるindexの実装(experimental) */
+/* #define USE_INDEX */
+
+
 /** Header custumization **/
 
 /* 「全部読む」をつける */
