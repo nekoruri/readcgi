@@ -2,6 +2,8 @@ tag: HEAD
   imodeでPREV_NEXT_ANCHOR機能追加
   ENGLISH condition 追加
   CONFIG_TIMEZONE 追加("JST-9")
+  USE_INTERNAL_SETTINGS
+    設定にSETTINGファイルではなく、SPECIAL_SETTINGを利用する
   過去ログがkako/100/に入っている場合に対応
 
 

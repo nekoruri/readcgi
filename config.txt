@@ -122,6 +122,20 @@ FORCE_304_TIME (PREVENTRELOAD有効時のみ)
 LATEST_NUM (LATEST_ANCHOR有効時のみ)
 LINKTAGCUT
 
+△USE_INTERNAL_SETTINGS
+※USE_SETTING_FILEが必要。
+SETTING_R.TXTを読まずに、板ごとの設定をプログラム内部に持つ。
+
+△SPECIAL_SETTING
+USE_INTERNAL_SETTINGSでの板ごとの設定を定義する。
+内容は、SETTING_R.TXTに準ずる。
+多数の板を定義するのは推奨しない。
+設定の終わりに'\n'が必要。
+一つの板に複数の設定を書く場合は、'\n'で区切ること。
+#deifine SPECIAL_SETTING \
+  { "板名", "設定名=設定\n" }, \
+  { "板名", "設定名=設定\n設定名=設定\n" },
+
 △CHECK_MOD_GZIP
 mod_gzipが導入されていたら、「掲示板に戻る」のリンク先を
 /板名/ にする。
