@@ -975,7 +975,7 @@ int BadAccess(void)
 #if defined(RAWOUT)
 	if ( rawmode ) {
 #ifdef	CHECK_MOD_GZIP
-		if (mod_gzip_exist)
+		if (mod_gzip_exist > 1)
 			return 0;
 #endif
 		return !gzip_flag;
@@ -2404,6 +2404,7 @@ int main(void)
 #ifdef	GZIP
 #ifdef	CHECK_MOD_GZIP
 	if (mod_gzip_exist) {
+		mod_gzip_exist += gzip_flag;
 #ifdef NN4_LM_WORKAROUND
 		if (!(!strncmp(zz_http_user_agent, "Mozilla/4.", 10)
 		    && !strstr(zz_http_user_agent, "compatible")))
