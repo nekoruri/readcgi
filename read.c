@@ -1425,6 +1425,15 @@ void zz_GetEnv(void)
 	if (!zz_http_language)
 		zz_http_language = KARA;
 
+#ifdef USE_PATH
+	zz_bs[0] = zz_ky[0] = zz_ls[0] = zz_st[0] = '\0';
+	zz_to[0] = zz_nf[0] = zz_im[0] = '\0';
+	if (!get_path_info(zz_path_info)) {
+		/* これ以降、path が付与されているかどうかの
+		   判定は zz_path_info のテストで行ってくれ */
+		zz_path_info = NULL;
+	}
+#endif
 	zz_GetString(zz_bs, sizeof(zz_bs), "bbs");
 	zz_GetString(zz_ky, sizeof(zz_ky), "key");
 	zz_GetString(zz_ls, sizeof(zz_ls), "ls");
@@ -1433,14 +1442,8 @@ void zz_GetEnv(void)
 	zz_GetString(zz_nf, sizeof(zz_nf), "nofirst");
 	zz_GetString(zz_im, sizeof(zz_im), "imode");
 #ifdef RAWOUT
+	zz_rw[0] = '\0';
 	zz_GetString(zz_rw, sizeof(zz_rw), "raw");
-#endif
-#ifdef USE_PATH
-	if (!get_path_info(zz_path_info)) {
-		/* これ以降、path が付与されているかどうかの
-		   判定は zz_path_info のテストで行ってくれ */
-		zz_path_info = NULL;
-	}
 #endif
 	/* zz_ky は単なる32ビット数値なので、
 	   以降、数字でも扱えるようにしておく */
@@ -1922,7 +1925,9 @@ char *zz_GetString(char *dst, size_t dat_size, char const *tgt)
 
 		line += line_len + 1; /* skip delim */
 	}
+#ifndef USE_PATH
 	*dst = '\0';
+#endif
 	return	dst;
 }
 /****************************************************************/
