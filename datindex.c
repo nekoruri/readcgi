@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.8 2001/09/03 14:50:36 2ch Exp $ */
+ *  $Id: datindex.c,v 1.9 2001/09/04 07:26:48 2ch Exp $ */
 
 #include <assert.h>
 #include <ctype.h>
@@ -236,6 +236,7 @@ static int buildup_index(DATINDEX_OBJ *dat,
 {
 	int chunk;
 	char const *const p = dat->private_dat;
+	int n_line_processed;
 
 	/* .dat の mtime は記録しておく */
 	if (idx)
@@ -248,11 +249,13 @@ static int buildup_index(DATINDEX_OBJ *dat,
 	     (ofs < datlen
 	      && (DATINDEX_CHUNK_SIZE * chunk + linenum
 		  < DATINDEX_MAX_ARTICLES));
-	     chunk++, linenum = 0) {
+	     linenum += n_line_processed,
+		     (linenum >= DATINDEX_CHUNK_SIZE
+		      ? chunk++, linenum = 0
+		      : 0)) {
 		struct DATINDEX_LINE *line;
 		int i, n;
 
-		int n_line_processed;
 		time_t chunk_lastmod;
 
 		n = DATINDEX_CHUNK_SIZE * chunk + linenum;
@@ -277,12 +280,12 @@ static int buildup_index(DATINDEX_OBJ *dat,
 			   インデクスは更新しない */
 			idx->idx[chunk].lastmod = chunk_lastmod;
 			idx->idx[chunk].nextofs = ofs;
-		}
 
-		/* 有効な行に対してフラグ立ててく */
-		for (i = 0; i < n_line_processed; i++) {
-			if (line[i].lastmod)
-				idx->idx[chunk].valid_bitmap |= 1 << i;
+			/* 有効な行に対してフラグ立ててく */
+			for (i = 0; i < n_line_processed; i++) {
+				if (line[i].lastmod)
+					idx->idx[chunk].valid_bitmap |= 1 << i;
+			}
 		}
 
 		/* サブジェクトが採れていそうだったら、採る */
@@ -495,14 +498,14 @@ int datindex_open(DATINDEX_OBJ *dat,
 	     i++)
 		local_ofs = dat->shared_idx->idx[i].nextofs;
 
-	local_st = DATINDEX_IDX_SIZE * i;
+	local_st = DATINDEX_CHUNK_SIZE * i;
 
 	/* 次に、ローカル行インデクス(不足分)を構築 */
 	dat->linenum = buildup_index(dat,
 				     local_st,
 				     NULL,
 				     local_ofs,
-				     dat->dat_stat.st_size - local_ofs);
+				     dat->dat_stat.st_size);
 	/* 更新行がなかった場合は何もすることがない、はず */
 	if (!dat->linenum)
 		return 1;
@@ -544,13 +547,28 @@ int datindex_open(DATINDEX_OBJ *dat,
 /****************************************************************
  *	lastmodを拾い上げる
  *	first は、!is_nofirst() であることに注意
+ *	与えられるパラメータは、1 originを想定。
  ****************************************************************/
 time_t datindex_lastmod(DATINDEX_OBJ const *dat,
 			int first,	/* 1番目を含める */
 			int st,
-			int to,
-			int ls)
+			int to)
 {
-	return dat->dat_stat.st_mtime;
+	int i;
+	int st_chunk = (st - 1) / DATINDEX_CHUNK_SIZE;
+	time_t lastmod = 0;
+
+	for (i = (first ? 0 : st_chunk);
+	     i <= (to - 1) / DATINDEX_CHUNK_SIZE;
+	     (i == 0 && st_chunk > 0
+	      ? i = st_chunk
+	      : i++)) {
+		if (dat->shared_idx->idx[i].nextofs == 0) {
+			if (lastmod < dat->dat_stat.st_mtime)
+				lastmod = dat->dat_stat.st_mtime;
+		} else if (lastmod < dat->shared_idx->idx[i].lastmod)
+			lastmod = dat->shared_idx->idx[i].lastmod;
+	}
+	return lastmod;
 }
 /*EOF*/

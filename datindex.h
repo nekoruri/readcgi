@@ -2,7 +2,7 @@
  *
  *  世界共通インデクスの定義
  *
- *  $Id: datindex.h,v 1.6 2001/09/03 14:53:57 2ch Exp $ */
+ *  $Id: datindex.h,v 1.7 2001/09/04 07:26:48 2ch Exp $ */
 
 #ifndef DATINDEX_H__
 #define DATINDEX_H__
@@ -45,13 +45,6 @@
  *    * ファイルをディレクトリからunlink
  *    * あとは【新規作成】へ。
  *
- *  【破壊更新のやり方】
- *    * versionを0にする。
- *	version0に成功したプロセスが、
- *	責任を持って後の作業を執り行う。
- *	version0を取れなかったプロセスは、自力で処理しる!
- *    * いろいろ再構築終わったら、versionをセットしる!
- *
  */
 
 /* 想定記事総数
@@ -92,23 +85,14 @@ typedef struct DATINDEX
 	   特別扱いする、というkludgeも考えられるが… */
 	struct
 	{
-		unsigned nextofs;
-		time_t lastmod;
-		unsigned valid_bitmap;
-		long pad;
+		unsigned nextofs;	/* 次chunkへのオフセット */
+		time_t lastmod;		/* chunkの最新更新 */
+		unsigned valid_bitmap;	/* 有効発言: LSBから読め */
+		long pad;		/* うめぐさ */
 	} idx[DATINDEX_IDX_SIZE];
 
 	/* XXX うめぐさ1 */
 	unsigned pad1[607];
-#if 0
-	/* 有効発言 bitmap
-	   little endian なので、LSBから数えること。
-	   あぼーんされている発言は 0 になる。*/
-	unsigned long valid_bitmap[DATINDEX_MAX_ARTICLES / 32];
-
-	/* XXX うめぐさ2 */
-	unsigned pad2[223];
-#endif
 
 	/* シグネチャ */
 	unsigned long signature;
@@ -160,24 +144,6 @@ typedef struct DATINDEX_OBJ
 		eax; \
 	 })
 
-/* 破壊更新のために、idxを排他取得する
-   勝ったら 非0 (というよりDATINDEX_VERSION)を戻す
-   負けたら 0 を戻す
-   注意: i386 では動きませーん(藁 */
-#if 0
-#define DATINDEX_GET_DESTRUCTIVE_UPDATE(idx) \
-	((idx)->version == DATINDEX_VERSION \
-	 ? ({ \
-		long eax; \
-		__asm__ ("cmpxchg %2,%3": \
-			 "=a"(eax) : \
-			 "0"(DATINDEX_VERSION), \
-			 "r"(0), \
-			 "g"((idx)->version)); \
-		eax; \
-	 }) : 0)
-#endif
-
 /* 命名規則を間違えた…鬱
    公開インタフェイスは、
    <module>_<method>()
@@ -193,8 +159,7 @@ extern int datindex_open(DATINDEX_OBJ *dat,
 extern time_t datindex_lastmod(DATINDEX_OBJ const *dat,
 			       int first,	/* 1番目を含める */
 			       int st,
-			       int to,
-			       int ls);
+			       int to);
 
 /* 実は漏れ、C++大好きなんだ…
    なんとなくそれを匂わせる書き方になってるでしょ?(鬱
