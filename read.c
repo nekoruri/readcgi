@@ -69,6 +69,7 @@ char const *zz_http_referer;
 #ifdef ALWAYS_PATH
 char const *zz_server_name;
 char const *zz_script_name;
+int need_basehref;
 #endif
 
 #ifdef USE_PATH
@@ -1624,6 +1625,9 @@ static int get_path_info(char const *path_info)
 			}
 		} else {
 			/* ‹K’è‚³‚ê‚Ä‚È‚¢•¶Žš‚ª—ˆ‚½‚Ì‚Å•]‰¿‚ð‚â‚ß‚é */
+#ifdef	ALWAYS_PATH
+			need_basehref = strchr(s, '/') != NULL;
+#endif
 			break;
 		}
 	}
@@ -2914,7 +2918,7 @@ void html_head(int level, char const *title, int line)
 
 	pPrintf(pStdout, R2CH_HTML_HEADER_0);
 #ifdef ALWAYS_PATH
-	if (path_depth < 3 && zz_server_name && zz_script_name) {
+	if ((path_depth < 3 || need_basehref) && zz_server_name && zz_script_name) {
 #ifdef READ_KAKO
 		if (read_kako[0]) {
 			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, read_kako);

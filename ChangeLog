@@ -17,6 +17,7 @@ tag: HEAD
     △RAWOUT_PARTIAL raw=0.0時のみst,to,lsを使用した部分取得を可能にする
       (subject.txt取得時のみ、ls=??はto=??として扱う)
     △Katjusha_DLL_REPLY かちゅ〜しゃgzip対応DLLのリクエストに応答する
+  PATH形式の末尾に'/'が含まれるとき、BASE_DEFINEを出力するようにした
 
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。
