@@ -2569,7 +2569,7 @@ void html_head(int level, char const *title, int line)
 					zz_bs, zz_ky,
 					i,
 					i + CHUNK_NUM - 1, 
-					(i == 1 ? "" : "&n=t"),
+					(i == 1 ? "" : "&nofirst=true"),
 					i);
 		}
 #endif /* CHUNK_ANCHOR */
