@@ -1,12 +1,16 @@
 tag: HEAD
 
+tag: YAKIN20011021: 実験サーバ choco.2ch.net および piza, teri2 にて ver 5.26として採用。
+(chocoはmod_gzipがないため、CHECK_MOD_GZIPをoffにして導入
+mod_gzipがあるサーバはCHECK_MOD_GZIPをon)
+
   IEで問題が出たため、文字コードE0hの文字をSJIS1バイト目と判定するようにした。
   geturltaillenでのURL終端判定に &gt; と &lt; を追加した
   1の本文に>>数字 でない<a href>リンクが本文中に含まれていた場合にタイトルがおかくなっていたバグ修正
   10桁datの倉庫検索パス変更 "1aaabccccc" -> "1aaa/1aaab"
 
 
-tal: YAKIN20011012: 実験サーバ choco.2ch.net にて ver 5.25として採用。
+tag: YAKIN20011012: 実験サーバ choco.2ch.net にて ver 5.25として採用。
 
   out_simplehtml()でHEADER_0を出していなかった
   can_simplehtml()でREFERERが旧形式の時にbbsを取りそこなっていた
