@@ -459,6 +459,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 			} else
 			{
 				/* chunk仕様を生かすためのkludgeは以下に。 */
+#ifdef CHUNK_ANCHOR
 				mst = (st - 1) / CHUNK_NUM;
 				mto = (to - 1) / CHUNK_NUM;
 
@@ -466,7 +467,9 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					/* chunk範囲 */
 					mst = 1 + CHUNK_NUM * mst;
 					mto = CHUNK_NUM * (mto + 1);
-				} else {
+				} else 
+#endif
+				{
 					/* chunkをまたぎそうなので、最小単位を。*/
 					mst = st;
 					mto = to;
