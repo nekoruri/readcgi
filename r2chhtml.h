@@ -326,7 +326,7 @@
 
 /*
  * FOOTER
- * (FORM? , FOOTER) | FORM_IMODE
+ * (FORM? , FOOTER) | (FORM_IMODE? , FOOTER_IMODE)
  */
 #ifndef COOKIE
 /* %s=î¬ %s=ÉXÉå %ld=åªç›éûçè */
