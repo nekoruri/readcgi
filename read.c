@@ -75,11 +75,14 @@ char zz_st[1024];
 char zz_to[1024];
 char zz_nf[1024];
 char zz_im[1024];
+#ifdef RAWOUT
+char zz_rw[1024];
+#endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char *BigLine[RES_RED + 16];
 
-#define is_imode() (!strncmp(zz_im, "t", 1))
+#define is_imode() (*zz_im == 't')
 
 char *KARA = "";
 int zz_fileSize = 0;
@@ -110,6 +113,10 @@ char *findSplitter(char *stt, int sp);
 #endif
 #ifdef RELOADLINK
 void html_reload(int);
+#endif
+#ifdef RAWOUT
+int rawmode;
+int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
 #endif
 
 
@@ -321,7 +328,8 @@ void splitting_copy(char **s, char *bufp, const char *p, int size)
 	p = ressplitter_split(&res, p, false); /* name */
 	p = ressplitter_split(&res, p, false); /* mail */
 	p = ressplitter_split(&res, p, false); /* date */
-	p = ressplitter_split(&res, p, LINKTAGCUT && isbusytime); /* text */
+	p = ressplitter_split(&res, p, (LINKTAGCUT && isbusytime)
+			      || rawmode); /* text */
 	p = ressplitter_split(&res, p, false); /* title */
 }
 
@@ -732,6 +740,35 @@ int out_html(int line, int lineNo)
 	return 0;
 }
 /****************************************************************/
+/*	Output raw data file					*/
+/****************************************************************/
+#ifdef RAWOUT
+int dat_out_raw()
+{
+	int i;
+
+	/* もし報告された最終レス番号およびサイズが一致していなけ
+	   れば、最初の行にその旨を示す */
+	if(raw_lastnum > 0
+	   && !(raw_lastnum <= lineMax
+		&& (BigLine[raw_lastnum - 1]
+		    + strlen(BigLine[raw_lastnum - 1]) + 1
+		    - BigBuffer) == raw_lastsize)) {
+		pPrintf(pStdout, "-INCR\n");
+		/* 全部を送信するように変更 */
+		raw_lastnum = 0;
+	} else {
+		pPrintf(pStdout, "+OK\n");
+	}
+	/* raw_lastnum から全部を送信する */
+	for(i = raw_lastnum; i < lineMax; i++) {
+		pPrintf(pStdout, "%s\n", BigLine[i]);
+	}
+	return 1;
+}
+#endif
+
+/****************************************************************/
 /*	Get file size(dat_out)					*/
 /****************************************************************/
 int dat_out()
@@ -980,6 +1017,9 @@ void zz_GetEnv(void)
 	zz_GetString(zz_to, "t");
 	zz_GetString(zz_nf, "n");
 	zz_GetString(zz_im, "i");
+#ifdef RAWOUT
+	zz_GetString(zz_rw, "r");
+#endif
 #else
 	zz_GetString(zz_bs, "bbs");
 	zz_GetString(zz_ky, "key");
@@ -988,6 +1028,9 @@ void zz_GetEnv(void)
 	zz_GetString(zz_to, "to");
 	zz_GetString(zz_nf, "nofirst");
 	zz_GetString(zz_im, "imode");
+#ifdef RAWOUT
+	zz_GetString(zz_rw, "raw");
+#endif
 #endif
 #ifdef USE_PATH
 	if (!get_path_info(zz_path_info)) {
@@ -998,6 +1041,20 @@ void zz_GetEnv(void)
 #endif
 #ifdef COOKIE
 	SetFormName();
+#endif
+#ifdef RAWOUT
+	rawmode = (*zz_rw != '\0');
+	if(rawmode) {
+		char *p = strchr(zz_rw, '.');
+		if(p) {
+			/* raw=(last_article_no).(local_dat_size) */
+			raw_lastnum = atoi(zz_rw);
+			raw_lastsize = atoi(p + 1);
+		}
+		if(!p || raw_lastnum < 1 || raw_lastsize < 1) {
+			raw_lastnum = raw_lastsize = 0;
+		}
+	}
 #endif
 	isbusytime = IsBusy2ch();
 }
@@ -1038,8 +1095,15 @@ int main()
 	pStdout = (gzFile) stdout;
 #endif
 	zz_GetEnv();
-	
-	pPrintf(pStdout, "Content-type: text/html\n");
+
+#ifdef RAWOUT
+	if(!rawmode)
+#endif
+		pPrintf(pStdout, "Content-type: text/html\n");
+#ifdef RAWOUT
+	else
+		pPrintf(pStdout, "Content-type: application/octet-stream\n");
+#endif
 #ifdef LASTMOD
 	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
 #ifdef DEBUG
@@ -1137,8 +1201,12 @@ int main()
 	logOut("");
 
 	dat_read();
+#ifdef RAWOUT
+	rawmode ? dat_out_raw() : dat_out();
+#else
 	dat_out();
-
+#endif
+	
 	if (BigBuffer)
 		free(BigBuffer);
 	BigBuffer = NULL;
@@ -1154,7 +1222,17 @@ void html_error(char *mes)
 	char doko[256];
 	struct stat CountStat;
 	char comcom[256];
-
+#ifdef RAWOUT
+	if(rawmode) {
+		/* ?....はエラー。 */
+		pPrintf(pStdout, "-ERR %s\n", mes);
+		if (BigBuffer)
+			free(BigBuffer);
+		BigBuffer = NULL;
+		exit(0);
+	}
+#endif
+	
 	*tmp = '\0';
 	strcpy(tmp, LastChar(zz_ky, "/"));
 	strncpy(zz_soko, tmp, 3);
@@ -1210,6 +1288,16 @@ int html_error999(char *mes)
 	char tmp[256];		/* ?スレ番号(9桁数字) */
 	char tmp_time[16];	/* 時刻 "hh:mm:ss" */
 	*tmp = '\0';
+#ifdef RAWOUT
+	if(rawmode) {
+		/* ?....はエラー。 */
+		pPrintf(pStdout, "?%s\n", mes);
+		if (BigBuffer)
+			free(BigBuffer);
+		BigBuffer = NULL;
+		exit(0);
+	}
+#endif
 	strcpy(tmp, LastChar(zz_ky, "/"));
 	strncpy(zz_soko, tmp, 3);
 	sprintf(tmp_time, "%02d:%02d:%02d", tm_now.tm_hour, tm_now.tm_min,
