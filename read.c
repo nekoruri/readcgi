@@ -109,10 +109,12 @@ int isbusytime = 0;
 
 char const *LastChar(char const *src, char c);
 char *zz_GetString(char *dst, size_t dst_size, char const *tgt);
-char *doReplace(char *des, char const *str0, char const *str1);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
+#ifndef TYPE_TERI
+char *doReplace(char *des, char const *str0, char const *str1);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
+#endif
 static void html_foot(int level, int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
@@ -584,7 +586,6 @@ static int isprinted(int lineNo)
 }
 
 /*
-	findSplitterの代わり
 	レスを全走査するが、コピーと変換(と削除)を同時に行う
 	p コピー前のレス(BigBuffer内の１レス)
 	resnumber	レス本文である場合にレス番号(行番号＋１)、それ以外は0を渡す
@@ -2234,6 +2235,7 @@ void html_foot_im(int line, int stopped)
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
 }
 
+#ifndef TYPE_TERI
 /****************************************************************/
 /*	Replace(do)						*/
 /****************************************************************/
@@ -2277,7 +2279,7 @@ void someReplace(char const *src,
 		last = doReplace(last, str0, str1);
 	}
 }
-
+#endif
 /****************************************************************/
 /*	END OF THIS FILE					*/
 /****************************************************************/
