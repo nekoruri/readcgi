@@ -132,6 +132,11 @@ int zz_fileSize = 0;
 int lineMax = -1;
 int out_resN = 0;
 
+#if defined(SEPARATE_CHUNK_ANCHOR) || defined(PREV_NEXT_ANCHOR)
+int first_line = 1;
+int last_line = 1;
+#endif
+
 time_t t_now;
 struct tm tm_now;
 long currentTime;
@@ -383,6 +388,8 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 			}
 			p += sprintf(p, "%d", to); /* 終点 */
 		}
+		if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
+			ls = 10;
 		if (nf && (st!=to || ls))	/* 単点は'n'不要 */
 			*p++ = 'n';
 		if (is_imode())
@@ -411,6 +418,8 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 			if ( to )
 				p += sprintf(p, "&to=%d", to);
 		}
+		if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
+			ls = 10;
 		if (nf && (st>1 || ls) ) {		/* 1を含むときは不要 */
 			p += sprintf(p, NO_FIRST );
 		}
@@ -1126,13 +1135,15 @@ static int out_html(int level, int line, int lineNo)
 				lineNo);
 		}
 		if (out_resN > RES_IMODE && lineNo != lineMax ) {
+#ifndef PREV_NEXT_ANCHOR
 			pPrintf(pStdout, R2CH_HTML_IMODE_TAIL("%s", "%d"),
 				create_link(lineNo, 
 					lineNo + RES_IMODE, 0,0,0),
 				RES_IMODE);
 			pPrintf(pStdout, R2CH_HTML_IMODE_TAIL2("%s", "%d"),
-				create_link(0, 0, RES_IMODE, 1,0),
+				create_link(0, 0, 0 /*RES_IMODE*/, 1,0),	/* imodeはスレでls=10扱い */
 				RES_IMODE);
+#endif
 			return 1;
 		}
 	}
@@ -2006,25 +2017,27 @@ int main(void)
 		st = 0;
 	if (to < 0)
 		to = 0;
-	if (st == 1 && to == 1)
-		zz_nf[0] = '\0';
+	if (ls < 0)
+		ls = 0;
 	if (is_imode()) {	/* imode */
 		if (!st && !to && !ls)
 			ls = RES_IMODE;
 	}
+	/* 複数指定された時はlsを優先 */
+	if (ls) {
+		st = to = 0;
+	}
+	if (st == 1 || (to && st<=1))	/* 1を表示するのでnofirst=false */
+		zz_nf[0] = '\0';
+
 	if (!is_nofirst() && ls > 0) {
 		ls--;
 		if(ls == 0) {
 			ls = 1;
 			strcpy(zz_nf, "true");
 		}
-	} else if (ls < 0)
-		ls = 0;
-
-	/* 複数指定された時はlsを優先 */
-	if (ls) {
-		st = to = 0;
 	}
+
 
 #ifdef USE_INDEX
 	/* ここでindexを読み込んでくる
@@ -2581,10 +2594,10 @@ static void html_thread_anchor(int first, int last)
 #endif	/* SEPARATE_CHUNK_ANCHOR */
 
 /* 最初と最後に表示されるレス番号を返す(レス１を除く)
-   imode未対応, isprintedと同じ動作を。
+   isprintedと同じ動作を。
 */
 #if defined(SEPARATE_CHUNK_ANCHOR) || defined(PREV_NEXT_ANCHOR)
-static int first_line()
+static int calc_first_line(void)
 {
 	if (nn_st)
 		return nn_st;
@@ -2592,20 +2605,33 @@ static int first_line()
 		return lineMax - nn_ls + 1;
 	return 1;
 }
-static int last_line()
+static int calc_last_line(void)
 {
-	/* html_footを呼ぶ時に最終表示行を渡すようにすれば要らないんだけど */
 	int line = lineMax;
+
 	if (nn_to && nn_to < lineMax)
 		line = nn_to;
-	if (isbusytime) {
-		int busy_last = first_line() + RES_NORMAL - 1 - is_nofirst();
-		/* 細かい計算間違ってるかも */
+	/* 1-で計算間違ってるが、その方が都合がいい */
+	if (is_imode()) {
+		int imode_last = first_line + RES_IMODE - 1 + is_nofirst();
+		if (imode_last < line)
+			line = imode_last;
+	} else if (isbusytime) {
+		int busy_last = first_line + RES_NORMAL - 1 + is_nofirst();
 		if (busy_last < line)
 			line = busy_last;
 	}
 	return line;
 }
+
+void calc_first_last(void)
+{
+	/* 必ず first_line を先に計算する */
+	first_line = calc_first_line();
+	last_line = calc_last_line();
+}
+#else
+#define calc_first_last()
 #endif
 
 /****************************************************************/
@@ -2639,6 +2665,7 @@ void html_head(int level, char const *title, int line)
 #endif
 	zz_init_parent_link();
 	zz_init_cgi_path();
+	calc_first_last();
 
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1("%s", "%s"),
@@ -2655,20 +2682,20 @@ void html_head(int level, char const *title, int line)
 #if defined(PREV_NEXT_ANCHOR) && !defined(CHUNK_ANCHOR)
 		pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR("%s", "1"),
 			create_link(1,CHUNK_NUM,0,0,0) );
-		if (first_line()>1) {
+		if (first_line>1) {
 			pPrintf(pStdout, R2CH_HTML_PREV("%s", "%d"),
-				create_link((first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-					first_line()-1,
+				create_link((first_line<=CHUNK_NUM ? 1 : first_line-CHUNK_NUM),
+					first_line-1,
 					0,0,0),
 				CHUNK_NUM );
 		}
 		pPrintf(pStdout, R2CH_HTML_NEXT("%s", "%d"),
-			create_link(last_line()+1,
-				last_line()+CHUNK_NUM,0,0,0),
+			create_link(last_line+1,
+				last_line+CHUNK_NUM,0,0,0),
 			CHUNK_NUM );
 #endif
 #ifdef	SEPARATE_CHUNK_ANCHOR
-		html_thread_anchor(1, first_line()-1);
+		html_thread_anchor(1, first_line-1);
 #else
 		html_thread_anchor(1, lineMax);
 #endif
@@ -2683,7 +2710,7 @@ void html_head(int level, char const *title, int line)
 			zz_parent_link,
 			create_link(1,RES_IMODE, 0,0,0) );
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_2("%s", "%d"),
-			create_link(0,0, RES_IMODE, 1,0),
+			create_link(0, 0, 0 /*RES_IMODE*/, 1,0),	/* imodeはスレでls=10扱い */
 			RES_IMODE);
 	}
 
@@ -2726,14 +2753,19 @@ void html_head(int level, char const *title, int line)
 void html_reload(int startline)
 {
 	if (is_imode())	/*  imode */
+#ifdef PREV_NEXT_ANCHOR
+		return;
+#else
+		/* PREV_NEXTが機能を代行 */
 		pPrintf(pStdout, R2CH_HTML_RELOAD_I("%s"),
 			create_link(startline,0, 0, 1,0) );
+#endif
 	else {
 #ifdef PREV_NEXT_ANCHOR
-		if (last_line()<lineMax) {
+		if (last_line<lineMax) {
 			if (isbusytime) return;	/* 混雑時は次100にまかせる */
 			pPrintf(pStdout, R2CH_HTML_AFTER("%s"),
-				create_link(last_line()+1,0, 0, 0,0) );
+				create_link(last_line+1,0, 0, 0,0) );
 
 		} else
 #endif
@@ -2772,10 +2804,10 @@ static void html_foot(int level, int line, int stopped)
 	pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR("%s", "1"),
 		create_link(1,CHUNK_NUM,0,0,0) );
 #endif
-	if (!isbusytime && first_line()>1) {
+	if (!isbusytime && first_line>1) {
 		pPrintf(pStdout, R2CH_HTML_PREV("%s", "%d"),
-			create_link((first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-				first_line()-1, 0,0,0),
+			create_link((first_line<=CHUNK_NUM ? 1 : first_line-CHUNK_NUM),
+				first_line-1, 0,0,0),
 			CHUNK_NUM );
 	}
 	if (isbusytime && need_tail_comment)
@@ -2783,18 +2815,18 @@ static void html_foot(int level, int line, int stopped)
 	else
 		nchunk = CHUNK_NUM;
 #ifdef RELOADLINK
-	if (!isbusytime || last_line()<lineMax) {
+	if (!isbusytime || last_line<lineMax) {
 #else
-	if (last_line() < lineMax) {
+	if (last_line < lineMax) {
 #endif
 		pPrintf(pStdout, R2CH_HTML_NEXT("%s", "%d"),
-			create_link(last_line()+1,
-				last_line()+nchunk, 0,0,0),
+			create_link(last_line+1,
+				last_line+nchunk, 0,0,0),
 			nchunk );
 #ifndef RELOADLINK
 	} else {
 		pPrintf(pStdout, R2CH_HTML_NEW("%s"),
-			create_link(last_line(), 0, 0,0,0) );
+			create_link(last_line, 0, 0,0,0) );
 	}
 #endif
 #ifndef SEPARATE_CHUNK_ANCHOR
@@ -2814,9 +2846,9 @@ static void html_foot(int level, int line, int stopped)
 #if !defined(RELOADLINK) && !defined(PREV_NEXT_ANCHOR)
 	pPrintf(pStdout, "<hr>");
 #endif
-	if (last_line() < lineMax) {
+	if (last_line < lineMax) {
 		/* RELOADLINKの表示条件の逆なんだけど */
-		html_thread_anchor(last_line() + 1, lineMax - LATEST_NUM);
+		html_thread_anchor(last_line + 1, lineMax - LATEST_NUM);
 		if (!(isbusytime && out_resN > RES_NORMAL)) {
 			/* 最新レスnnがかぶるので苦肉の策
 			   LATEST_ANCHORを生きにして、なおかつ末尾に持ってきているので
@@ -2849,6 +2881,27 @@ static void html_foot(int level, int line, int stopped)
 /****************************************************************/
 void html_foot_im(int line, int stopped)
 {
+#ifdef PREV_NEXT_ANCHOR
+	if (last_line < lineMax) {
+		pPrintf(pStdout, R2CH_HTML_NEXT("%s", "%d"),
+			create_link(last_line+1,
+				last_line+RES_IMODE, 0,1,0),
+			RES_IMODE );
+	} else {
+		pPrintf(pStdout, R2CH_HTML_NEW_I("%s"),
+			create_link(last_line,
+				last_line+RES_IMODE-1, 0,1,0) );
+	}
+	if ( first_line>1) {
+		pPrintf(pStdout, R2CH_HTML_PREV("%s", "%d"),
+			create_link((first_line<=RES_IMODE ? 1 : first_line-RES_IMODE),
+				first_line-1, 0,1,0),
+			RES_IMODE );
+	}
+	pPrintf(pStdout, R2CH_HTML_IMODE_TAIL2("%s", "%d"),
+		create_link(0, 0, 0 /*RES_IMODE*/, 1,0),	/* imodeはスレでls=10扱い */
+		RES_IMODE);
+#endif
 	if (line <= RES_RED && !stopped ) {
 		pPrintf(pStdout, R2CH_HTML_FORM_IMODE("%s", "%s", "%s", "%ld"),
 			zz_cgi_path,

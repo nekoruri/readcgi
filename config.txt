@@ -155,6 +155,7 @@ NN4.xでgzip圧縮時にContent-LengthがあるとLast-Modifiedが無効になる問
  CHUNK_ANCHOR時は下にだけつける
  RELOADLINKがない場合は、次50と未読に切り替え
  前後の数はCHUNK_NUMで定義
+ i-modeでは、下に 次10 前10 最新10
 
 △REFERDRES_SIMPLE
 混雑時間帯に、>>nn形式のリンクから参照された場合に

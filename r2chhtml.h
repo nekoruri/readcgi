@@ -501,6 +501,9 @@
 #define R2CH_HTML_NEW(path) \
 	" <a href=" path ">ñ¢ì«</a>"
 
+#define R2CH_HTML_NEW_I(path) \
+	" <a href=" path ">êVíÖ</a>"
+
 /*
  * FOOTER
  * (FORM? , FOOTER) | FORM_IMODE
