@@ -385,7 +385,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		return 0;
 	s += n + 1;	/* まだdは進めないでおく */
 	if (!memcmp(s, "&gt;&gt;", 8)) {
-		char const * copy_start = s;
+		char const * copy_start = s + 8; /* &gt;&gt;をスキップ */
 		int copy_len;
 		int st, to;
 		int mst, mto;
@@ -460,28 +460,27 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mto = to;
 				}
 
-				d += sprintf(d, 
-					     (
+				d += sprintf(d, "<a href=\"%s", depth_expr );
 #ifdef USE_PATH
-					     (path_depth != 0) ?
-					     "<a href=\"%s%d-%dn" : 
+				if ( path_depth != 0 ) {
+					if ( mst != mto )
+						d += sprintf(d, "%d-%d" "n", mst, mto );
+					else
+						d += sprintf(d, "%d" "n", mst);
+				} else
 #endif
-					     "<a href=\"%s&st=%d&to=%d" NO_FIRST
-					     ),
-					     depth_expr,
-					     mst, mto);
-
+					d += sprintf(d, "&st=%d&to=%d" NO_FIRST, mst, mto );
 #ifdef CREATE_NAME_ANCHOR
 				if ( mst != st )
-					d += sprintf(d, "#%d\" target=\"_blank\">", st);
-				else
+					d += sprintf(d, "#%d", st);
 #endif
-					d += sprintf(d, "\"  target=\"_blank\">");
-
+				d += sprintf(d, "\" target=\"_blank\">");
 			}
 		}
 
-		/* "&gt;&gt;".."</a>"を丸写し */
+		/* "&gt;&gt;"は >> に置き換え、つづき.."</a>"を丸写し */
+		*d++ = '>';
+		*d++ = '>';
 		memcpy( d, copy_start, copy_len );
 		d += copy_len;
 	}
