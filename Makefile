@@ -14,7 +14,7 @@ SRCS          = digest.c read.c util_date.c \
 .SUFFIXES: .c .o .cgi
 
 # phony targets
-.PHONY:all clean test dat strip tags
+.PHONY:all clean test dat strip tags dist
 
 # targets
 read.cgi: $(OBJS)
