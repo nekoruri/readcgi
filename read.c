@@ -53,6 +53,10 @@ static int pid;
 # undef ALWAYS_PATH /* USE_PATHが定義されていなければALWAYS_PATHは無視 */
 #endif
 
+#if !defined(READ_KAKO)
+# undef READ_TEMP
+#endif
+
 /* 非TERIタイプで','が置換されて格納される文字列 */
 #define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */
 #define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
@@ -1377,7 +1381,11 @@ static int get_path_info(char const *path_info)
 	path_depth++;
 	s += n;
 #ifdef READ_KAKO
-	if (strcmp(zz_ky,"kako")==0 || strcmp(zz_ky,"temp")==0) {
+	if (strcmp(zz_ky,"kako")==0 
+#ifdef READ_TEMP
+	 || strcmp(zz_ky,"temp")==0
+#endif
+	) {
 		char *p = zz_ky+4;
 		n = strcspn(++s, "/");
 		if (n == 0)
@@ -2015,8 +2023,10 @@ int main(void)
 		char buf[256];
 		kako_dirname(buf, zz_ky);
 		sprintf(fname, KAKO_DIR "%.20s/%.20s.dat", zz_bs, buf, zz_ky);
+# ifdef READ_TEMP
 	} else if (read_kako[0] == 't') {
 		sprintf(fname, TEMP_DIR "%.20s.dat", zz_bs, zz_ky);
+# endif
 	} else
 #endif
 		sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
@@ -2305,7 +2315,7 @@ void html_error(enum html_error_t errorcode)
 				sprintf(doko, TEMP_DIR "%.50s.dat",
 					zz_bs, tmp);
 				if (!stat(doko, &CountStat)) {
-#ifdef READ_KAKO
+#ifdef READ_TEMP
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
 						zz_cgi_path, zz_bs, "temp/", tmp, tmp);
 #else
