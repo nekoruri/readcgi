@@ -1503,11 +1503,11 @@ void zz_GetEnv(void)
 /****************************************************************/
 /* receive gzipped data from zlib/gzio.c                        */
 /****************************************************************/
-
-int gzipped_fwrite(char *buf, int n, int m, void *dummy)
+int gzipped_fwrite(char *buf, int n, int m, FILE *fp)
 {
 	int l = n*m;
 
+	if ( fp != stdout ) return fwrite(buf,n,m,fp);
 	if ( outlen+l > outalloc ) {
 		outalloc = outlen + l + 40960;  /* ‘½‚ß‚É */
 		if ( outlen == 0 ) {
@@ -1564,9 +1564,9 @@ void atexitfunc(void)
 			fprintf(stdout,"Content-Encoding: gzip\n");
 		}
 		fprintf(stdout,"Content-Length: %d\n\n",outlen);
-		fflush(stdout);
 
 		fwrite(outbuf,1,outlen,stdout);
+		fflush(stdout);
 	}
 #elif defined(GZIP)
 	if(gzip_flag) {
@@ -1765,7 +1765,7 @@ int main(void)
 	else
 		dat_out(0);
 #else
-	dat_out();
+	dat_out(0);
 #endif
 	return 0;
 }
@@ -2102,6 +2102,8 @@ void html_head(int level, char const *title, int line)
 #ifdef CHUNK_ANCHOR
 	int i;
 #endif
+	char fname[1024];
+
 	if (level) {
 		pPrintf(pStdout,
 			R2CH_HTML_DIGEST_HEADER_2("%s"),
@@ -2115,10 +2117,17 @@ void html_head(int level, char const *title, int line)
 			pPrintf(pStdout,
 				R2CH_HTML_HEADER_1("%s", "../"),
 				title);
-		else
-			pPrintf(pStdout,
-				R2CH_HTML_HEADER_1("%s", "/%s/index2.htm%s"),
-				title, zz_bs, gzip_flag ? "" : "l");
+		else {
+			sprintf(fname, "../%.256s/index2.cgi", zz_bs);
+			if (access(fname, S_IXUSR) == -1)
+				pPrintf(pStdout,
+					R2CH_HTML_HEADER_1("%s", "/%s/index2.htm%s"),
+					title, zz_bs, gzip_flag ? "" : "l");
+			else
+				pPrintf(pStdout,
+					R2CH_HTML_HEADER_1("%s", "/%s/index2.cgi"),
+					title, zz_bs);
+		}
 #ifdef ALL_ANCHOR
 		if (path_depth)
 			pPrintf(pStdout,

@@ -7,6 +7,9 @@ DEFS          = -DHAVE_READ2CH_H
 CFLAGS        = -I$(zlibdir) -g -O2 -Wall -funsigned-char
 LIBS          = 
 OBJS          = digest.o read.o util_date.o $(zlibdir)/libz.a
+SRCS          = digest.c read.c util_date.c \
+		r2chhtml.h read2ch.h digest.h read.h util_date.h \
+		Makefile
 
 .SUFFIXES: .c .o .cgi
 
@@ -37,6 +40,10 @@ dat:
 
 strip: read.cgi
 	strip -v $^ $>
+
+dist: $(SRCS)
+	tar cf - $(SRCS) zlib/*.[ch] zlib/configure zlib/Makefile.in \
+	| gzip -9 > read.tgz
 
 tags: TAGS
 
