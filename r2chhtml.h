@@ -101,7 +101,7 @@
 	%02d=制限開始時刻 %02d=制限終了時刻 */
 #define R2CH_HTML_PATH_TAIL \
 	R2CH_HTML_T_TAIL("%d-%d", "%d", \
-			 "?ls=%d", "%d")
+			 "./?ls=%d", "%d")
 
 /*
  * i-MODEでレスを表示。
@@ -321,7 +321,7 @@
 	R2CH_HTML_T_CHUNK_ANCHOR("%d-%d", "%d")
 /* %d=レス個数 %d=レス個数 */
 #define R2CH_HTML_PATH_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR("?ls=%d", "%d")
+	R2CH_HTML_T_LATEST_ANCHOR("./?ls=%d", "%d")
 
 
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
@@ -369,7 +369,7 @@
 	R2CH_HTML_T_RELOAD("read.cgi?bbs=%s&key=%s&st=%d&n=t")
 
 #define R2CH_HTML_PATH_RELOAD \
-	R2CH_HTML_T_RELOAD("%s-")
+	R2CH_HTML_T_RELOAD("%d-")
 
 #define R2CH_HTML_RELOAD_I \
 	"<hr><center><a href=\"read.cgi?bbs=%s&key=%s&st=%d&i=t&n=t\">新レスの表\示</a></center><hr>"
