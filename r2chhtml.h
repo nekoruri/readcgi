@@ -129,8 +129,8 @@
 	%s=cgi %s=board %s=key %d=レス数 %d=レス数
 	%02d=制限開始時刻 %02d=制限終了時刻 */
 #define R2CH_HTML_TAIL \
-	R2CH_HTML_T_TAIL("./%s?bbs=%s&key=%s&st=%d&to=%d" NO_FIRST, "%d", \
-			 "./%s?bbs=%s&key=%s&ls=%d" NO_FIRST, "%d")
+	R2CH_HTML_T_TAIL("%s?bbs=%s&key=%s&st=%d&to=%d" NO_FIRST, "%d", \
+			 "%s?bbs=%s&key=%s&ls=%d" NO_FIRST, "%d")
 /* tail: PATH仕様
 	%d=開始 %d=終了 %d=レス数
 	%d=レス数 %d=レス数
@@ -155,8 +155,8 @@
 
 /* tail: %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数 %s=cgi %s=board %s=key %d=レス数 %d=レス数 */
 #define R2CH_HTML_IMODE_TAIL \
-	" <a href=\"./%s?bbs=%s&key=%s&st=%d&to=%d&imode=true\">次の%dレス</a>\n" \
-	" <a href=\"./%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a><br>\n"
+	" <a href=\"%s?bbs=%s&key=%s&st=%d&to=%d&imode=true\">次の%dレス</a>\n" \
+	" <a href=\"%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST "\">最新レス%d</a><br>\n"
 
 /*
  * ERROR
