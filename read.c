@@ -52,6 +52,7 @@ static int pid;
 #define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
 #define COMMA_SUBSTITUTE_LEN 4
 
+int zz_head_request; /* !0 = HEAD request */
 char const *zz_remote_addr;
 char const *zz_remote_host;
 char const *zz_http_referer;
@@ -68,7 +69,11 @@ char const *zz_http_user_agent;
 char const *zz_http_language;
 #ifdef GZIP
 char const *zz_http_encoding;
-int gzip_flag;
+enum compress_type_t {
+	compress_none,
+	compress_gzip,
+	compress_x_gzip,
+} gzip_flag;
 #endif
 #ifdef CHECK_MOD_GZIP
 char const *zz_server_software;
@@ -100,6 +105,7 @@ char const *BigLine[RES_RED + 16];
 
 #define is_imode() (*zz_im == 't')
 #define is_nofirst() (*zz_nf == 't')
+#define is_head() (zz_head_request != 0)
 
 char *KARA = "";
 int zz_fileSize = 0;
@@ -738,6 +744,7 @@ void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 
 /****************************************************************/
 /*	BadAccess						*/
+/* 許可=0, 不許可=1を返す                                       */
 /****************************************************************/
 int BadAccess(void)
 {
@@ -752,6 +759,8 @@ int BadAccess(void)
 	};
 	int i;
 
+	if ( is_head() )
+		return 0;
 #if defined(GZIP) && defined(RAWOUT)
 	if ( rawmode )
 		return !gzip_flag;
@@ -1399,11 +1408,14 @@ void readSettingFile(const char *bbsname)
 /****************************************************************/
 void zz_GetEnv(void)
 {
+	char const * request_method;
 	currentTime = (long) time(&t_now);
 	putenv("TZ=JST-9");
 	tzset();
 	tm_now = *localtime(&t_now);
 
+	request_method = getenv("REQUEST_METHOD");
+	zz_head_request = request_method && (strcmp(request_method, "HEAD") == 0);
 	zz_remote_addr = getenv("REMOTE_ADDR");
 	zz_remote_host = getenv("REMOTE_HOST");
 	zz_http_referer = getenv("HTTP_REFERER");
@@ -1524,7 +1536,7 @@ void atexitfunc(void)
 			putchar('\n');
 			html_error(ERROR_NO_MEMORY);
 		}
-		if ( gzip_flag == 2 ) {
+		if ( gzip_flag == compress_x_gzip ) {
 			puts("Content-Encoding: x-gzip");
 		} else {
 			puts("Content-Encoding: gzip");
@@ -1538,7 +1550,8 @@ void atexitfunc(void)
 #endif
 			printf("Content-Length: %d\n\n", outlen);
 
-		fwrite(outbuf,1,outlen,stdout);
+		if ( !is_head() )
+			fwrite(outbuf,1,outlen,stdout);
 		/* fflush(stdout); XXX このfflush()って必要？ */
 		/* free(outbuf); outbufはfreeすべき物 exitなのでほっとく */
 	}
@@ -1689,17 +1702,20 @@ int main(void)
 
 #ifdef GZIP
 	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
-		gzip_flag = 2;
+		gzip_flag = compress_x_gzip;
 	} else if (zz_http_encoding && strstr(zz_http_encoding, "gzip")) {
-		gzip_flag = 1;
+		gzip_flag = compress_gzip;
 	} else {
-		gzip_flag = 0;
+		gzip_flag = compress_none;
 	}
 #ifndef ZLIB
-	if ( gzip_flag == 2 ) {
+	switch ( gzip_flag ) {
+	case compress_x_gzip:
 		puts("Content-Encoding: x-gzip");
-	} else if ( gzip_flag == 1 ) {
+		break;
+	case compress_gzip:
 		puts("Content-Encoding: gzip");
+		break;
 	}
 #endif
 #endif
@@ -1708,14 +1724,25 @@ int main(void)
 	printf("Last-Modified: %s\n", lastmod_str);
 
 #ifdef ZLIB
-	if ( gzip_flag == 0 ) putchar('\n');
-#else
-	putchar('\n');
+	if ( gzip_flag == compress_none )
 #endif
+	{
+		putchar('\n');
+	}
+	/* 通常ここでヘッダは終わりだが、 gzip_flag 時にはまだヘッダが続く */
 #ifdef DEBUG
 	sleep(1);
 #endif
 	fflush(stdout);
+#ifdef ZLIB
+	if ( gzip_flag == compress_none )
+#endif
+	{
+		/* HEADリクエストならここで終了 */
+		if ( is_head() ) {
+			return 0;
+		}
+	}
 
 	/*  終了処理登録 */
 	atexit(atexitfunc);
