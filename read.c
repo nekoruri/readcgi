@@ -75,6 +75,9 @@ enum compress_type_t {
 	compress_x_gzip,
 } gzip_flag;
 #endif
+#ifdef CHECK_MOD_GZIP
+char const *zz_server_software;
+#endif
 
 char const *zz_http_if_modified_since;
 time_t zz_fileLastmod;
@@ -99,10 +102,6 @@ char zz_rw[1024];
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
-
-/* 各種リンク等で使うリンク先を統一するため、あらかじめ作成しておく */
-char zz_thread_name[256];
-char zz_board_name[80];
 
 #define is_imode() (*zz_im == 't')
 #define is_nofirst() (*zz_nf == 't')
@@ -325,6 +324,124 @@ typedef struct { /*  class... */
 	int isTeri;
 } ressplitter;
 
+char *create_link(int st, int to, int ls, int nf, int sst)
+{
+	static char url_expr[128];
+	static char *url_p = NULL;
+	char *p;
+
+#ifdef USE_PATH
+	if (path_depth) {
+#ifdef USE_INDEX
+		if (path_depth == 2) {
+			strncpy(url_expr,
+				zz_ky,
+				sizeof(url_expr) - 4);
+			depth_expr[sizeof(url_expr) - 4] = 0;
+			p = url_expr;
+			while (*p) ++p;
+			*p++= '/';
+		} else
+#endif
+			p = url_expr;
+		*p = '\0';
+		if (ls) {
+			sprintf(p,"l%d",ls);
+		} else if (to==0) {
+			if (st<=1) {
+#ifdef USE_INDEX
+				if(path_depth!=2)
+#endif
+					strcpy(p,"./");
+			} else
+				sprintf(p,"%d-",st);
+		} else if (st<=1) {
+			sprintf(p,"-%d",to);
+		} else if (st==to) {
+			sprintf(p,"%d",st);
+		} else {
+			sprintf(p,"%d-%d",st,to);
+		}
+		if (nf && (st!=to || ls))
+			strcat(p,"n");
+		if (is_imode())
+			strcat(p,"i");
+#ifdef CREATE_NAME_ANCHOR
+		if (sst && sst!=st) {
+			while(*p) ++p;
+			sprintf(p,"#%d",sst);
+		}
+#endif
+	} else
+#endif	/* USE_PATH */
+	{
+		if (url_p==NULL) {
+			sprintf(url_expr, "\"" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky);
+			url_p = url_expr;
+			while (*url_p) ++url_p;
+		}
+		p = url_p;
+		*p = '\0';
+		if (ls) {
+			sprintf(p,"&ls=%d",ls);
+		} else if (to==0) {
+			if (st>1)
+				sprintf(p,"&st=%d",st);
+		} else if (st<=1) {
+			sprintf(p,"&to=%d",to);
+		} else {
+			sprintf(p,"&st=%d&to=%d",st,to);
+		}
+		while (*p) ++p;
+		if (nf && (st>1 || ls) ) {
+			strcpy(p, NO_FIRST);
+			p += sizeof(NO_FIRST)-1;
+		}
+		if (is_imode()) {
+			strcat(p, "&imode=true");
+			p += sizeof("&imode=true")-1;
+		}
+#ifdef CREATE_NAME_ANCHOR
+		if (sst && sst!=st) {
+			sprintf(p,"#%d",sst);
+			while(*p) ++p;
+		}
+#endif
+		*p++ = '\"';
+		*p = '\0';
+	}
+	return url_expr;
+}
+
+char *create_parent_link(void)
+{
+	static char url_expr[128] = "";
+
+	if (url_expr[0]) return url_expr;
+#ifdef USE_PATH
+	if (path_depth)
+		sprintf(url_expr,"../../../../%s/",zz_bs);
+	else
+#endif
+		sprintf(url_expr,"../%s/",zz_bs);
+	if (is_imode() ) {
+		strcat(url_expr,"i/");
+		return url_expr;
+	}
+#ifdef CHECK_MOD_GZIP
+	if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
+		return url_expr;
+	} else
+#endif
+#ifdef GZIP
+	if (!gzip_flag)
+		strcat(url_expr,"index.html");
+	else
+#endif
+		strcat(url_expr,"index.htm");
+	return url_expr;
+}
+
 /*
   初期化
   toparray ポインタ配列のアドレス
@@ -444,21 +561,13 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mto = to;
 				}
 
-				d += sprintf(d, "<a href=\"%s", zz_thread_name );
-#ifdef USE_PATH
-				if ( path_depth != 0 ) {
-					if ( mst != mto )
-						d += sprintf(d, "%d-%d" "n", mst, mto );
-					else
-						d += sprintf(d, "%d" /*"n"*/, mst); /*単点はn不要 */
-				} else
+				d += sprintf(d, "<a href=%s target=\"_blank\">", 
+#if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR) && defined(USE_CHUNK_LINK)
+					create_link(mst, mto, 0, 0, st)
+#else
+					create_link(mst, mto, 0, 1, st)
 #endif
-					d += sprintf(d, "&st=%d&to=%d" NO_FIRST, mst, mto );
-#ifdef CREATE_NAME_ANCHOR
-				if ( mst != st )
-					d += sprintf(d, "#%d", st);
-#endif
-				d += sprintf(d, "\" target=\"_blank\">");
+					);
 			}
 		}
 
@@ -905,61 +1014,44 @@ static int out_html(int level, int line, int lineNo)
 			need_tail_comment = 1;
 #else
 #ifdef SEPARATE_CHUNK_ANCHOR
-			pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
+			pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE("%02d:00","%02d:00"),
+				LIMIT_PM - 12, LIMIT_AM);
 #else
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout,
-					R2CH_HTML_PATH_TAIL,
-					lineNo,
-					lineNo + RES_NORMAL,
-					RES_NORMAL,
-					RES_NORMAL,
-					RES_NORMAL,
-					LIMIT_PM - 12, LIMIT_AM);
-			else
-#endif
-				pPrintf(pStdout,
-					R2CH_HTML_TAIL,
-					CGINAME, zz_bs, zz_ky,
-					lineNo,
-					lineNo + RES_NORMAL,
-					RES_NORMAL,
-					CGINAME, zz_bs, zz_ky,
-					RES_NORMAL,
-					RES_NORMAL,
-					LIMIT_PM - 12, LIMIT_AM);
+			pPrintf(pStdout, R2CH_HTML_TAIL("%s","%d"),
+				create_link(lineNo,
+					lineNo + RES_NORMAL, 0,1,0),
+				RES_NORMAL);
+			pPrintf(pStdout,
+				R2CH_HTML_TAIL2("%s", "%d") R2CH_HTML_TAIL_SIMPLE("%02d:00", "%02d:00"),
+				create_link(0,0, RES_NORMAL, 1,0),
+				RES_NORMAL,
+				LIMIT_PM - 12, LIMIT_AM);
 #endif
 #endif
 			return 1;
 		}
 	} else {		/* imode  */
-
 		if (*r3) {
 			if (*s[1]) {
 				pPrintf(pStdout, R2CH_HTML_IMODE_RES_MAIL,
 					lineNo, r1, r0, s[2], r3);
 			} else {
 				pPrintf(pStdout,
-					R2CH_HTML_IMODE_RES_NOMAIL, lineNo,
-					r0, s[2], r3);
+					R2CH_HTML_IMODE_RES_NOMAIL,
+					lineNo, r0, s[2], r3);
 			}
 		} else {
 			pPrintf(pStdout, R2CH_HTML_IMODE_RES_BROKEN_HERE,
 				lineNo);
 		}
 		if (out_resN > RES_IMODE && lineNo != lineMax ) {
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout, R2CH_HTML_PATH_IMODE_TAIL,
-					lineNo, lineNo + RES_IMODE, RES_IMODE,
-					RES_IMODE, RES_IMODE);
-			else
-#endif
-				pPrintf(pStdout, R2CH_HTML_IMODE_TAIL,
-					CGINAME, zz_bs, zz_ky, lineNo,
-					lineNo + RES_IMODE, RES_IMODE, CGINAME,
-					zz_bs, zz_ky, RES_IMODE, RES_IMODE);
+			pPrintf(pStdout, R2CH_HTML_IMODE_TAIL("%s", "%d"),
+				create_link(lineNo, 
+					lineNo + RES_IMODE, 0,0,0),
+				RES_IMODE);
+			pPrintf(pStdout, R2CH_HTML_IMODE_TAIL2("%s", "%d"),
+				create_link(0, 0, RES_IMODE, 1,0),
+				RES_IMODE);
 			return 1;
 		}
 	}
@@ -1028,7 +1120,7 @@ int dat_out(int level)
 			line++; 
 			break; /* 非0が返るのは、エラー時とimodeのMaxに達した時 */ 
 		} 
-		if (lineNo==1 && is_imode() && nn_st==1) 
+		if (lineNo==1 && is_imode() && nn_st<=1 && nn_ls==0) 
 			++out_resN; 
 	} 
 	out_html1(level); /* レスが１つも表示されていない時にレス１を表示する */ 
@@ -1038,8 +1130,7 @@ int dat_out(int level)
 		return 1; 
 	if( s[2]!=0 && (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" )) ) threadStopped=1;
 
-	pPrintf(pStdout,
-		R2CH_HTML_PREFOOTER);
+	pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
 	if (!level && lineMax == line && lineMax <= RES_RED && !threadStopped) {
 		html_reload(line);	/*  Button: Reload */
@@ -1268,10 +1359,12 @@ static int get_path_info(char const *path_info)
 					*p = *s;
 				*p = 0;
 			}
+#if 0
 			/* ls= はnofirst=true を標準に */
 			if (!zz_nf[0]) {
 				strcpy(zz_nf,"true");
 			}
+#endif
 		} else if (*s == '-') {
 			s++;
 			/* toを取り出す */
@@ -1405,6 +1498,9 @@ void zz_GetEnv(void)
 #ifdef GZIP
 	zz_http_encoding = getenv("HTTP_ACCEPT_ENCODING");
 #endif
+#ifdef CHECK_MOD_GZIP
+	zz_server_software = getenv("SERVER_SOFTWARE");
+#endif
 	zz_http_if_modified_since = getenv("HTTP_IF_MODIFIED_SINCE");
 
 	if (!zz_remote_addr)
@@ -1469,49 +1565,6 @@ void zz_GetEnv(void)
 	readSettingFile(zz_bs);
 #endif
 	isbusytime = IsBusy2ch();
-}
-
-#ifdef	USE_PATH
-#define	SELFORMAT(a,b)	(path_depth ? a:b)
-#else
-#define	SELFORMAT(a,b)	(0 ? 0:b)
-#endif
-/* zz_board_nameとzz_thread_nameを設定 */
-static void setlinknames()
-{
-	/* gzip_flagがあるので、zz_GetEnv()の末尾では設定できない */
-	char indexname[40];
-
-	/* 板のリンク先 */
-	strcpy(indexname, "index.htm");
-#ifdef GZIP
-	if (!gzip_flag)
-		strcat(indexname, "l");
-#endif
-#ifdef	CHECK_MOD_GZIP
-	{
-		const char *zz_server_software = getenv("SERVER_SOFTWARE");
-		if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL)
-			indexname[0] = '\0';
-	}
-#endif
-	sprintf(zz_board_name, SELFORMAT("../../../../%.40s/%s%s", "../%.40s/%s%s"),
-		zz_bs, is_imode() ? "i/":"", indexname);
-
-	/* スレッドのリンク先 */
-	/* ../kako/...の場合も考えて、keyは少し長めに */
-	sprintf(zz_thread_name, /*"./"*/ CGINAME "?bbs=%.40s&key=%.60s%s",
-		zz_bs, zz_ky, is_imode() ? "&imode=true":"");
-#ifdef USE_PATH
-	/* ここだけ、あらかじめimodeに対応しておくことができない */
-	if (path_depth) {
-		if (path_depth == 2) {
-			sprintf(zz_thread_name, "%.60s/", zz_ky);
-		} else
-			zz_thread_name[0] = '\0';
-	}
-#endif
-	/*selecthtml();*/
 }
 
 /*----------------------------------------------------------------------
@@ -1767,7 +1820,7 @@ int out_simplehtml(void)
 	if (!*p)
 		return 1;
 	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s", ""), s[4]);
-	pPrintf(pStdout, R2CH_HTML_HEADER_2, s[4]);
+	pPrintf(pStdout, R2CH_HTML_HEADER_2("%s"), s[4]);
 	
 	out_resN++;	/* ヘッダ出力を抑止 */
 	if (!is_nofirst()) {
@@ -2017,8 +2070,7 @@ int main(void)
 #endif /* ZLIB */
 	}
 #endif /* GZIP */
-	setlinknames();
-	
+
 	logOut("");
 
 	dat_read(fname, st, to, ls);
@@ -2027,7 +2079,7 @@ int main(void)
 	if (rawmode) {
 		dat_out_raw();
 		return 0;
-	}
+	} else
 #endif
 #ifdef USE_PATH
 	if (path_depth && path_depth!=3) {
@@ -2338,21 +2390,11 @@ static void html_thread_anchor(int first, int last)
 		pPrintf(pStdout, CHUNKED_ANCHOR_SELECT_TAIL);
 #else
 		for ( ; line <= last; line += CHUNK_NUM) {
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout,
-					R2CH_HTML_PATH_CHUNK_ANCHOR,
-					line,
+			pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR("%s", "%d"),
+				create_link(line, 
 					line + CHUNK_NUM - 1, 
-					line);
-			else
-#endif
-				pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
-					zz_bs, zz_ky,
-					line,
-					line + CHUNK_NUM - 1, 
-					"", /* (line == 1 ? "" : NO_FIRST), */
-					line);
+					0,0,0),
+				line);
 		}
 #endif
 	}
@@ -2395,8 +2437,7 @@ static int last_line()
 void html_head(int level, char const *title, int line)
 {
 	if (level) {
-		pPrintf(pStdout,
-			R2CH_HTML_DIGEST_HEADER_2("%s"),
+		pPrintf(pStdout, R2CH_HTML_DIGEST_HEADER_2("%s"),
 			title);
 		/* これだけ出力してもどる */
 		return;
@@ -2405,67 +2446,37 @@ void html_head(int level, char const *title, int line)
 	if (!is_imode()) {	/* no imode       */
 #if 0 /* スレ一覧を外すと要らなくなる #ifdef USE_PATH */
 		if (path_depth)
-			pPrintf(pStdout,
-				R2CH_HTML_HEADER_1("%s", "../"),
+			pPrintf(pStdout, R2CH_HTML_HEADER_1("%s", "../"),
 				title);
 		else 
 #endif
-			pPrintf(pStdout,
-				R2CH_HTML_HEADER_1("%s", "%s"),
-				title, zz_board_name);
+		{
+			pPrintf(pStdout, R2CH_HTML_HEADER_1("%s", "%s"),
+				title, create_parent_link());
+		}
 	/* ALL_ANCHOR は常に生きにする
 	   ただし、CHUNK_ANCHORが生きで、かつisbusytimeには表示しない */
 #if defined(CHUNK_ANCHOR) || defined(PREV_NEXT_ANCHOR)
 		if (!isbusytime)
 #endif
 		{
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout,
-					R2CH_HTML_PATH_ALL_ANCHOR);
-			else
-#endif
-				pPrintf(pStdout,
-					R2CH_HTML_ALL_ANCHOR,
-					zz_bs, zz_ky); 
+			pPrintf(pStdout, R2CH_HTML_ALL_ANCHOR("%s"),
+				create_link(0,0,0,0,0) );
 		}
 #if defined(PREV_NEXT_ANCHOR) && !defined(CHUNK_ANCHOR)
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, " <a href=\"1-%d\">1-</a>",
-				 CHUNK_NUM);
-		else
-#endif
-			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
-				zz_bs, zz_ky, CHUNK_NUM);
+		pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR("%s", "1"),
+			create_link(1,CHUNK_NUM,0,0,0) );
 		if (first_line()>1) {
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout, R2CH_HTML_PATH_PREV,
-					(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+			pPrintf(pStdout, R2CH_HTML_PREV("%s", "%d"),
+				create_link((first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
 					first_line()-1,
-					CHUNK_NUM );
-			else
-#endif
-				pPrintf(pStdout, R2CH_HTML_PREV,
-					zz_bs, zz_ky,
-					(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-					first_line()-1,
-					CHUNK_NUM );
+					0,0,0),
+				CHUNK_NUM );
 		}
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_PATH_NEXT,
-				last_line()+1,
-				last_line()+CHUNK_NUM,
-				CHUNK_NUM );
-		else
-#endif
-			pPrintf(pStdout, R2CH_HTML_NEXT,
-				zz_bs, zz_ky,
-				last_line()+1,
-				last_line()+CHUNK_NUM,
-				CHUNK_NUM );
+		pPrintf(pStdout, R2CH_HTML_NEXT("%s", "%d"),
+			create_link(last_line()+1,
+				last_line()+CHUNK_NUM,0,0,0),
+			CHUNK_NUM );
 #endif
 #ifdef	SEPARATE_CHUNK_ANCHOR
 		html_thread_anchor(1, first_line()-1);
@@ -2474,39 +2485,28 @@ void html_head(int level, char const *title, int line)
 #endif
 
 #if	defined(LATEST_ANCHOR) && !defined(SEPARATE_CHUNK_ANCHOR)
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout,
-				R2CH_HTML_PATH_LATEST_ANCHOR,
-				LATEST_NUM, LATEST_NUM);
-		else
-#endif
-			pPrintf(pStdout,
-				R2CH_HTML_LATEST_ANCHOR,
-				zz_bs, zz_ky,
-				LATEST_NUM, LATEST_NUM);
+		pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR("%s", "%d"),
+			create_link(0,0, LATEST_NUM, 0,0),
+			LATEST_NUM);
 #endif	/* LATEST_ANCHOR */
 	} else {
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_PATH_IMODE_HEADER_1,
-				title, zz_bs, RES_IMODE,
-				RES_IMODE, RES_IMODE);
-		else
-#endif
-			pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1,
-				title, zz_bs, zz_bs, zz_ky, RES_IMODE, zz_bs,
-				zz_ky, RES_IMODE, RES_IMODE);
+		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1("%s", "%s", "%s"),
+			title,
+			create_parent_link(),
+			create_link(1,RES_IMODE, 0,0,0) );
+		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_2("%s", "%d"),
+			create_link(0,0, RES_IMODE, 1,0),
+			RES_IMODE);
 	}
 
 	if (line > RES_RED) {
-		pPrintf(pStdout, R2CH_HTML_HEADER_RED, RES_RED);
+		pPrintf(pStdout, R2CH_HTML_HEADER_RED("%d"), RES_RED);
 	} else if (line > RES_REDZONE) {
-		pPrintf(pStdout, R2CH_HTML_HEADER_REDZONE, RES_REDZONE,
-			RES_RED);
+		pPrintf(pStdout, R2CH_HTML_HEADER_REDZONE("%d", "%d"),
+			RES_REDZONE, RES_RED);
 	} else if (line > RES_YELLOW) {
-		pPrintf(pStdout, R2CH_HTML_HEADER_YELLOW, RES_YELLOW,
-			RES_RED);
+		pPrintf(pStdout, R2CH_HTML_HEADER_YELLOW("%d", "%d"),
+			RES_YELLOW, RES_RED);
 	}
 
 #ifdef CAUTION_FILESIZE 
@@ -2526,9 +2526,9 @@ void html_head(int level, char const *title, int line)
 #endif 
 
 	if (is_imode())
-		pPrintf(pStdout, R2CH_HTML_HEADER_2_I, title);
+		pPrintf(pStdout, R2CH_HTML_HEADER_2_I("%s"), title);
 	else
-		pPrintf(pStdout, R2CH_HTML_HEADER_2, title);
+		pPrintf(pStdout, R2CH_HTML_HEADER_2("%s"), title);
 }
 
 /****************************************************************/
@@ -2538,43 +2538,20 @@ void html_head(int level, char const *title, int line)
 void html_reload(int startline)
 {
 	if (is_imode())	/*  imode */
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_PATH_RELOAD_I, startline);
-		else
-#endif
-			pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
-				startline);
+		pPrintf(pStdout, R2CH_HTML_RELOAD_I("%s"),
+			create_link(startline,0, 0, 1,0) );
 	else {
 #ifdef PREV_NEXT_ANCHOR
 		if (last_line()<lineMax) {
 			if (isbusytime) return;	/* 混雑時は次100にまかせる */
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout,
-					R2CH_HTML_PATH_AFTER,
-					last_line()+1);
-			else
-#endif
-				pPrintf(pStdout,
-					R2CH_HTML_AFTER,
-					zz_bs, zz_ky,
-					last_line()+1);
+			pPrintf(pStdout, R2CH_HTML_AFTER("%s"),
+				create_link(last_line()+1,0, 0, 0,0) );
 
 		} else
 #endif
 		{
-#ifdef USE_PATH
-			if (path_depth)
-				pPrintf(pStdout,
-					R2CH_HTML_PATH_RELOAD,
-					startline);
-			else
-#endif
-				pPrintf(pStdout,
-					R2CH_HTML_RELOAD,
-					zz_bs, zz_ky,
-					startline);
+			pPrintf(pStdout, R2CH_HTML_RELOAD("%s"),
+				create_link(startline,0, 0, 0,0) );
 		}
 	}
 }
@@ -2596,48 +2573,22 @@ static void html_foot(int level, int line, int stopped)
 	pPrintf(pStdout, "<hr>");
 #endif
 #ifdef PREV_NEXT_ANCHOR
-	if (!isbusytime)
-	{
-		pPrintf(pStdout,
-			R2CH_HTML_RETURN_BOARD("%s"),
-			zz_board_name);
-
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout,
-				R2CH_HTML_PATH_ALL_ANCHOR); 
-		else
-#endif
-			pPrintf(pStdout,
-				R2CH_HTML_ALL_ANCHOR,
-				zz_bs, zz_ky); 
+	if (!isbusytime) {
+		pPrintf(pStdout, R2CH_HTML_RETURN_BOARD("%s"),
+			create_parent_link());
+		pPrintf(pStdout, R2CH_HTML_ALL_ANCHOR("%s"),
+			create_link(0,0,0,0,0) );
 	}
 
 #ifndef RELOADLINK
-#ifdef USE_PATH
-	if (path_depth)
-		pPrintf(pStdout, " <a href=\"1-%d\">1-</a>",
-			CHUNK_NUM);
-	else
+	pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR("%s", "1"),
+		create_link(1,CHUNK_NUM,0,0,0) );
 #endif
-		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
-			zz_bs, zz_ky, CHUNK_NUM);
-#endif
-
 	if (!isbusytime && first_line()>1) {
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_PATH_PREV,
-				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-				first_line()-1,
-				CHUNK_NUM );
-		else
-#endif
-			pPrintf(pStdout, R2CH_HTML_PREV,
-				zz_bs, zz_ky,
-				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
-				first_line()-1,
-				CHUNK_NUM );
+		pPrintf(pStdout, R2CH_HTML_PREV("%s", "%d"),
+			create_link((first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+				first_line()-1, 0,0,0),
+			CHUNK_NUM );
 	}
 	if (isbusytime && need_tail_comment)
 		nchunk = RES_NORMAL;
@@ -2648,48 +2599,25 @@ static void html_foot(int level, int line, int stopped)
 #else
 	if (last_line() < lineMax) {
 #endif
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_PATH_NEXT,
-				last_line()+1,
-				last_line()+nchunk,
-				nchunk );
-		else
-#endif
-			pPrintf(pStdout, R2CH_HTML_NEXT,
-				zz_bs, zz_ky,
-				last_line()+1,
-				last_line()+nchunk,
-				nchunk );
+		pPrintf(pStdout, R2CH_HTML_NEXT("%s", "%d"),
+			create_link(last_line()+1,
+				last_line()+nchunk, 0,0,0),
+			nchunk );
 #ifndef RELOADLINK
 	} else {
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_PATH_NEW,
-				last_line());
-		else
-#endif
-			pPrintf(pStdout, R2CH_HTML_NEW,
-				zz_bs, zz_ky,
-				last_line());
+		pPrintf(pStdout, R2CH_HTML_NEW("%s"),
+			create_link(last_line(), 0, 0,0,0) );
 	}
 #endif
-#ifdef USE_PATH
-	if (path_depth)
-		pPrintf(pStdout,
-			R2CH_HTML_PATH_LATEST_ANCHOR,
-			LATEST_NUM, LATEST_NUM);
-	else
-#endif
-		pPrintf(pStdout,
-			R2CH_HTML_LATEST_ANCHOR,
-			zz_bs, zz_ky,
-			LATEST_NUM, LATEST_NUM);
+	pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR("%s", "%d"),
+		create_link(0,0, LATEST_NUM, 0,0),
+		LATEST_NUM);
 	if (isbusytime && need_tail_comment)
-		pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
-#endif
+		pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE("%02d:00", "%02d:00"),
+			LIMIT_PM - 12, LIMIT_AM);
 #ifdef RELOADLINK
 	}
+#endif
 #endif
 
 #ifdef	SEPARATE_CHUNK_ANCHOR
@@ -2707,17 +2635,9 @@ static void html_foot(int level, int line, int stopped)
 			   「混雑時にCHUNK_ANCHORを非表示にする」等の場合には
 			   再修正が必要なので保留 */
 	/* LATEST_ANCHORも常に生きにする */
-#ifdef USE_PATH
-		if (path_depth)
-			pPrintf(pStdout,
-				R2CH_HTML_PATH_LATEST_ANCHOR,
-				LATEST_NUM, LATEST_NUM);
-		else
-#endif
-			pPrintf(pStdout,
-				R2CH_HTML_LATEST_ANCHOR,
-				zz_bs, zz_ky,
-				LATEST_NUM, LATEST_NUM);
+			pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR("%s", "%d"),
+				create_link(0,0, LATEST_NUM, 0,0),
+				LATEST_NUM);
 		}
 	}
 #endif
@@ -2751,10 +2671,12 @@ void html_foot_im(int line, int stopped)
 	if (line <= RES_RED && !stopped ) {
 #ifdef USE_PATH
 		if (path_depth)
-			pPrintf(pStdout, R2CH_HTML_FORM_IMODE("../../../"), zz_bs, zz_ky, currentTime);
+			pPrintf(pStdout, R2CH_HTML_FORM_IMODE("../../../"),
+				zz_bs, zz_ky, currentTime);
 		else
 #endif
-			pPrintf(pStdout, R2CH_HTML_FORM_IMODE(""), zz_bs, zz_ky, currentTime); 
+			pPrintf(pStdout, R2CH_HTML_FORM_IMODE(""),
+				zz_bs, zz_ky, currentTime); 
 	}
 	pPrintf(pStdout, R2CH_HTML_FOOTER_IMODE);
 }

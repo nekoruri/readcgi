@@ -131,28 +131,15 @@
 #define R2CH_HTML_RES_BROKEN_HERE(n) \
 	"<dt>" n " " R2CH_HTML_NAME " " R2CH_HTML_DATE "[ここ壊れています]<dd>[ここ壊れています]<br><br>"
 
-/* tail: npath=生成するURLその1 nst=次のxxxレス
-	 lpath=生成するURLその2 ls=最新レスxxx
+/* tail: 次ぎの%dレス
+	 最新レス%d
          %02d=制限開始時刻 %02d=制限終了時刻 */
-#define R2CH_HTML_T_TAIL(npath, nst, lpath, ls) \
-	" <a href=\"" npath "\">次の" nst "レス</a>" \
-	" <a href=\"" lpath "\">最新レス" ls "</a>\n" \
-	" (%02d:00PM - %02d:00AM の間一気に全部は読めません)<br>\n"
-
-/* tail: PATHナシ
-	%s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数
-	%s=cgi %s=board %s=key %d=レス数 %d=レス数
-	%02d=制限開始時刻 %02d=制限終了時刻 */
-#define R2CH_HTML_TAIL \
-	R2CH_HTML_T_TAIL("%s?bbs=%s&key=%s&st=%d&to=%d" NO_FIRST, "%d", \
-			 "%s?bbs=%s&key=%s&ls=%d" NO_FIRST, "%d")
-/* tail: PATH仕様
-	%d=開始 %d=終了 %d=レス数
-	%d=レス数 %d=レス数
-	%02d=制限開始時刻 %02d=制限終了時刻 */
-#define R2CH_HTML_PATH_TAIL \
-	R2CH_HTML_T_TAIL("%d-%d", "%d", \
-			 "./l%d", "%d")
+#define R2CH_HTML_TAIL(path,next) \
+	" <a href=" path ">次の" next "レス</a>"
+#define R2CH_HTML_TAIL2(path, ls)  \
+	" <a href=" path ">最新レス" ls "</a>\n"
+#define R2CH_HTML_TAIL_SIMPLE(from,to) \
+	" (" from "PM - " to "AM の間一気に全部は読めません)<br>\n"
 
 /*
  * i-MODEでレスを表示。
@@ -170,26 +157,11 @@
 
 /* tail: npath=生成するURLその1 nst=次のxxxレス
 	lpath=生成するURLその2 ls=最新レスxxx */
-#define R2CH_HTML_T_IMODE_TAIL(npath, nst, lpath, ls) \
-	" <a href=\"" npath "\">次の" nst "レス</a>" \
-	" <a href=\"" lpath "\">最新レス" ls "</a><br>\n"
+#define R2CH_HTML_IMODE_TAIL(path, next) \
+	" <a href=" path ">次の" next "レス</a>"
+#define R2CH_HTML_IMODE_TAIL2(path, ls) \
+	" <a href=" path ">最新レス" ls "</a><br>\n"
 
-/* tail: PATHナシ
-	   %s=cgi %s=board %s=key %d=開始 %d=終了 %d=レス数
-	   %s=cgi %s=board %s=key %d=レス数 %d=レス数 */
-#define R2CH_HTML_IMODE_TAIL \
-	   R2CH_HTML_T_IMODE_TAIL("%s?bbs=%s&key=%s&st=%d&to=%d&imode=true", "%d", \
-						  "%s?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST, "%d")
-
-/* tail: PATH仕様
-	   %d=開始 %d=終了 %d=レス数
-	   %d=レス数 %d=レス数 */
-#define R2CH_HTML_PATH_IMODE_TAIL \
-	R2CH_HTML_T_IMODE_TAIL("%d-%di", "%d", \
-				  "l%di", "%d")
-
-#define R2CH_HTML_TAIL_SIMPLE \
-	" (%02d:00PM - %02d:00AM の間一気に全部は読めません)<br>\n"
 /* テストなので使っていないけど */
 #define CHUNKED_ANCHOR_SELECT_HEAD(bbs,key) \
 	"<form><select onchange='" \
@@ -394,52 +366,26 @@
 
 /* path=生成するURL */
 #ifdef PREV_NEXT_ANCHOR
-#define R2CH_HTML_T_ALL_ANCHOR(path) \
-	" <a href=\"" path "\">全部</a>"
+#define R2CH_HTML_ALL_ANCHOR(path) \
+	" <a href=" path ">全部</a>"
 #else
-#define R2CH_HTML_T_ALL_ANCHOR(path) \
-	" <a href=\"" path "\">レスを全部読む</a>"
+#define R2CH_HTML_ALL_ANCHOR(path) \
+	" <a href=" path ">レスを全部読む</a>"
 #endif
-/* path=生成するURL st=開始位置 */
-#define R2CH_HTML_T_CHUNK_ANCHOR(path, st) \
-	" <a href=\"" path "\">" st "-</a>"
+/* %s=生成するURL %d=開始位置 */
+#define R2CH_HTML_CHUNK_ANCHOR(path, st) \
+	" <a href=" path ">" st "-</a>"
 /* path=生成するURL ls=記事数 */
 #ifdef PREV_NEXT_ANCHOR
-#define R2CH_HTML_T_LATEST_ANCHOR(path, ls) \
-	" <a href=\"" path "\">最新"ls"</a>"
+#define R2CH_HTML_LATEST_ANCHOR(path, ls) \
+	" <a href=" path ">最新" ls "</a>"
 #else
-#define R2CH_HTML_T_LATEST_ANCHOR(path, ls) \
-	" <a href=\"" path "\">最新レス"ls"</a>"
+#define R2CH_HTML_LATEST_ANCHOR(path, ls) \
+	" <a href=" path ">最新レス" ls "</a>"
 #endif
 
-/* 以下のものは、PATHナシ仕様で用いられる */
-
-/* %s=板 %s=スレ番号 */
-#define R2CH_HTML_ALL_ANCHOR \
-	R2CH_HTML_T_ALL_ANCHOR(CGINAME "?bbs=%s&key=%s")
-/* %s=板 %s=スレ番号 %d=開始レス %d=終了レス %s="&n=f" %d=開始レス */
-#define R2CH_HTML_CHUNK_ANCHOR \
-	R2CH_HTML_T_CHUNK_ANCHOR(CGINAME "?bbs=%s&key=%s&st=%d&to=%d%s", "%d")
-/* %s=板 %s=スレ番号 %d=レス個数 %d=レス個数 */
-#define R2CH_HTML_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR(CGINAME "?bbs=%s&key=%s&ls=%d" /*NO_FIRST*/, "%d")
-
-/* 以下のものは、PATH仕様で用いられる
-   板・スレ番はすでに決定しているので、埋め込まれない */
-
-/* 外部パラメータナシ */
-#define R2CH_HTML_PATH_ALL_ANCHOR \
-	R2CH_HTML_T_ALL_ANCHOR("1-")
-/* %d=開始レス %d=終了レス %d=開始レス */
-#define R2CH_HTML_PATH_CHUNK_ANCHOR \
-	R2CH_HTML_T_CHUNK_ANCHOR("%d-%d", "%d")
-/* %d=レス個数 %d=レス個数 */
-#define R2CH_HTML_PATH_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR("./l%d", "%d")
-
-
 /* </title>の前の空白は削除しないこと */
-#define R2CH_HTML_IMODE_HEADER_T(title, board, alllink, latestlink)  \
+#define R2CH_HTML_IMODE_HEADER_1(title, board, alllink)  \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
@@ -447,35 +393,27 @@
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"" board "\">■掲示板に戻る■</a>" \
-	" <a href=\"" alllink "\">レスを最初から読む</a>" \
-	" <a href=\"" latestlink "\">最新レス%d</a>"
+	" <a href=" alllink ">レスを最初から読む</a>"
 
-/* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
-                     %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
-#define R2CH_HTML_IMODE_HEADER_1 \
-	R2CH_HTML_IMODE_HEADER_T("%s", "../%s/i/", \
-		CGINAME "?bbs=%s&key=%s&st=1&to=%d&imode=true", \
-		CGINAME "?bbs=%s&key=%s&ls=%d&imode=true" NO_FIRST )
-
-#define R2CH_HTML_PATH_IMODE_HEADER_1 \
-	R2CH_HTML_IMODE_HEADER_T("%s", "../../../../%s/i/", "1-%di", "l%di")
+#define R2CH_HTML_IMODE_HEADER_2(latestlink, ls)  \
+	" <a href=" latestlink ">最新レス" ls "</a>"
 
 /* レス数オーバー: %d=最大レス数 */
-#define R2CH_HTML_HEADER_RED \
+#define R2CH_HTML_HEADER_RED(num) \
 	"<p><table><tr><td bgcolor=red>" \
-	"<br><br><font color=white>レス数が%dを超えています。残念ながら全部は表\示しません。</font>" \
+	"<br><br><font color=white>レス数が" num "を超えています。残念ながら全部は表\示しません。</font>" \
 	"</td></tr></table>"
 
 /* レス数やばい: %d=やばくなるレス数 */
-#define R2CH_HTML_HEADER_REDZONE \
+#define R2CH_HTML_HEADER_REDZONE(num1, num2) \
 	"<p><table><tr><td bgcolor=red>\n" \
-	"<font color=white>レス数が%dを超えています。%dを超えると表\示できなくなるよ。</font>" \
+	"<font color=white>レス数が" num1 "を超えています。" num2 "を超えると表\示できなくなるよ。</font>" \
 	"</td></tr></table>"
 
 /* レス数そろそろ?: %d=警告の出るレス数 */
-#define R2CH_HTML_HEADER_YELLOW \
+#define R2CH_HTML_HEADER_YELLOW(num1, num2) \
 	"<p><table><tr><td bgcolor=yellow>" \
-	"レス数が%dを超えています。%dを超えると表\示できなくなるよ。" \
+	"レス数が" num1 "を超えています。" num2 "を超えると表\示できなくなるよ。" \
 	"</td></tr></table>"
 
 /* ファイルサイズやばい: %d=超えた大きさ %d=表示できない大きさ %s=付加文字列 */ 
@@ -486,60 +424,39 @@
 
 /* スレ名: %s=スレ名 */
 /* </font> の前の空白は削除しないこと */
-#define R2CH_HTML_HEADER_2 \
-	"<p><font size=+1 color=red>%s </font>" \
+#define R2CH_HTML_HEADER_2(title) \
+	"<p><font size=+1 color=red>" title " </font>" \
 	"<dl>"
 
-#define R2CH_HTML_HEADER_2_I \
-	"<p><font size=+1 color=red>%s </font>"
+#define R2CH_HTML_HEADER_2_I(title) \
+	"<p><font size=+1 color=red>" title " </font>"
 
 /*
  * RELOAD
  */
 #define R2CH_HTML_T_RELOAD(path,str) \
-	"<hr><center><a href=\"" path "\">" str "</a></center>"
+	"<hr><center><a href=" path ">" str "</a></center>"
 
-#define R2CH_HTML_RELOAD \
-	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" /* NO_FIRST */, "新着レスの表\示")
+#define R2CH_HTML_RELOAD(path) \
+	R2CH_HTML_T_RELOAD(path, "新着レスの表\示")
 
-#define R2CH_HTML_PATH_RELOAD \
-	R2CH_HTML_T_RELOAD("%d-", "新着レスの表\示")
+#define R2CH_HTML_AFTER(path) \
+	R2CH_HTML_T_RELOAD(path, "続きを読む")
 
-#define R2CH_HTML_PATH_RELOAD_I \
-	"<center><a href=\"%d-i\">新着レスの表\示</a></center><hr>"
-
-#define R2CH_HTML_AFTER \
-	R2CH_HTML_T_RELOAD(CGINAME"?bbs=%s&key=%s&st=%d" /* NO_FIRST */, "続きを読む")
-
-#define R2CH_HTML_PATH_AFTER \
-	R2CH_HTML_T_RELOAD("%d-", "続きを読む")
-
-#define R2CH_HTML_RELOAD_I \
-	"<center><a href=\""CGINAME"?bbs=%s&key=%s&st=%d&i=t" NO_FIRST "\">新着レスの表\示</a></center><hr>"
+#define R2CH_HTML_RELOAD_I(path) \
+	"<center><a href=" path ">新着レスの表\示</a></center><hr>"
 
 /*
  * PREV_NEXT
  */
-#define R2CH_HTML_T_PREVNEXT(path,str) \
-	" <a href=\"" path "\">" str "</a>"
+#define R2CH_HTML_PREV(path, prev) \
+	" <a href=" path ">前" prev "</a>"
 
-#define R2CH_HTML_PREV \
-	R2CH_HTML_T_PREVNEXT(CGINAME "?bbs=%s&key=%s&st=%d&to=%d","前%d")
+#define R2CH_HTML_NEXT(path, next) \
+	" <a href=" path ">次" next "</a>"
 
-#define R2CH_HTML_PATH_PREV \
-	R2CH_HTML_T_PREVNEXT("%d-%d","前%d")
-
-#define R2CH_HTML_NEXT \
-	R2CH_HTML_T_PREVNEXT(CGINAME "?bbs=%s&key=%s&st=%d&to=%d","次%d")
-
-#define R2CH_HTML_PATH_NEXT \
-	R2CH_HTML_T_PREVNEXT("%d-%d","次%d")
-
-#define R2CH_HTML_NEW \
-	R2CH_HTML_T_PREVNEXT(CGINAME "?bbs=%s&key=%s&st=%d","未読")
-
-#define R2CH_HTML_PATH_NEW \
-	R2CH_HTML_T_PREVNEXT("%d-","未読")
+#define R2CH_HTML_NEW(path) \
+	" <a href=" path ">未読</a>"
 
 /*
  * FOOTER

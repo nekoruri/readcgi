@@ -5,6 +5,7 @@ tag: HEAD
   USE_INDEX用処理の一部が#if 0になっていたので#ifdef USE_INDEXに訂正。
   rawmodeリザルトで "-ERR 過去ログ倉庫で発見 %s" と "-ERR html待ち" 追加。
 　rawmodeで末尾にhtmlが付いてしまうバグ修正
+　USE_PATHのURL生成をまとめた。
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。
