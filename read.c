@@ -42,6 +42,11 @@ static int pid;
 # error "Too large CHUNK_NUM!!"
 #endif
 
+/* CHUNK_ANCHOR のコードに依存している */
+#if defined(SEPARATE_CHUNK_ANCHOR) || defined(CHUNKED_ANCHOR_WITH_FORM)
+# define CHUNK_ANCHOR
+#endif
+
 /* 非TERIタイプで','が置換されて格納される文字列 */
 #define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */
 #define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
@@ -1803,7 +1808,7 @@ void html_error(enum html_error_t errorcode)
 	}
 #ifdef RAWOUT
 	if(rawmode) {
-		/* ?....はエラー。 */
+		/* -ERR (message)はエラー。 */
 		pPrintf(pStdout, "-ERR %s\n", mes);
 		exit(0);
 	}
@@ -1869,7 +1874,7 @@ int html_error999(char *mes)
 	*tmp = '\0';
 #ifdef RAWOUT
 	if(rawmode) {
-		/* ?....はエラー。 */
+		/* -ERR (message)はエラー。 */
 		pPrintf(pStdout, "-ERR %s\n", mes);
 		exit(0);
 	}
