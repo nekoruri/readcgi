@@ -42,7 +42,7 @@ static int pid;
 # error "Too large CHUNK_NUM!!"
 #endif
 
-/* TERIタイプで','が置換されて格納される文字列 */
+/* 非TERIタイプで','が置換されて格納される文字列 */
 #define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */
 #define COMMA_SUBSTITUTE_FIRSTCHAR 0x81
 #define COMMA_SUBSTITUTE_LEN 4
@@ -525,10 +525,7 @@ int geturltaillen(const char *p)
 	int len = 0;
 	while (!hrefStop(*p)) {
 		if (*p == '&') {
-			/*  cutWordOff(url, "&quot;");
-				ちょっとやっていることがわからないが、そのまま動作を再現
-				どうせならstrnicmp()の方が・・・
-			*/
+			/* &quot;で囲まれたURLの末尾判定 */
 			if (strncmp(p, "&quot;", 6) == 0)
 				break;
 		}
@@ -977,7 +974,7 @@ static int out_html(int level, int line, int lineNo)
 			pPrintf(pStdout, R2CH_HTML_IMODE_RES_BROKEN_HERE,
 				lineNo);
 		}
-		if (out_resN > RES_IMODE) {
+		if (out_resN > RES_IMODE && lineNo != lineMax ) {
 			pPrintf(pStdout, R2CH_HTML_IMODE_TAIL,
 				CGINAME, zz_bs, zz_ky, lineNo,
 				lineNo + RES_IMODE, RES_IMODE, CGINAME,
@@ -1035,47 +1032,34 @@ int dat_out_raw(void)
 /*	Level=0のときは、外側の出力				*/
 /*	Level=1のときは、内側の出力				*/
 /****************************************************************/
-int dat_out(int level)
-{
-	int line, lineNo;
-#ifdef RELOADLINK
-	int lineLast = lineMax;
-#endif
-	int threadStopped=0;
-	char *s[20];
-	char p[SIZE_BUF];
-	
-	for (line = 0; line < lineMax; line++) {
-		lineNo = line + 1;
 
-		if (lineNo == 1) {
-			if (is_nofirst())
-				continue;
-		} else {
-			if (nn_st && lineNo < nn_st)
-				continue;
-			if (nn_to && lineNo > nn_to)
-				continue;
-			if (nn_ls && line < lineMax - nn_ls)
-				continue;
-		}
+int dat_out(int level) 
+{ 
+	int line; 
+	int threadStopped=0; 
+	char *s[20]; 
+	char p[SIZE_BUF]; 
 
-		if (out_html(level, line, lineNo))
-			break;
-		if (lineNo==1 && is_imode() && nn_st==1)
+	for (line = 0; line < lineMax; line++) { 
+		int lineNo = line + 1; 
+		if (!isprinted(lineNo)) 
+			continue; 
+		if (out_html(level, line, lineNo)) { 
+			line++; 
+			break; /* 非0が返るのは、エラー時とimodeのMaxに達した時 */ 
+		} 
+		if (lineNo==1 && is_imode() && nn_st==1) 
 			++out_resN; 
-#ifdef RELOADLINK
-		lineLast = lineNo;
-#endif
-	}
-	out_html1(level);
+	} 
+	out_html1(level); /* レスが１つも表示されていない時にレス１を表示する */ 
+
 	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
 	if (!*p)
 		return 1; 
 	if( s[2]!=0 && (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" )) ) threadStopped=1;
 #ifdef RELOADLINK
-	if (!level && lineMax == lineLast && lineMax <= RES_RED && !threadStopped) {
-		html_reload(lineLast);	/*  Button: Reload */
+	if (!level && lineMax == line && lineMax <= RES_RED && !threadStopped) {
+		html_reload(line);	/*  Button: Reload */
 	}
 #endif
 	html_foot(level, lineMax, threadStopped);
@@ -1105,28 +1089,6 @@ int dat_read(char const *fname,
 	nn_st = st;
 	nn_to = to;
 	nn_ls = ls;
-
-#if 0
-	/* 外側へ移動 */
-	if (nn_st < 0)
-		nn_st = 0;
-	if (nn_to < 0)
-		nn_to = 0;
-	if (nn_st == 1 && nn_to == 1)
-		strcpy(zz_nf, KARA);
-	if (is_imode()) {	/* imode */
-		if (!nn_st && !nn_to && !nn_ls)
-			nn_ls = RES_IMODE;
-	}
-	if (!is_nofirst() && nn_ls > 0) {
-		nn_ls--;
-		if(nn_ls == 0) {
-			nn_ls = 1;
-			strcpy(zz_nf, "true");
-		}
-	} else if (nn_ls < 0)
-		nn_ls = 0;
-#endif
 
 	in = open(fname, O_RDONLY);
 	if (in < 0)
