@@ -1803,7 +1803,7 @@ int main(void)
 	printf("Last-Modified: %s\n", lastmod_str);
 
 #ifdef ZLIB
-	if ( gzip_flag == compress_none )
+	if ( is_head() || gzip_flag == compress_none )
 #endif
 	{
 		putchar('\n');
@@ -1814,7 +1814,7 @@ int main(void)
 #endif
 	fflush(stdout);
 #ifdef ZLIB
-	if ( gzip_flag == compress_none )
+	if ( is_head() || gzip_flag == compress_none )
 #endif
 	{
 		/* HEADリクエストならここで終了 */
