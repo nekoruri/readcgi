@@ -1,4 +1,5 @@
 read.cgi raw modeドキュメント
+$Id: rawmode.txt,v 1.4 2001/11/10 07:39:07 2ch Exp $
 
 2001-11-10 Ver.5.26+ (5.28候補)
 
@@ -11,7 +12,7 @@ read.cgi raw modeドキュメント
 
 リクエストヘッダ
  Accept-Encoding
-  gzipまたはx-gzipが必要。なければエラーとなる。
+  gzipまたはx-gzipが必要。なければエラーとなる[mod_gzipを使わない場合]。
   結果はgzip圧縮されているとは限らないため、クライアントは正しくヘッダの
   Content-Encodingを見て圧縮されているかどうかを判断すること。
 
@@ -20,6 +21,33 @@ read.cgi raw modeドキュメント
   Last-Modifiedの値を指定すると、その後変化がないときにはHTTPのリザルトとして
   304 Not Modifiedを返す。[サーバの負荷削減のために推奨する]
 
+ User-Agent
+  存在しなければならない。
+
+ Accept-Language
+  存在しなければならない。
+
+HTTPレスポンス
+ read.cgiのレスポンスは以下のものに分類される。
+
+ 200 Ok
+  cgiが何らかのメッセージを出力するときに返す。
+
+ 304 Not Modified
+  If-Modified-Sinceにより、更新がないと判断された場合に返す。
+
+HTTPレスポンスヘッダ
+ Content-type
+  text/plain
+
+ Content-Encoding
+  圧縮されている場合、gzipまたはx-gzipで返す。圧縮されない場合はこのヘッダは
+  出力しない。
+
+ Content-Length
+  実際に出力するオクテット数を出力するが、User-Agentが"Mozilla/4."で始まり、
+  "compatible"が存在しない場合(つまりNetscape 4.x)このヘッダは出力しない。
+ 
 
 §2. rawモード
 
@@ -93,7 +121,7 @@ rawモードの出力は、1行目にステータス行、2行目以降は.datファイルの書式で
 
       "過去ログ倉庫で発見 %s"
 	倉庫で発見した。
-	%sは相対パスで.datの位置を表す。
+	%sは相対パスで.datまたは.dat.gzの位置を表す。
 
       "html化待ち"
 	倉庫待ちで発見した。場所は示さない。
@@ -116,6 +144,7 @@ rawモードの出力は、1行目にステータス行、2行目以降は.datファイルの書式で
 
 書式: http://サーバ.2ch.net/test/read.cgi/板/スレ/?raw=0.0
 
+解説:
 　指定スレの全レスを出力する。
 
 出力:
