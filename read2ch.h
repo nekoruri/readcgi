@@ -17,7 +17,6 @@
 #define	LIMIT_AM	3
 
 /* 混雑時間帯に、>>000 形式のレスへのリンクを削除する */
-#define CUTRESLINK
 #define LINKTAGCUT (1)
 
 /* 一番最後に、「更新したレスを表示」のリンクを表示する */

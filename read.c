@@ -119,20 +119,11 @@ void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
 int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
-#ifndef CUTRESLINK
-void hlinkReplace(char *src);
-#endif
 static void html_foot(int level, int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
 int getFileSize(char const *file);
-#ifdef CUTRESLINK
 static int isprinted(int lineNo);
-#endif
-#ifndef CUTRESLINK
-/*int res_split(char **s, char *p);*/
-char *findSplitter(char *stt, int sp);
-#endif
 #ifdef RELOADLINK
 void html_reload(int);
 #endif
@@ -187,9 +178,7 @@ struct {
 #ifdef	LATEST_ANCHOR
 	int Latest_Num;
 #endif
-#ifdef	CUTRESLINK
 	int LinkTagCut;
-#endif
 } Settings = {
 	RES_YELLOW,
 	RES_REDZONE,
@@ -204,9 +193,7 @@ struct {
 #ifdef	LATEST_ANCHOR
 	LATEST_NUM,
 #endif
-#ifdef	CUTRESLINK
 	LINKTAGCUT,
-#endif
 };
 struct {
 	const char *str;
@@ -229,9 +216,7 @@ struct {
 #ifdef	LATEST_ANCHOR
 	{	"LATEST_NUM",	&Settings.Latest_Num,	},
 #endif
-#ifdef	CUTRESLINK
 	{	"LINKTAGCUT",	&Settings.LinkTagCut	},
-#endif
 };
 #undef	RES_YELLOW
 #define	RES_YELLOW	Settings.Res_Yellow
@@ -255,13 +240,10 @@ struct {
 #undef	LATEST_NUM
 #define	LATEST_NUM	Settings.Latest_Num
 #endif
-#ifdef	CUTRESLINK
 #undef	LINKTAGCUT
 #define	LINKTAGCUT	Settings.LinkTagCut
-#endif
 #endif	/*	USE_SETTING_FILE	*/
 
-#ifdef CUTRESLINK
 /* <ctype.h>等とかぶってたら、要置換 */
 #define false (0)
 #define true (!false)
@@ -761,7 +743,6 @@ void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 	p = ressplitter_split(&res, p, false); /* title */
 }
 
-#endif
 
 /****************************************************************/
 /*	BadAccess						*/
@@ -871,17 +852,9 @@ static int out_html1(int level)
 
 	if (out_resN)
 		return 0;
-#ifndef CUTRESLINK
-	strncpy(p, BigLine[0], 1024);
-	p[1024 - 1] = '\0';
-	if (!*p)
-		return 1;
-	res_split(s, p);
-#else
 	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 	if (!*p)
 		return 1; 
-#endif
 #ifdef	TYPE_TERI
 	/*someReplace(s[4],r4,COMMA_SUBSTITUTE,",")       ; */
 	html_head(level, s[4], lineMax);
@@ -914,17 +887,9 @@ static int out_html(int level, int line, int lineNo)
 /*printf("line=%d[%s]<P>\n",line,BigLine[line]);return 0;*/
 
 	if (!out_resN) {	/* Can I write header ?   */
-#ifndef CUTRESLINK
-		strncpy(p, BigLine[0], 1024);
-		p[1024 - 1] = '\0';
-		if (!*p)
-			return 1;
-		res_split(s, p);
-#else
 		splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 		if (!*p)
 			return 1; 
-#endif
 #ifdef	TYPE_TERI
 		r4 = s[4];
 #else
@@ -939,17 +904,9 @@ static int out_html(int level, int line, int lineNo)
 	}
 	out_resN++;
 
-#ifndef CUTRESLINK
-	strncpy(p, BigLine[line], 1024);
-	p[1024 - 1] = '\0';
-	if (!*p)
-		return 1;
-	res_split(s, p);
-#else
 	splitting_copy(s, p, BigLine[line], sizeof(p) - 20, line);
 	if (!*p)
 		return 1; 
-#endif
 	
 #ifdef	TYPE_TERI
 	r0 = s[0];
@@ -961,16 +918,9 @@ static int out_html(int level, int line, int lineNo)
 	someReplace(s[3], r3, COMMA_SUBSTITUTE, ",");
 	someReplace(r3, r3, "&amp;", "&");
 #endif
-#ifndef	CUTRESLINK
-	hlinkReplace(r3);
-#endif
 
 	if (!is_imode()) {	/* no imode */
-#ifndef	CUTRESLINK
-		if (*r3 && strlen(r3) < 8192) {
-#else
 		if (*r3 && s[4]-r3 < 8192) {
-#endif
 			if (r1 && strcmp(r1, "sage") == 0) {
 #ifdef SAGE_IS_PLAIN
 # ifdef CREATE_NAME_ANCHOR
@@ -1073,7 +1023,6 @@ static int out_html(int level, int line, int lineNo)
 /*	Output raw data file					*/
 /****************************************************************/
 #ifdef RAWOUT
-#ifdef	CUTRESLINK
 #if	0
 /* BigLineをnul-terminatedではなく'\n'-terminatedにする場合 */
 int getlinelen(const char *line)
@@ -1085,7 +1034,6 @@ int getlinelen(const char *line)
 	return last - line;
 }
 #endif
-#endif
 
 int dat_out_raw(void)
 {
@@ -1096,12 +1044,8 @@ int dat_out_raw(void)
 	if(raw_lastnum > 0
 	   && !(raw_lastnum <= lineMax
 		&& (BigLine[raw_lastnum - 1]
-#ifndef	CUTRESLINK
-		    + strlen(BigLine[raw_lastnum - 1]) + 1
-#else
 			+ (BigLine[raw_lastnum] - BigLine[raw_lastnum - 1])
 			/* + getlinelen(BigLine[raw_lastnum - 1]) */
-#endif
 		    - BigBuffer) == raw_lastsize)) {
 		pPrintf(pStdout, "-INCR\n");
 		/* 全部を送信するように変更 */
@@ -1111,11 +1055,7 @@ int dat_out_raw(void)
 	}
 	/* raw_lastnum から全部を送信する */
 	for(i = raw_lastnum; i < lineMax; i++) {
-#ifndef CUTRESLINK
-		pPrintf(pStdout, "%s\n", BigLine[i]);
-#else
 		pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
-#endif
 	}
 	return 1;
 }
@@ -1165,17 +1105,9 @@ int dat_out(int level)
 		html_reload(lineLast);	/*  Button: Reload */
 	}
 #endif
-#ifndef CUTRESLINK
-	strncpy(p, BigLine[lineMax-1], 1024);
-	p[1024 - 1] = '\0';
-	if (!*p)
-		return 1;
-	res_split(s, p);
-#else
 	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
 	if (!*p)
 		return 1; 
-#endif
 	if( s[2]!=0 && strstr( s[2], "ストッパー" )) threadStopped=1;
 	html_foot(level, lineMax, threadStopped);
 
@@ -1250,16 +1182,6 @@ int dat_read(char const *fname,
 	read(in, BigBuffer, zz_fileSize);
 	close(in);
 #endif
-#ifndef	CUTRESLINK
-	/* XXX ところどころに 0 が現れるの? */
-	{
-		char *end = BigBuffer + zz_fileSize;
-		char *p = BigBuffer;
-		while ((p = memchr(p, '\0', end - p)) != NULL) {
-			*p = '*';
-		}
-	}
-#endif
 
 	lineMax = getLineMax();
 /*
@@ -1279,17 +1201,6 @@ int getLineMax(void)
 	if (!p)
 		return -8;
 
-#ifndef	CUTRESLINK
-	while ((p1 = strchr(p, '\n')) != NULL) {
-		BigLine[line] = p;
-		*p1 = '\0';
-		p = p1;
-		if (line > RES_RED)
-			break;
-		line++;
-		p++;
-	}
-#else
 	p1 = BigBuffer + zz_fileSize;	/* p1 = 最後の\nの次のポインタ */
 	while (p < p1 && *(p1-1) != '\n')	/* 最後の行末を探す 正常なdatなら問題無し */
 		p1--;
@@ -1309,7 +1220,6 @@ int getLineMax(void)
 		(dat_out_rawでstrlenしている部分への対応)
 	*/
 	BigLine[line] = BigBuffer + zz_fileSize;
-#endif
 	return line;
 }
 /****************************************************************/
@@ -2447,136 +2357,6 @@ void someReplace(char const *src,
 		last = doReplace(last, str0, str1);
 	}
 }
-/****************************************************************/
-/*	Replace(hrefStop)					*/
-/****************************************************************/
-#ifndef CUTRESLINK
-int hrefStop(char x)
-{
-	if ('A' <= x && x <= 'Z')
-		return 0;
-	if ('a' <= x && x <= 'z')
-		return 0;
-	if ('0' <= x && x <= '9')
-		return 0;
-	if (x == '#')
-		return 0;
-	if (x == '/')
-		return 0;
-	if (x == '~')
-		return 0;
-	if (x == '_')
-		return 0;
-	if (x == '.')
-		return 0;
-	if (x == ',')
-		return 0;
-	if (x == '$')
-		return 0;
-	if (x == '%')
-		return 0;
-	if (x == '&')
-		return 0;
-	if (x == '@')
-		return 0;
-	if (x == '?')
-		return 0;
-	if (x == '=')
-		return 0;
-	if (x == '-')
-		return 0;
-	if (x == '+')
-		return 0;
-	if (x == '*')
-		return 0;
-	if (x == ';')
-		return 0;
-	if (x == ':')
-		return 0;
-	if (x == '!')
-		return 0;
-	if (x == '^')
-		return 0;
-	if (x == '`')
-		return 0;
-	if (x == '|')
-		return 0;
-	if (x == '[')
-		return 0;
-	if (x == ']')
-		return 0;
-	if (x == '{')
-		return 0;
-	if (x == '}')
-		return 0;
-	if (x == '\\')
-		return 0;
-	return 1;
-}
-/****************************************************************/
-/*	Replace(cutWordOff)					*/
-/****************************************************************/
-int cutWordOff(char *src, char *word)
-{
-	char *p = strstr(src, word);
-	if (!p)
-		return 0;
-	*p = '\0';
-	return 1;
-}
-/****************************************************************/
-/*	Replace(ExistHlinkX)					*/
-/****************************************************************/
-int ExistHlinkX(char *tgt, char *src, char *url, char *hrefStr)
-{
-	char *p;
-	char *u;
-	p = strstr(src, tgt);
-	if (!p)
-		return 0;
-	/*NASHI*/ for (u = url; *p; p++) {
-		if (hrefStop(*p))
-			break;
-		*u = *p;
-		u++;
-	}
-	*u = '\0';
-	/*-- &quot; 等の削除 --*/
-	cutWordOff(url, "&quot;");
-/*	cutWordOff(url,";")		;*/
-	/*---------------------*/
-	sprintf(hrefStr,
-		"<A HREF=\"%.1024s\" TARGET=\"_blank\">%.1024s</A>", url,
-		url);
-	return 1;
-/*ARI*/}
-/****************************************************************/
-/*	Replace(ExistHlink)					*/
-/****************************************************************/
-int ExistHlink(char *src, char *h0, char *h1)
-{
-	if (ExistHlinkX("http://", src, h0, h1))
-		return 1;
-	if (ExistHlinkX("ftp://", src, h0, h1))
-		return 1;
-	return 0;
-}
-/****************************************************************/
-/*	Replace(hlinkReplace)					*/
-/****************************************************************/
-void hlinkReplace(char *src)
-{
-	char *last = src;
-	char hlink0[SIZE_BUF];
-	char hlink1[SIZE_BUF];
-
-	while (last) {
-		if (!ExistHlink(last, hlink0, hlink1))
-			break;
-		last = doReplace(last, hlink0, hlink1);
-	}
-}
-#endif
 
 /****************************************************************/
 /*	END OF THIS FILE					*/

@@ -6,15 +6,10 @@
 ▲新機能・変更が大きいので、とりあえずOFF推奨
 ×新機能・テスト中等の理由で、開発版でもOFFになっているもの
 
-○CUTRESLINK
-ファイルのreadとsplitを最適化する
-(define名がおかしい)
-
 ○LINKTAGCUT
 混雑時間帯に >>000 形式のレスへのリンクを削除。
 「レスを全部読む」の増加への対策として、
 表示範囲外のリンクは削除しないように変更。
-(CUTRESLINKが有効な時のみ機能する。0/1で指定)
 
 △RELOADLINK
 一番最後に、「更新したレスを表示」のリンクを表示する
@@ -125,7 +120,7 @@ LIMIT_PM
 LIMIT_AM
 FORCE_304_TIME (PREVENTRELOAD有効時のみ)
 LATEST_NUM (LATEST_ANCHOR有効時のみ)
-LINKTAGCUT (CUTRESLINK有効時のみ)
+LINKTAGCUT
 
 ---------------------------------------------------------------------
 採用決定のためcondition削除
