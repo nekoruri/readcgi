@@ -355,13 +355,18 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	static char url_expr[128];
 	static char *url_p = NULL;
 	char *p;
+	const char * key = zz_ky;
+#ifdef READ_KAKO
+	if ( read_kako[0] )
+		key = read_kako;
+#endif
 
 #ifdef USE_PATH
 	if (path_depth) {
 		p = url_expr;
 #ifdef USE_INDEX
 		if (path_depth == 2) {
-			p += sprintf(p, "%.40s/", zz_ky );
+			p += sprintf(p, "%.40s/", key );
 		}
 #endif
 		if (ls) {
@@ -397,12 +402,8 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	{
 		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
 			url_p = url_expr;
-#ifdef READ_KAKO
-			if (read_kako[0])
-				url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, read_kako);
-			else
-#endif
-				url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, zz_ky);
+			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", 
+						zz_bs, key);
 		}
 		p = url_p;
 		if (ls) {
@@ -2224,6 +2225,59 @@ int main(void)
 		dat_out(0);
 	return 0;
 }
+
+#ifdef READ_KAKO
+/* 過去ログへのリンク作成
+ *
+ * path_depth, zz_kyを書き換えてしまうので注意
+ */
+const char * create_kako_link(const char * dir_type, const char * key)
+{
+	static char result[256];
+	int needs_close_quote = false;
+	char *wp = result;
+	const char *p;
+
+	*wp++ = '\"'; /* "で囲む */
+
+#ifdef USE_PATH
+# ifdef ALWAYS_PATH
+	path_depth = 3;
+# endif
+	
+	if (path_depth) {
+#ifdef ALWAYS_PATH
+		wp += sprintf(wp, "%s", zz_script_name );
+#else
+		wp += sprintf(wp, "/test/" CGINAME );
+#endif
+		wp += sprintf(wp, "/%.40s/%.8s/%.40s/", zz_bs, dir_type, key);
+	} else
+#endif
+		wp += sprintf(wp, "%.40s", zz_cgi_path);
+
+	sprintf(zz_ky,"%.8s/%.40s", dir_type, key);
+#ifdef READ_KAKO_THROUGH
+	p = create_link(atoi(zz_st), atoi(zz_to), atoi(zz_ls), is_nofirst(), 0);
+#else
+	p = create_link(0, 0, 0, 0, 0);
+#endif
+	if (*p == '\"')
+		++p;		/* 全体を"で囲むため、"が付いていれば取り除く */
+	else
+		needs_close_quote = true;	/* path形式の最後にも"を */
+
+	if ( p[0]=='.' && p[1]=='/' )
+		p += 2;	/* "./"は邪魔 */
+
+	wp += sprintf(wp, "%.80s", p);
+
+	if ( needs_close_quote )
+		*wp++ = '\"'; /* "で囲む */
+	*wp = '\0';
+	return result;
+}
+#endif
 /****************************************************************/
 /*	ERROR END(html_error)					*/
 /****************************************************************/
@@ -2298,15 +2352,17 @@ void html_error(enum html_error_t errorcode)
 		sprintf(doko, KAKO_DIR "%.50s/%.50s.html", zz_bs,
 			zz_soko, tmp);
 		if (!stat(doko, &CountStat)) {
+			/* 過去ログ倉庫にhtml発見 */
 			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, 
 				zz_cgi_path, doko, tmp);
 		} else {
 			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
+				/* 過去ログ倉庫にdat発見 */
 #ifdef READ_KAKO
-				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					zz_cgi_path, zz_bs, "kako/", tmp, tmp);
+ 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT("%s","%s"),
+					create_kako_link("kako", tmp), tmp);
 #else
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
 					zz_cgi_path, doko, tmp);
@@ -2316,8 +2372,8 @@ void html_error(enum html_error_t errorcode)
 					zz_bs, tmp);
 				if (!stat(doko, &CountStat)) {
 #ifdef READ_TEMP
-					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
-						zz_cgi_path, zz_bs, "temp/", tmp, tmp);
+ 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP("%s","%s"),
+						create_kako_link("temp",tmp), tmp);
 #else
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
 						tmp);
