@@ -120,7 +120,7 @@ void hlinkReplace(char *src);
 void html_foot(int line);
 int getLineMax(void);
 int IsBusy2ch(void);
-int getFileSize(char *file);
+int getFileSize(char const *file);
 #ifndef CUTRESLINK
 /*int res_split(char **s, char *p);*/
 char *findSplitter(char *stt, int sp);
@@ -132,6 +132,12 @@ void html_reload(int);
 int rawmode;
 int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
 #endif
+
+static int dat_read(char const *fname,
+		    int st,
+		    int to,
+		    int ls);
+static int dat_out(void);
 
 
 #ifdef ZLIB
@@ -917,7 +923,10 @@ int dat_out_raw()
 /****************************************************************/
 static void dat_out_index(void)
 {
+	char *dat_name_4digest[N_INDEX_DIGESTS];
+
 	int i;
+	int max = 0;
 
 	pPrintf(pStdout,
 		R2CH_HTML_INDEX_HEADER("%s", "%s"),
@@ -939,7 +948,8 @@ static void dat_out_index(void)
 		subjn = strcspn(subj, "\r\n");
 		if (subjn == 0)
 			continue;
-		if (i < N_INDEX_DIGESTS)
+		if (i < N_INDEX_DIGESTS) {
+			char *q;
 			pPrintf(pStdout,
 				R2CH_HTML_INDEX_LABEL("%.64s/%.*s",
 						      "%d",
@@ -950,7 +960,12 @@ static void dat_out_index(void)
 				1 + i,
 				1 + i,
 				subjn, subj);
-		else
+			q = malloc(datn + 1);
+			memcpy(q, p, datn);
+			q[datn] = 0;
+			max = i;
+			dat_name_4digest[max++] = q;
+		} else {
 			pPrintf(pStdout,
 				R2CH_HTML_INDEX_ANCHOR("%.64s/%.*s",
 						       "%d",
@@ -959,13 +974,47 @@ static void dat_out_index(void)
 				datn, p,
 				1 + i,
 				subjn, subj);
+		}
 	}
 
 	pPrintf(pStdout,
 		R2CH_HTML_INDEX_AD("%.64s/"),
 		zz_bs);
 
+	/* かなーり気休め */
+#ifndef USE_MMAP
+	if (BigBuffer)
+		free(BigBuffer);
+#endif
+	BigBuffer = NULL;
+	/* これ以降、グローバル変数が
+	   信用おけなくなる可能性あり
+	   なんだかひっくり返して書き直したい
+	   …鬱だ氏のう */
+
 	/* スレダイジェストの出力 */
+	zz_nf[0] = 0;
+	for (i = 0; i < N_INDEX_DIGESTS && i < max; i++) {
+		char fname[1024];
+
+		/* ファイルを読み込んでくる */
+		sprintf(fname,
+			"../%.64s/dat/%.64s.dat",
+			zz_bs,
+			dat_name_4digest[i]);
+		dat_read(fname, 0, 0, 10);
+
+		/* せっかくだから表示してあげる */
+		pPrintf(pStdout,
+			"<HR><P><A name=\"#%d\">%s\n",
+			1 + i, fname);
+		dat_out();
+#ifndef USE_MMAP
+		if (BigBuffer)
+			free(BigBuffer);
+#endif
+		BigBuffer = NULL;
+	}
 
 	pPrintf(pStdout,
 		R2CH_HTML_INDEX_FOOTER);
@@ -1007,7 +1056,7 @@ static void dat_out_subback(void)
 /****************************************************************/
 /*	Get file size(dat_out)					*/
 /****************************************************************/
-int dat_out()
+static int dat_out(void)
 {
 	int line, lineNo;
 #ifdef RELOADLINK
@@ -1047,23 +1096,16 @@ int dat_out()
 }
 /****************************************************************/
 /*	Get file size(dat_read)					*/
+/*	BigBuffer, BigLine, LineMaxが更新されるはず		*/
 /****************************************************************/
-int dat_read()
+static int dat_read(char const *fname,
+		    int st,
+		    int to,
+		    int ls)
 {
 	int i;
 	int in;
-	char fname[1024];
 
-	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
-	/* sprintf(fname,"../%s/dat/%s.dat",zz_bs,zz_ky) ; */
-#ifdef DEBUG
-	sprintf(fname, "998695422.dat");
-#endif
-#ifdef USE_PATH
-	/* スレ一覧を取りに逝くモード */
-	if (1 <= path_depth && path_depth < 3)
-		sprintf(fname, "../%.256s/subject.txt", zz_bs);
-#endif
 	zz_fileSize = getFileSize(fname);
 
 	if (zz_fileSize > MAX_FILESIZE)
@@ -1071,9 +1113,15 @@ int dat_read()
 	if (*zz_ky == '.')
 		html_error(ERROR_NOT_FOUND);
 
+#if 1
+	nn_st = st;
+	nn_to = to;
+	nn_ls = ls;
+#else
 	nn_st = atoi(zz_st);
 	nn_to = atoi(zz_to);
 	nn_ls = atoi(zz_ls);
+#endif
 	if (nn_st < 0)
 		nn_st = 0;
 	if (nn_to < 0)
@@ -1151,7 +1199,7 @@ int getLineMax()
 /****************************************************************/
 /*	Get file size						*/
 /****************************************************************/
-int getFileSize(char *file)
+int getFileSize(char const *file)
 {
 	struct stat CountStat;
 	int ccc = 0;
@@ -1594,7 +1642,11 @@ int main()
 
 	logOut("");
 
-	dat_read();
+	dat_read(fname,
+		 atoi(zz_st),
+		 atoi(zz_to),
+		 atoi(zz_ls));
+
 #ifdef RAWOUT
 	if (rawmode)
 		dat_out_raw();
