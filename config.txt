@@ -62,8 +62,16 @@ read.cgi側によるindexの実装(experimental)
 トップに「全部読む」/CHUNK_NUM毎に区切ったレスへのanchorをつける
 どちらかはあった方がよさそうだけど、
 
+▲SEPARATE_CHUNK_ANCHOR
+要CHUNK_ANCHOR
+後に続くchunkへのanchorを末尾に表示する。
+
+▲CHUNKED_ANCHOR_WITH_FORM
+要CHUNK_ANCHOR
+CHUNK_ANCHORをform selectにする
+
 ▲USE_CHUNK_LINK
-CUUNK_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
+CHUNK_ANCHORとCREATE_NAME_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
 
 △LATEST_ANCHOR
 「最新レス LATEST_NUM」をつける

@@ -1029,6 +1029,10 @@ int dat_out(int level)
 	char *s[20]; 
 	char p[SIZE_BUF]; 
 
+	if (!isdigit(*zz_ky)) {
+		threadStopped = 1;
+		/* 過去ログはFORMもRELOADLINKも非表示にするため */
+	}
 	for (line = 0; line < lineMax; line++) { 
 		int lineNo = line + 1; 
 		if (!isprinted(lineNo)) 
@@ -1610,7 +1614,7 @@ int main(void)
 #endif
 		puts("Content-Type: text/html");
 
-	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
+	sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
@@ -1796,7 +1800,8 @@ void html_error(enum html_error_t errorcode)
 	
 	*tmp = '\0';
 	strcpy(tmp, LastChar(zz_ky, '/'));
-	strncpy(zz_soko, tmp, 3);
+/*	strncpy(zz_soko, tmp, 3); */
+	sprintf(zz_soko, "%d", atoi(tmp)/(1000*1000) );
 
 	*comcom = '\0';
 	if (errorcode == ERROR_LOGOUT) {
@@ -1814,20 +1819,27 @@ void html_error(enum html_error_t errorcode)
 	pPrintf(pStdout, R2CH_HTML_ERROR_4);
 
 	if (errorcode == ERROR_NOT_FOUND) {
-		sprintf(doko, "../%.50s/kako/%.50s/%.50s.html", zz_bs,
+		sprintf(doko, KAKO_DIR "%.50s/%.50s.html", zz_bs,
 			zz_soko, tmp);
 		if (!stat(doko, &CountStat)) {
-			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, doko + 2,
+			pPrintf(pStdout, R2CH_HTML_ERROR_5_HTML, doko,
 				tmp);
 		} else {
-			sprintf(doko, "../%.50s/kako/%.50s/%.50s.dat",
+			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					doko + 2, tmp);
+					doko, tmp);
 			} else {
-				pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
-					zz_bs);
+				sprintf(doko, TEMP_DIR "%.50s.dat",
+					zz_bs, tmp);
+				if (!stat(doko, &CountStat)) {
+					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
+						tmp);
+				} else {
+					pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
+						zz_bs);
+				}
 			}
 		}
 	}
@@ -1853,7 +1865,8 @@ int html_error999(char *mes)
 	}
 #endif
 	strcpy(tmp, LastChar(zz_ky, '/'));
-	strncpy(zz_soko, tmp, 3);
+/*	strncpy(zz_soko, tmp, 3); */
+	sprintf(zz_soko, "%d", atoi(tmp)/(1000*1000) );
 	sprintf(tmp_time, "%02d:%02d:%02d", tm_now.tm_hour, tm_now.tm_min,
 		tm_now.tm_sec);
 
@@ -2101,17 +2114,17 @@ void html_head(int level, char const *title, int line)
 #ifdef CHECK_MOD_GZIP
 			if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "/%s/"),
+					R2CH_HTML_HEADER_1("%s", "../%s/"),
 					title, zz_bs);
 			} else
 #endif
 #ifdef GZIP
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "/%s/index.htm%s"),
+					R2CH_HTML_HEADER_1("%s", "../%s/index.htm%s"),
 					title, zz_bs, gzip_flag ? "" : "l");
 #else
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "/%s/index.htm"),
+					R2CH_HTML_HEADER_1("%s", "../%s/index.htm"),
 					title, zz_bs);
 #endif
 		}
@@ -2217,11 +2230,7 @@ void html_reload(int startline)
 /****************************************************************/
 static void html_foot(int level, int line, int stopped)
 {
-#ifndef	SEPARATE_CHUNK_ANCHOR
-	/* 初期化した数値を再び使うのはダイジェスト関係だけのはず */
-	out_resN = 0;	/* ここで初期化するといいらしい? */
-#endif
-
+	/* out_resN = 0;	ダイジェスト用に再初期化 */
 	if (is_imode()) {
 		html_foot_im(line,stopped);
 		return;

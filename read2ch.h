@@ -16,6 +16,10 @@
 #define	LIMIT_PM	23
 #define	LIMIT_AM	3
 
+#define DAT_DIR "../%.256s/dat/"
+#define TEMP_DIR "../%.50s/temp/"
+#define KAKO_DIR "../%.50s/kako/"
+
 /* 混雑時間帯に、>>000 形式のレスへのリンクを削除する */
 #define LINKTAGCUT (1)
 
@@ -101,7 +105,7 @@
 #define CUT_DATE_STRING
 
 /* <a name=...>をつける。これをつけないときはCHUNK_ANCHORも無効にしたほうが良い */ 
-#define CREATE_NAME_ANCHOR 
+/* #define CREATE_NAME_ANCHOR  */
 
 /* nofirst=trueを短縮形にする。bbs.cgiの出力と同一形式が望ましい */
 /* #define NO_FIRST "&n=t" */

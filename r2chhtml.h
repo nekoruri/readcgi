@@ -251,9 +251,13 @@
 #define R2CH_HTML_ERROR_5_DAT \
 	"隊長! 過去ログ倉庫で、<a href=\"%s\">スレッド %s.dat</a> を発見しました。<br><b><font size=+1 color=red>が</font></b>、しかしまだ html化されていません。残念、待つしかない。\n"
 
+/* エラー(5b/6,DAT): %s=場所 %s=スレ番号 */
+#define R2CH_HTML_ERROR_5_TEMP \
+	"隊長! スレッド %s.dat は、html化されるのを待っているようです。<br>しばらく待つしかない。\n"
+
 /* エラー(5c/6,NONE): %s=板 */
 #define R2CH_HTML_ERROR_5_NONE \
-	"<a href=\"/%s/kako/\">過去ログ倉庫</a>にもありませんでした。<br>問い合わせても見つかる可能\性はほとんどありません。\n"
+	"<a href=\"" KAKO_DIR "\">過去ログ倉庫</a>にもありませんでした。<br>問い合わせても見つかる可能\性はほとんどありません。\n"
 
 /* エラー(6/6): */
 #define R2CH_HTML_ERROR_6 \
@@ -279,7 +283,7 @@
 	"fileSize = [%d bytes] %dlines<br>" \
 	"time=[%s]<br>" \
 	"<br>「えらー、そんな板orスレッドないです」の場合はここ倉庫へ Go <br>" \
-	"<a href=\"/%s/kako/%s/%s.html\">過去ログ倉庫 %s.html</a>\n" \
+	"<a href=\"" KAKO_DIR "%s/%s.html\">過去ログ倉庫 %s.html</a>\n" \
 	"<br>まだ、dat -> html 変換が行われていない場合が良くあります。" \
 	"<br><a href=\"http://teri.2ch.net/test/read.cgi?bbs=accuse&key=980507715&ls=30\">ここ</a>で訴えると、過去ログ整理をしてくれる場合があるかもです。" \
 	"</td></tr></table>" \
