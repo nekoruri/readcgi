@@ -391,7 +391,7 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 		}
 		if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
 			ls = 10;
-		if (nf && (st!=to || ls))	/* 単点は'n'不要 */
+		if (nf && ((st!=to && st>1) || ls))	/* 単点と1を含むときはは'n'不要 */
 			*p++ = 'n';
 		if (is_imode())
 			*p++ = 'i';
@@ -1956,8 +1956,7 @@ int can_simplehtml(void)
 	ref = getenv("HTTP_REFERER");
 	if (!ref || !*ref)
 		return false;
-	return true;
-	
+
 	p = strstr(ref, cginame);
 	if (p) {
 		p += strlen(cginame);
