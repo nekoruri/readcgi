@@ -1,0 +1,54 @@
+tag:
+　rawmodeで "+OK"と"-INCR"にサイズも表示するようにした
+　フッタ部分にまたがるHTMLタグの修正
+　HEADリクエスト時に処理軽減
+　PREV_NEXT_ANCHORをCHUNK_ANCHORとRELOADLINKに強調させた
+　REFERDRES_SIMPLE追加
+　USE_CSS追加
+　「名前」も削除(CUT_NAME_STRING)
+
+
+tag YAKIN20010915: 実験サーバ ex.2ch.net にて ver 5.21として採用。
+
+　USE_PATH時、スレ一覧を行う実験機能の残骸が残っていた(〜/board/ とリクエストしたときに
+壊れた表示になった)が、無効にして「ないです」エラーになるようにした
+　rawmode時はBadAccess()の判定を変更、圧縮対応のみ許可とした。
+　サイズ上限とメッセージ数上限の両方に達しているときの警告は無駄なので消した
+　i-mode時の最終レス画面でRELOADLINKではなく「次の10レス」が出てしまっていたバグ修正
+　NN4.xのgzip圧縮時対策
+　PATH_INFO中に '='でls, 'n'でnofirst=true, '.'でnofirst=false相当の動作をするようにした
+　PATH_INFOとQUERY_STRINGが両方指定された場合、後者が優先になるようにした
+　rawmodeの書式ミスには-INCRを返すようにした。
+　>>nnで表示外に飛ぶとき、target="_blank"を付けた
+　USE_CHUNK_LINK, SEPARATE_CHUNK_ANCHOR, PREV_NEXT_ANCHOR, NORMAL_TAGCUT追加
+　夜勤さんの要請に従い、DAT_DIR, TEMP_DIR, KAKO_DIR追加。過去ログのディレクトリ構成変更に
+対応。
+　「掲示板に戻る」リンクを相対パス化
+　rawmodeでの出力をバイナリ出力に修正。従来は'\0'があると切れていた。
+　lsと範囲指定の両方があったときにはlsが優先になるようにした。
+
+
+tag YAKIN20010910: piza2サーバなどに Ver 5.20として採用。
+
+  CGINAMEの参照もれ対応
+　USE_PATH時のrewrite_href生成URLをリクエストされた方式に合わせた
+　nofirst=true表記統一
+　CUTRESLINKを有効固定にした
+　旧形式リクエストの場合 >>1 が表示できなかった
+　サイズ制限による「大きすぎます」警告追加
+　ストッパー時、1000オーバー時にRELOADLINKを消した
+　BadAccess判定のかちゅ〜しゃのスペルミス訂正
+　その他細かいbug fix, ソース整理
+　config.txt追加
+
+
+tag YAKIN20010909: piza2サーバに read5x.cgiとして実験導入
+
+　ver.5.12に対して多数の改良。おおまかに
+　・CHUNK対応
+　・gzip対応
+　・"投稿日"の削除
+　・PATH_INFOへの対応
+　・rawモードの導入
+など
+
