@@ -1,11 +1,13 @@
+zlibdir       = zlib
+
 CC            = gcc
 DEFS          = -DHAVE_READ2CH_H
 # DEFS        = -DCUTRESLINK -DRELOADLINK -DLASTMOD -DNEWBA -DGSTR2 \
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
-CFLAGS        = -g -O2 -Wall
-LIBS          = -lz
+CFLAGS        = -I$(zlibdir) -g -O2 -Wall
+LIBS          = 
 #SOURCES       = read.c util_date.c
-OBJS          = read.o util_date.o
+OBJS          = read.o util_date.o $(zlibdir)/libz.a
 INCLUDES      = read2ch.h read2ch.h r2chhtml.h
 
 .SUFFIXES: .c .o .cgi
@@ -22,6 +24,7 @@ all: read.cgi TAGS
 #	$(CC) $(LIBS) $(CFLAGS) $(DEFS) -o $@ $(SOURCES)
 
 clean:
+	cd $(zlibdir); make distclean
 	rm -f read.cgi *.o
 
 # バイナリのあるファイルの下にtech/dat/998845501.datを置いてから実行
@@ -45,6 +48,10 @@ tags: TAGS
 
 TAGS: *.c *.h
 	etags $^ $>
+
+$(zlibdir)/libz.a:
+	( cd $(zlibdir) && ./configure --libdir=. --includedir=. \
+		&& make libz.a)
 
 # implicit rules
 .o.cgi:
