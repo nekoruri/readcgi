@@ -377,9 +377,7 @@
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">"
 
-#ifdef ALWAYS_PATH
 #define R2CH_HTML_BASE_DEFINE "<base href=\"http://%s%s/%s/%s/\">"
-#endif
 
 /* ブラウザで見たとき: %s=スレ名 %s=板 */
 /* </title> の前の空白は削除しないこと */

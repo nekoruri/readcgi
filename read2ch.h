@@ -39,14 +39,6 @@
 /* teri タイプのログを読み込む */
 #define TYPE_TERI
 
-/* PATH_INFOを処理することにより、
-   read.cgi/board/nnnnnn/?query
-   のリクエストを処理できるようになる */
-#define USE_PATH
-
-/* 非パス仕様のURLで呼ばれたときはBASEを出力して、常にパス仕様でリンクを生成 */
-#define ALWAYS_PATH
-
 /* 書き込み直後のリロードを防止する */
 #define PREVENTRELOAD
 
@@ -164,12 +156,17 @@
 /* nofirst=trueを短縮形にする。bbs.cgiの出力と同一形式が望ましい */
 /* #define NO_FIRST "&n=t" */
 
-/* 「大きすぎます」の警告を出すまでのサイズ(KB単位) 
-　MAX_FILESIZE - CAUTION_FILESIZE*1024 を超えたら警告 
-　これが未定義なら、警告は出さない */ 
-#define CAUTION_FILESIZE 16 
-/* デバッグ用 
-#define MAX_FILESIZE_BUSY (MAX_FILESIZE - 64 * 1024) */ 
+/* 「大きすぎます」の警告を出すまでのサイズ(KB単位)
+   MAX_FILESIZE - CAUTION_FILESIZE*1024 を超えたら警告
+   これが未定義なら、警告は出さない */
+#define CAUTION_FILESIZE 16
+/* デバッグ用
+#define MAX_FILESIZE_BUSY (MAX_FILESIZE - 64 * 1024) */
+
+/* スレッドストップ扱いにするサイズ(KB単位)
+   MAX_FILESIZE - WRITESTOP_FILESIZE*1024 を超えたらFORM等を出さない
+   これが未定義なら、大きくてもスレッドストップ扱いはしない */
+#define WRITESTOP_FILESIZE	5
 
 /* NN4.xでgzip圧縮時にContent-Lengthがあると
   Last-Modifiedが無効になる問題の対策 */
@@ -189,6 +186,7 @@
 #define Katjusha_Beta_kisei
 
 /* かちゅ〜しゃgzip化DLLのリクエストに応答する
+ * raw=.nnn形式のリクエストを受け付け、
  * あぼーんが想定される場合、
  * [-ERR どこかであぼーんがあったみたいです。]
  * を返し、本文の再送は行わない。

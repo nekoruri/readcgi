@@ -54,10 +54,6 @@ static int pid;
 # define CHUNK_ANCHOR
 #endif
 
-#if defined(ALWAYS_PATH) && !defined(USE_PATH)
-# undef ALWAYS_PATH /* USE_PATHが定義されていなければALWAYS_PATHは無視 */
-#endif
-
 #if !defined(READ_KAKO)
 # undef READ_TEMP
 #endif
@@ -66,18 +62,14 @@ int zz_head_request; /* !0 = HEAD request */
 char const *zz_remote_addr;
 char const *zz_remote_host;
 char const *zz_http_referer;
-#ifdef ALWAYS_PATH
 char const *zz_server_name;
 char const *zz_script_name;
 int need_basehref;
-#endif
 
-#ifdef USE_PATH
 char const *zz_path_info;
 /* 0 のときは、pathは適用されていない
    read.cgi/tech/998845501/ のときは、3になる */
 int path_depth;
-#endif
 char const *zz_query_string;
 char *zz_temp;
 char const *zz_http_user_agent;
@@ -377,7 +369,6 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 		key = read_kako;
 #endif
 
-#ifdef USE_PATH
 	if (path_depth) {
 		p = url_expr;
 #ifdef USE_INDEX
@@ -412,9 +403,7 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 #endif
 		if ( p == url_expr )
 			p += sprintf(p, "./"); /* 全部 */
-	} else
-#endif	/* USE_PATH */
-	{
+	} else {
 		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
 			url_p = url_expr;
 			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", 
@@ -473,7 +462,6 @@ void zz_init_parent_link(void)
 {
 	char * p = zz_parent_link;
 
-#ifdef USE_PATH
 #ifdef USE_INDEX
 	if (path_depth==2)
 		p += up_path(p, 1);
@@ -483,10 +471,6 @@ void zz_init_parent_link(void)
 		p += up_path(p, path_depth+1);
 		p += sprintf(p, "%.20s/", zz_bs);
 	}
-#else
-	p += up_path(p,1);
-	p += sprintf(p,"%.20s/",zz_bs);
-#endif
 	if (is_imode() ) {
 		strcpy(p,"i/");
 		return;
@@ -505,9 +489,7 @@ void zz_init_parent_link(void)
 void zz_init_cgi_path(void)
 {
 	zz_cgi_path[0] = '\0';
-#ifdef USE_PATH
 	up_path( zz_cgi_path, path_depth );
-#endif
 }
 
 /*
@@ -591,9 +573,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 
 		if (is_imode()
 		|| (st == 0 || to == 0 || st > lineMax || to > lineMax)
-#if	1	/* #ifndef USE_PATH */
-		/* #ifndef を生かせば、isbusytimeでもa name=へのリンクがつく*/
-		/* USE_PATHでなくても、a name=のanchorがつくようになった??	*/
+#if	1
 		|| (istagcut && isprinted(st) && isprinted(to))
 #endif
 		)
@@ -984,6 +964,10 @@ static int isthreadstopped()
 	
 	if (lineMax >= RES_RED)
 		return 1;
+#ifdef WRITESTOP_FILESIZE
+	if (zz_fileSize > MAX_FILESIZE - WRITESTOP_FILESIZE * 1024)
+		return 1;
+#endif
 	if (lineMax) {
 		splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
 		for ( i = 0 ; i < (sizeof stoppers)/(sizeof stoppers[0]) ; ++i )
@@ -1502,7 +1486,6 @@ int get_lastmod_str(char *buf, time_t lastmod)
 /*	副作用: zz_bs, zz_ky, zz_st, zz_to, zz_nf		*/
 /*		などが更新される場合がある			*/
 /****************************************************************/
-#ifdef USE_PATH
 static int get_path_info(char const *path_info)
 {
 	char const *s = path_info;
@@ -1625,9 +1608,7 @@ static int get_path_info(char const *path_info)
 			}
 		} else {
 			/* 規定されてない文字が来たので評価をやめる */
-#ifdef	ALWAYS_PATH
 			need_basehref = strchr(s, '/') != NULL;
-#endif
 			break;
 		}
 	}
@@ -1658,7 +1639,6 @@ static int get_path_info(char const *path_info)
 	/* 処理は完了したものとみなす */
 	return 1;
 }
-#endif
 
 /****************************************************************/
 /*	SETTING_R.TXTの読みこみ					*/
@@ -1759,16 +1739,11 @@ void zz_GetEnv(void)
 	zz_remote_addr = getenv("REMOTE_ADDR");
 	zz_remote_host = getenv("REMOTE_HOST");
 	zz_http_referer = getenv("HTTP_REFERER");
-#ifdef ALWAYS_PATH
 	zz_server_name = getenv("HTTP_HOST");
 	if (!zz_server_name)
 		zz_server_name = getenv("SERVER_NAME");
 	zz_script_name = getenv("SCRIPT_NAME");
-#endif
-
-#ifdef USE_PATH
 	zz_path_info = getenv("PATH_INFO");
-#endif
 	zz_query_string = getenv("QUERY_STRING");
 	zz_temp = getenv("REMOTE_USER");
 	zz_http_user_agent = getenv("HTTP_USER_AGENT");
@@ -1787,10 +1762,8 @@ void zz_GetEnv(void)
 		zz_remote_host = KARA;
 	if (!zz_http_referer)
 		zz_http_referer = KARA;
-#ifdef USE_PATH
 	if (!zz_path_info)
 		zz_path_info = "";	/* XXX KARAを使い回すのは怖い */
-#endif
 	if (!zz_query_string)
 		zz_query_string = KARA;
 	if (!zz_temp)
@@ -1800,7 +1773,6 @@ void zz_GetEnv(void)
 	if (!zz_http_language)
 		zz_http_language = KARA;
 
-#ifdef USE_PATH
 	zz_bs[0] = zz_ky[0] = zz_ls[0] = zz_st[0] = '\0';
 	zz_to[0] = zz_nf[0] = zz_im[0] = '\0';
 	if (!get_path_info(zz_path_info)) {
@@ -1808,7 +1780,6 @@ void zz_GetEnv(void)
 		   判定は zz_path_info のテストで行ってくれ */
 		zz_path_info = NULL;
 	}
-#endif
 	GetString(zz_query_string, zz_bs, sizeof(zz_bs), "bbs");
 	GetString(zz_query_string, zz_ky, sizeof(zz_ky), "key");
 	GetString(zz_query_string, zz_ls, sizeof(zz_ls), "ls");
@@ -2070,11 +2041,7 @@ int can_simplehtml(void)
 	char buff[128];
 	const char *p;
 	const char *ref;
-#ifdef ALWAYS_PATH
 	const char * cginame = zz_script_name;
-#else
-	static const char cginame[] = "/test/" CGINAME;
-#endif
 	static const char indexname[] = "index.htm";
 	
 	if (!isbusytime)
@@ -2112,11 +2079,9 @@ int can_simplehtml(void)
 			GetString(query_string, key, sizeof(key), "key");
 			return (strcmp(zz_bs, bbs) == 0) && (strcmp(zz_ky, key) == 0);
 		}
-#ifdef	USE_PATH
 		sprintf(buff, "/%.50s/%.50s/", zz_bs, zz_ky);
 		if (!strncmp(p, buff, strlen(buff)))
 			return true;
-#endif
 	}
 
 	sprintf(buff, "/%.50s/", zz_bs);
@@ -2223,7 +2188,6 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 	sprintf(fname, "998695422.dat");
 #endif
 
-#ifdef	USE_PATH
 	/* スレ一覧を取りに逝くモード */
 	if (1 <= path_depth && path_depth < 3
 #ifndef USE_INDEX
@@ -2248,7 +2212,6 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 			strcpy(zz_to, zz_ls), zz_ls[0] = zz_st[0] = '\0';
 #endif
 	}
-#endif
 }
 
 /****************************************************************/
@@ -2518,7 +2481,6 @@ int main(void)
 		return 0;
 	}
 #endif
-#ifdef USE_PATH
 #ifdef USE_INDEX
 	if (path_depth == 2) {
 		if (zz_ky[0] == '-')
@@ -2540,7 +2502,6 @@ int main(void)
 		html_error(ERROR_NOT_FOUND);
 		return 0;
 	}
-#endif
 #ifdef	REFERDRES_SIMPLE
 	if (can_simplehtml())
 		out_simplehtml();
@@ -2564,20 +2525,12 @@ const char * create_kako_link(const char * dir_type, const char * key)
 
 	*wp++ = '\"'; /* "で囲む */
 
-#ifdef USE_PATH
-# ifdef ALWAYS_PATH
 	path_depth = 3;
-# endif
 	
 	if (path_depth) {
-#ifdef ALWAYS_PATH
 		wp += sprintf(wp, "%.40s", zz_script_name );
-#else
-		wp += sprintf(wp, "/test/" CGINAME );
-#endif
 		wp += sprintf(wp, "/%.40s/%.8s/%.40s/", zz_bs, dir_type, key);
 	} else
-#endif
 		wp += sprintf(wp, "%.40s", zz_cgi_path);
 
 	sprintf(zz_ky,"%.8s/%.40s", dir_type, key);
@@ -2801,9 +2754,6 @@ char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 
 		line += line_len + 1; /* skip delim */
 	}
-#ifndef USE_PATH
-	*dst = '\0';
-#endif
 	return	dst;
 }
 /****************************************************************/
@@ -2921,7 +2871,6 @@ void html_head(int level, char const *title, int line)
 #endif
 
 	pPrintf(pStdout, R2CH_HTML_HEADER_0);
-#ifdef ALWAYS_PATH
 	if ((path_depth < 3 || need_basehref) && zz_server_name && zz_script_name) {
 #ifdef READ_KAKO
 		if (read_kako[0]) {
@@ -2934,7 +2883,6 @@ void html_head(int level, char const *title, int line)
 			path_depth = 3;
 		}
 	}
-#endif
 	zz_init_parent_link();
 	zz_init_cgi_path();
 	calc_first_last();
