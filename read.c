@@ -1167,7 +1167,7 @@ int dat_out_raw(void)
 #ifndef CUTRESLINK
 		pPrintf(pStdout, "%s\n", BigLine[i]);
 #else
-		pPrintf(pStdout, "%.*s\n", BigLine[i+1] - BigLine[i], BigLine[i]);
+		pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
 #endif 
 	}
 	return 1;
