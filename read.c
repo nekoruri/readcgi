@@ -844,11 +844,6 @@ static int out_html1(int level)
 	if (!*p)
 		return 1; 
 	html_head(level, s[4], lineMax);
-#if 0
-	if (!is_imode()) {	/* no imode       */
-		pPrintf(pStdout, "<DL>");
-	}
-#endif
 	out_resN++;
 	return 0;
 }
@@ -869,11 +864,6 @@ static int out_html(int level, int line, int lineNo)
 			return 1; 
 		r4 = s[4];
 		html_head(level, r4, lineMax);
-#if 0
-		if (!is_imode()) {	/* no imode       */
-			pPrintf(pStdout, "<DL>");
-		}
-#endif
 	}
 	out_resN++;
 
@@ -1694,13 +1684,6 @@ int main(void)
 		/* gzdopen()で"wb9"を指定したので不要 */
 		/* gzsetparams(pStdout, Z_BEST_COMPRESSION,
 			Z_DEFAULT_STRATEGY); */
-#if 0
-		/* put 2048byte */
-		/* もう要らないんじゃないかな、
-		   XXX 追試求む */
-		while (whitespace--)
-			gzputc(pStdout, ' ');
-#endif
 #endif /* ZLIB */
 	}
 #endif /* GZIP */
