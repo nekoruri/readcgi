@@ -7,7 +7,9 @@
 #include	<fcntl.h>
 #include	<time.h>
 #include	<unistd.h>
-#include	"read2ch.h"
+#ifdef HAVE_READ2CH_H
+# include	"read2ch.h"
+#endif
 
 #ifdef ZLIB
 # ifndef GZIP
@@ -25,7 +27,9 @@
 # ifndef LASTMOD
 #  define LASTMOD
 # endif
-# define FORCE_304_TIME  30    /* ïbÇ≈éwíË */
+# ifndef FORCE_304_TIME
+#  define FORCE_304_TIME  30    /* ïbÇ≈éwíË */
+# endif
 # include        "util_date.h" /* from Apache 1.3.20 */
 #endif
 
@@ -46,6 +50,9 @@ char *zz_remote_addr;
 char *zz_remote_host;
 char *zz_http_referer;
 char *zz_http_cookie;
+#ifdef USE_PATH
+char *zz_path_info;
+#endif
 char *zz_query_string;
 char *zz_temp;
 char *zz_http_user_agent;
@@ -71,6 +78,8 @@ char zz_im[1024];
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char *BigLine[RES_RED + 16];
+
+#define is_imode() (!strncmp(zz_im, "t", 1))
 
 char *KARA = "";
 int zz_fileSize = 0;
@@ -605,7 +614,7 @@ int out_html1()
 	someReplace(s[4], r4, "ÅóÅM", ",");
 	html_head(r4, lineMax);
 #endif
-	if (strcmp(zz_im, "true")) {	/* no imode       */
+	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, "<DL>");
 	}
 	out_resN++;
@@ -645,7 +654,7 @@ int out_html(int line, int lineNo)
 		someReplace(s[4], r4, "ÅóÅM", ",");
 #endif
 		html_head(r4, lineMax);
-		if (strcmp(zz_im, "true")) {	/* no imode       */
+		if (!is_imode()) {	/* no imode       */
 			pPrintf(pStdout, "<DL>");
 		}
 	}
@@ -675,7 +684,7 @@ int out_html(int line, int lineNo)
 #endif
 	hlinkReplace(r3);
 
-	if (strcmp(zz_im, "true")) {	/* no imode */
+	if (!is_imode()) {	/* no imode */
 		if (*r3 && strlen(r3) < 8192) {
 			if (*r1) {
 				pPrintf(pStdout, R2CH_HTML_RES_MAIL,
@@ -736,7 +745,7 @@ int dat_out()
 		lineNo = line + 1;
 
 		if (lineNo == 1) {
-			if (!strcmp(zz_nf, "true"))
+			if (!strncmp(zz_nf, "t", 1))
 				continue;
 		} else {
 			if (nn_st && lineNo < nn_st)
@@ -793,11 +802,11 @@ int dat_read()
 		nn_to = 0;
 	if (nn_st == 1 && nn_to == 1)
 		strcpy(zz_nf, KARA);
-	if (!strcmp(zz_im, "true")) {	/* imode */
+	if (is_imode()) {	/* imode */
 		if (!nn_st && !nn_to && !nn_ls)
 			nn_ls = RES_IMODE;
 	}
-	if (strcmp(zz_nf, "true"))
+	if (strncmp(zz_nf, "t", 1))
 		nn_ls--;
 	if (nn_ls < 0)
 		nn_ls = 0;
@@ -897,6 +906,9 @@ void zz_GetEnv(void)
 	zz_remote_host = getenv("REMOTE_HOST");
 	zz_http_referer = getenv("HTTP_REFERER");
 	zz_http_cookie = getenv("HTTP_COOKIE");
+#ifdef USE_PATH
+	zz_path_info = getenv("PATH_INFO");
+#endif
 	zz_query_string = getenv("QUERY_STRING");
 	zz_temp = getenv("REMOTE_USER");
 	zz_http_user_agent = getenv("HTTP_USER_AGENT");
@@ -914,6 +926,10 @@ void zz_GetEnv(void)
 		zz_remote_host = KARA;
 	if (!zz_http_referer)
 		zz_http_referer = KARA;
+#ifdef USE_PATH
+	if (!zz_path_info)
+		zz_path_info = KARA;
+#endif
 	if (!zz_query_string)
 		zz_query_string = KARA;
 	if (!zz_temp)
@@ -939,6 +955,21 @@ void zz_GetEnv(void)
 	zz_GetString(zz_to, "to");
 	zz_GetString(zz_nf, "nofirst");
 	zz_GetString(zz_im, "imode");
+#endif
+#ifdef USE_PATH
+	if (zz_path_info[0] == '/') {
+		/* PATH_INFOÇ©ÇÁÅAÉgÅ[ÉNÉìÇ2å¬î≤Ç´èoÇ∑ */
+		char buf[48];
+		char const *b, *k;
+		strncpy(buf, zz_path_info + 1, 47);
+		buf[47] = 0;
+		b = strtok(buf, "/");
+		k = strtok(NULL, "/");
+		if (b && k) {
+			strncpy(zz_bs, b, 1023);
+			strncpy(zz_ky, k, 1023);
+		}
+	}
 #endif
 #ifdef COOKIE
 	SetFormName();
@@ -1395,7 +1426,7 @@ char *LastChar(char *src, char *c)
 void html_head(char *title, int line)
 {
 
-	if (strcmp(zz_im, "true")) {	/* no imode       */
+	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1, title, zz_bs, zz_bs,
 			zz_ky, zz_bs, zz_ky);
 	} else {
@@ -1422,7 +1453,7 @@ void html_head(char *title, int line)
 #ifdef RELOADLINK
 void html_reload(int startline)
 {
-	if (!strcmp(zz_im, "true"))	/*  imode */
+	if (is_imode())	/*  imode */
 		pPrintf(pStdout, R2CH_RELOAD_I, zz_bs, zz_ky,
 			startline);
 	else
@@ -1435,7 +1466,7 @@ void html_reload(int startline)
 /****************************************************************/
 void html_foot(int line)
 {
-	if (!strcmp(zz_im, "true"))
+	if (is_imode())
 		return html_foot_im();
 	if (line <= RES_RED) {
 #ifndef COOKIE		
