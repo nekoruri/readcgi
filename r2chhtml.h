@@ -463,6 +463,10 @@
 	"<font color=white>サイズが" s1 "を超えています。" s2 "を超えると" r "表\示できなくなるよ。</font>" \
 	"</td></tr></table>" 
 
+/* 時間帯によっては表示できなくなるよ */
+#define R2CH_HTML_HEADER_SIZE_REDZONE_TIME(s1,s2) \
+	R2CH_HTML_HEADER_SIZE_REDZONE(s1,s2, "時間帯によっては")
+
 /* スレ名: %s=スレ名 */
 /* </font> の前の空白は削除しないこと */
 #define R2CH_HTML_HEADER_2(title) \

@@ -2995,7 +2995,7 @@ void html_head(int level, char const *title, int line)
 	} 
 # ifdef MAX_FILESIZE_BUSY 
 	else if (zz_fileSize > MAX_FILESIZE_BUSY - CAUTION_FILESIZE * 1024) { 
-		pPrintf(pStdout, R2CH_HTML_HEADER_SIZE_REDZONE("%dKB", "%dKB", "ŽžŠÔ‘Ñ‚É‚æ‚Á‚Ä‚Í"), 
+		pPrintf(pStdout, R2CH_HTML_HEADER_SIZE_REDZONE_TIME("%dKB", "%dKB"), 
 			MAX_FILESIZE_BUSY/1024 - CAUTION_FILESIZE, MAX_FILESIZE_BUSY/1024 ); 
 	} 
 # endif 
