@@ -703,6 +703,33 @@ static int isprinted(int lineNo)
 	return true;
 }
 
+#define	needspace_simple(buftop, bufp)	\
+	((bufp) != (buftop) && isSJIS1(*((bufp)-1)))
+
+#ifdef	CUT_TAIL_BLANK
+/* 直前の文字がシフトJIS１バイト目であるかを返す。 */
+static int needspace_strict(const char *buftop, const char *bufp)
+{
+	const char *p = bufp-1;
+	while (p >= buftop && isSJIS1(*p))
+		p--;
+	return (bufp - p) % 2 == 0;
+}
+# define	needspace(buftop, bufp)	\
+	(needspace_simple((buftop), (bufp)) && needspace_strict((buftop), (bufp)))
+#else
+# define	needspace(buftop, bufp)	\
+	needspace_simple((buftop), (bufp))
+#endif	/* CUT_TAIL_BLANK */
+
+#define	add_tailspace(buftop, bufp)	\
+	(needspace(buftop, bufp) ? (void) (*bufp++ = ' ') : (void)0)
+
+#ifdef	STRICT_ILLEGAL_CHECK
+# define	add_tailspace_strict(buftop, bufp)	add_tailspace(buftop, bufp)
+#else
+# define	add_tailspace_strict(buftop, bufp)	((void)0)
+#endif
 /*
 	レスを全走査するが、コピーと変換(と削除)を同時に行う
 	p コピー前のレス(BigBuffer内の１レス)
@@ -715,11 +742,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 {
 	char *bufp = *This->buffers;
 	int bufrest = This->rest;
-#ifdef NORMAL_TAGCUT
-	int istagcut = (resnumber > 1) || is_imode();
-#else
 	int istagcut = (LINKTAGCUT && isbusytime && resnumber > 1) || is_imode();
-#endif
 	/*	ループ中、*This->Buffersはバッファの先頭を保持している	*/
 	while (--bufrest > 0) {
 		int ch = *p;
@@ -732,15 +755,13 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				if (*(p+1) != '<')
 					break;
 				if (*(p+2) == '>') {
-					if (bufp == *This->buffers) /* 名前欄が半角空白の場合 */
+					if (bufp == *This->buffers) /* 名前欄が半角空白１つの場合に必要 */
 						*bufp++ = ' ';
 					p += 3;
 					goto Teri_Break;
 				}
 				if (memcmp(p, " <br> ", 6) == 0) {
-					if (bufp != *This->buffers && isSJIS1(*(bufp-1))) {
-						*bufp++ = ' ';
-					}
+					add_tailspace(*This->buffers, bufp);
 					memcpy(bufp, "<br>", 4);
 					p += 6;
 					bufp += 4;
@@ -753,11 +774,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 					p += 2;
 					goto Teri_Break;
 				}
-#ifdef	RAWOUT
-				/* rawmode != 0 の時は呼ばれていないように思うけど・・?? */
-				if (rawmode)
-					break;
-#endif
+				add_tailspace_strict(*This->buffers, bufp);
 				if (resnumber && p[1] == 'a' && isspace(p[2])) {
 					char *tdp = bufp;
 					char const *tsp = p;
@@ -770,6 +787,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				}
 				break;
 			case '&':
+				/* add_tailspace_strict(*This->buffers, bufp); */
 				if (memcmp(p+1, "amp", 3) == 0) {
 					if (*(p + 4) != ';')
 						p += 4 - 1;
@@ -796,6 +814,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 							int taillen = geturltaillen(p + 3);
 							if (taillen && bufrest > taillen * 2 + 60) {
 								bufp -= pdif, p -= pdif, bufrest += pdif, taillen += pdif + 3;
+								add_tailspace_strict(*This->buffers, bufp);
 								pdif = urlcopy(bufp, p, taillen);
 								bufp += pdif, bufrest -= pdif, p += taillen;
 								continue;
@@ -838,6 +857,7 @@ Teri_Break:
 	/* 名前欄に','が入っている時にsplitをミスるので、見誤る可能性があるので、 */
 	/* This->isTeri = true; */
 Break:
+	add_tailspace(*This->buffers, bufp);
 	*bufp++ = '\0';
 	This->rest -= bufp - *This->buffers;
 	*++This->buffers = bufp;
@@ -864,6 +884,8 @@ void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 	p = ressplitter_split(&res, p, false); /* date */
 	p = ressplitter_split(&res, p, linenum+1); /* text */
 	p = ressplitter_split(&res, p, false); /* title */
+	if (s[1][0] == '0' && s[1][1] == '\0')
+		s[1][0] = '\0';
 }
 
 /* タイトルを取得してzz_titleにコピー
@@ -1164,7 +1186,6 @@ int dat_out(int level)
 
 	if (isthreadstopped())
 		threadStopped=1;
-
 	if ( !is_imode() )
 		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
@@ -2274,29 +2295,8 @@ void html_error(enum html_error_t errorcode)
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
 #ifdef READ_KAKO
-				char *p;
-				zz_soko[0] = '\0';
-#ifdef USE_PATH
-#ifdef ALWAYS_PATH
-				path_depth = 3;
-#endif
-				if (path_depth)
-					sprintf(zz_soko, CGINAME "/%s/kako/%s/", zz_bs, tmp);
-#endif
-				strcpy(zz_ky,"kako/");
-				strcat(zz_ky,tmp);
-#ifdef READ_KAKO_THROUGH
-				p = create_link(atoi(zz_st), atoi(zz_to), atoi(zz_ls), is_nofirst(), 0);
-#else
-				p = create_link(0, 0, 0, 0, 0);
-#endif
-				if (*p == '\"')
-					++p;		/* "はもっと前につける */
-				else
-					strcat(p,"\"");	/* path形式の最後にも"を */
-				if (p[0]=='.'&&p[1]=='/') p += 2;	/* "./"は邪魔 */
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					zz_cgi_path, zz_soko, p, tmp);
+					zz_cgi_path, zz_bs, "kako/", tmp, tmp);
 #else
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
 					zz_cgi_path, doko, tmp);
@@ -2306,29 +2306,8 @@ void html_error(enum html_error_t errorcode)
 					zz_bs, tmp);
 				if (!stat(doko, &CountStat)) {
 #ifdef READ_KAKO
-					char *p;
-					zz_soko[0] = '\0';
-#ifdef USE_PATH
-#ifdef ALWAYS_PATH
-					path_depth = 3;
-#endif
-					if (path_depth)
-						sprintf(zz_soko, CGINAME "/%s/temp/%s/", zz_bs, tmp);
-#endif
-					strcpy(zz_ky,"temp/");
-					strcat(zz_ky,tmp);
-#ifdef READ_KAKO_THROUGH
-					p = create_link(atoi(zz_st), atoi(zz_to), atoi(zz_ls), is_nofirst(), 0);
-#else
-					p = create_link(0, 0, 0, 0, 0);
-#endif
-					if (*p == '\"')
-						++p;		/* "はもっと前につける */
-					else
-						strcat(p,"\"");	/* path形式の最後にも"を */
-					if (p[0]=='.'&&p[1]=='/') p += 2;	/* "./"は邪魔 */
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
-						zz_cgi_path, zz_soko, p, tmp);
+						zz_cgi_path, zz_bs, "temp/", tmp, tmp);
 #else
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
 						tmp);
@@ -2449,7 +2428,6 @@ char *GetString(char const *line, char *dst, size_t dat_size, char const *tgt)
 #endif
 	return	dst;
 }
-
 /****************************************************************/
 /*								*/
 /****************************************************************/
