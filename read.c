@@ -2111,6 +2111,8 @@ void html_head(int level, char const *title, int line)
 	}
 
 #ifdef CAUTION_FILESIZE 
+	if (line > RES_RED )
+		;
 	else
 	if (zz_fileSize > MAX_FILESIZE - CAUTION_FILESIZE * 1024) { 
 		pPrintf(pStdout, R2CH_HTML_HEADER_SIZE_REDZONE("%dKB", "%dKB", ""),
