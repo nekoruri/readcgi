@@ -104,8 +104,8 @@ int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
 void hlinkReplace(char *src);
 void html_foot(int line);
-int getLineMax();
-int IsBusy2ch();
+int getLineMax(void);
+int IsBusy2ch(void);
 int getFileSize(char *file);
 #ifndef CUTRESLINK
 /*int res_split(char **s, char *p);*/
@@ -934,7 +934,8 @@ int get_lastmod_str(time_t lastmod)
 /*	PATH_INFOを解析						*/
 /*	/board/datnnnnnn/[range] であるとみなす			*/
 /*	return:pathが有効だったら1を返す			*/
-/*	副作用: zz_bs, zz_kyが更新される場合がある		*/
+/*	副作用: zz_bs, zz_ky, zz_st, zz_to, zz_nf		*/
+/*		などが更新される場合がある			*/
 /****************************************************************/
 #ifdef USE_PATH
 static int get_path_info(char const *path_info)
@@ -992,6 +993,8 @@ static int get_path_info(char const *path_info)
 				*p = 0;
 			}
 		} else {
+			/* 範囲指定はないので、
+			   単点ポイントと見なす */
 			strcpy(zz_to, zz_st);
 		}
 

@@ -104,32 +104,32 @@ int getLineMax(878,21145
 int getFileSize(901,21550
 time_t getFileLastmod(913,21892
 int get_lastmod_str(926,22244
-static int get_path_info(940,22700
-void zz_GetEnv(1012,24232
-void atexitfunc(1110,26592
-int main(1129,26943
-void html_error(1262,29654
-int html_error999(1329,31112
-char *zz_GetString(1366,32037
-char *zz_GetString(1401,32647
-int whatKanji(1432,33263
-char *findSplitter(1467,34075
-char *findSplitter(1484,34431
-int res_split(1510,35002
-void dump_out16(1545,35553
-int IsBusy2ch(1558,35890
-char const *LastChar(1567,36148
-void html_head(1583,36499
-void html_reload(1611,37318
-void html_foot(1624,37678
-void html_foot_im(1644,38166
-char *doReplace(1652,38420
-void someReplace(1670,38870
-int hrefStop(1686,39245
-int cutWordOff(1752,40272
-int ExistHlinkX(1763,40553
-int ExistHlink(1789,41162
-void hlinkReplace(1800,41496
+static int get_path_info(941,22735
+void zz_GetEnv(1015,24324
+void atexitfunc(1113,26684
+int main(1132,27035
+void html_error(1265,29746
+int html_error999(1332,31204
+char *zz_GetString(1369,32133
+char *zz_GetString(1404,32743
+int whatKanji(1435,33359
+char *findSplitter(1470,34171
+char *findSplitter(1487,34527
+int res_split(1513,35098
+void dump_out16(1548,35649
+int IsBusy2ch(1561,35986
+char const *LastChar(1572,36308
+void html_head(1584,36601
+void html_reload(1612,37420
+void html_foot(1625,37780
+void html_foot_im(1645,38272
+char *doReplace(1656,38601
+void someReplace(1684,39282
+int hrefStop(1700,39657
+int cutWordOff(1766,40684
+int ExistHlinkX(1777,40965
+int ExistHlink(1803,41574
+void hlinkReplace(1814,41908
 
 util_date.c,203
 #define ap_isupper 75,3236
@@ -141,7 +141,7 @@ API_EXPORT(95,3724
 API_EXPORT(149,4886
 API_EXPORT(227,7576
 
-r2chhtml.h,1351
+r2chhtml.h,1393
 #define	R2CH_HTML_NEW_BANNER 17,423
 #define	R2CH_HTML_BBSPINK_BANNER 48,2109
 #define	R2CH_HTML_BANNER 56,2492
@@ -174,9 +174,10 @@ r2chhtml.h,1351
 #define R2CH_RELOAD 317,12312
 #define R2CH_RELOAD_I 320,12422
 #define R2CH_HTML_FORM 329,12643
-#define R2CH_HTML_FORM 349,13467
+#define R2CH_HTML_FORM 348,13390
 #define R2CH_HTML_FOOTER 362,13971
-#define R2CH_HTML_FORM_IMODE 366,14090
+#define R2CH_HTML_FORM_IMODE 366,14088
+#define R2CH_HTML_FOOTER_IMODE 379,14615
 
 read2ch.h,262
 #define CUTRESLINK4,74
