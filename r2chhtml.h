@@ -598,6 +598,8 @@
 /* html_error()用エラーメッセージ */
 #define ERRORMES_TOO_HUGE "このスレッド大きすぎます。"
 #define ERRORMES_NOT_FOUND "そんな板orスレッドないです。"
+#define ERRORMES_DAT_FOUND "過去ログ倉庫で発見 %s"
+#define ERRORMES_TEMP_FOUND "html化待ち"
 #define ERRORMES_NO_MEMORY "メモリの確保に失敗しました。"
 #define ERRORMES_MAINTENANCE "調整中。。。"
 #define ERRORMES_LOGOUT "なんか不調です。"

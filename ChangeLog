@@ -2,6 +2,9 @@ tag: HEAD
 
 　dat落ちのメッセージ変更
 　USE_PATH時のimode出力対応
+  USE_INDEX用処理の一部が#if 0になっていたので#ifdef USE_INDEXに訂正。
+  rawmodeリザルトで "-ERR 過去ログ倉庫で発見 %s" と "-ERR html待ち" 追加。
+　rawmodeで末尾にhtmlが付いてしまうバグ修正
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。

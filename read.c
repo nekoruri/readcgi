@@ -1847,7 +1847,7 @@ int main(void)
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
-#if 0	/* #ifdef USE_PATH */
+#ifdef USE_INDEX
 	/* スレ一覧を取りに逝くモード */
 	if (1 <= path_depth && path_depth < 3) {
 		sprintf(fname, "../%.256s/subject.txt", zz_bs);
@@ -2007,8 +2007,8 @@ int main(void)
 	if (path_depth && path_depth!=3) {
 		html_error(ERROR_NOT_FOUND);
 		return 0;
-	}
-#if 0
+	} else
+#ifdef USE_INDEX
 	if (path_depth == 2) {
 		if (zz_ky[0] == '-')
 			dat_out_subback();	/* スレ一覧 */
@@ -2055,18 +2055,31 @@ void html_error(enum html_error_t errorcode)
 	default:
 		mes = "";
 	}
+
+	*tmp = '\0';
+	strcpy(tmp, LastChar(zz_ky, '/'));
+	kako_dirname(zz_soko, tmp);
 #ifdef RAWOUT
 	if(rawmode) {
 		/* -ERR (message)はエラー。 */
-		pPrintf(pStdout, "-ERR %s\n", mes);
+		if (errorcode == ERROR_NOT_FOUND) {
+			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat", zz_bs, zz_soko, tmp);
+			if (!stat(doko, &CountStat)) {
+				pPrintf(pStdout, "-ERR " ERRORMES_DAT_FOUND "\n", doko);
+			} else {
+				sprintf(doko, TEMP_DIR "%.50s.dat", zz_bs, tmp);
+				if (!stat(doko, &CountStat)) {
+					pPrintf(pStdout, "-ERR %s\n", ERRORMES_TEMP_FOUND);
+				} else {
+					pPrintf(pStdout, "-ERR %s\n", mes);
+				}
+			}
+		} else
+			pPrintf(pStdout, "-ERR %s\n", mes);
 		exit(0);
 	}
 #endif
 	
-	*tmp = '\0';
-	strcpy(tmp, LastChar(zz_ky, '/'));
-	kako_dirname(zz_soko, tmp);
-
 	*comcom = '\0';
 	if (errorcode == ERROR_LOGOUT) {
 		sprintf(comcom, R2CH_HTML_ERROR_ADMIN);
