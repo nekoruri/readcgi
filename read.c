@@ -39,19 +39,6 @@
 # include        "util_date.h" /* from Apache 1.3.20 */
 #endif
 
-#define	CGINAME	"read.cgi"
-#define	CGIVER	"read.cgi ver14 (01/08/28)"
-#define	RES_YELLOW	900
-#define	RES_REDZONE	950
-#define	RES_RED		1000
-#define	RES_IMODE	10
-#define	RES_NORMAL	100
-#define	MAX_FILESIZE	(8192 * 64)
-#define	SIZE_BUF	0xa000
-
-#define	LIMIT_PM	23
-#define	LIMIT_AM	3
-
 char const *zz_remote_addr;
 char const *zz_remote_host;
 char const *zz_http_referer;
