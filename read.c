@@ -118,6 +118,7 @@ static void html_foot(int level, int line,int);
 int getLineMax(void);
 int IsBusy2ch(void);
 int getFileSize(char const *file);
+static int isprinted(int lineNo);
 #ifndef CUTRESLINK
 /*int res_split(char **s, char *p);*/
 char *findSplitter(char *stt, int sp);
@@ -351,6 +352,7 @@ void ressplitter_init(ressplitter *This, char **toparray, char *buff, int bufsiz
 }
 
 /* <a href="xxx">をPATH向けに打ち直す
+   *spは"<a "から始まっていること。
    dp, sp はポインタを進められる
    書き換える場合は</a>まで処理するが、
    書き換え不要な場合は<a ....>までママコピ(もしくは削る)だけ
@@ -373,6 +375,10 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	int n;
 	int f_processed = 0;
 
+#ifdef USE_PATH
+	if (path_depth == 0) {
+		sprintf(depth_expr, "./read.cgi/%.20s/%.20s/", zz_bs, zz_ky );
+	} else
 	if (path_depth == 2) {
 		strncpy(depth_expr,
 			zz_ky,
@@ -381,6 +387,9 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		strcat(depth_expr, "/");
 	} else
 		depth_expr[0] = 0;
+#else
+	sprintf(depth_expr, "./read.cgi?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
+#endif
 
 	/* 閉じ位置を探す */
 	n = strcspn(*sp, ">");
@@ -388,6 +397,8 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		return 0;
 	s += n + 1;	/* まだdは進めないでおく */
 	if (!memcmp(s, "&gt;&gt;", 8)) {
+		char const * copy_start = s;
+		int copy_len;
 		int st, to;
 		int mst, mto;
 		char buf[8];
@@ -420,6 +431,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		if (!s)
 			return 0;
 		s += 4;
+		copy_len = s - copy_start;
 
 		/* chunk仕様を生かすためのkludgeは以下に。 */
 		mst = (st - 1) / CHUNK_NUM;
@@ -436,18 +448,28 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		}
 
 		/* 新しい表現をブチ込む */
-		if (st < to)
+		if (isprinted(st) && isprinted(to)) {
 			d += sprintf(d,
-				     "<a href=\"%s%d-%d#%d\">&gt;&gt;%d-%d</a>",
-				     depth_expr,
-				     mst, mto, st,
-				     st, to);
-		else
-			d += sprintf(d,
-				     "<a href=\"%s%d-%d#%d\">&gt;&gt;%d</a>",
-				     depth_expr,
-				     mst, mto, st,
+				     "<a href=#%u>", 
 				     st);
+		} else
+		{
+#ifdef USE_PATH
+			d += sprintf(d,
+				     "<a href=\"%s%d-%d#%d\">",
+				     depth_expr,
+				     mst, mto, st );
+#else
+			d += sprintf(d,
+				     "<a href=\"%s&st=%d&to=%d&nofirst=true#%d\">",
+				     depth_expr,
+				     mst, mto, st );
+#endif
+		}
+
+		/* "&gt;&gt;".."</a>"を丸写し */
+		memcpy( d, copy_start, copy_len );
+		d += copy_len;
 	}
 
 	/* あとしまつ */
