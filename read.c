@@ -1934,7 +1934,7 @@ static void parse_path_param(const char *s)
 		get_range_minmax( &nn_range, &nn_st, &nn_to );
 
 		sprintf( zz_st, "%d", nn_st );
-		if ( nn_st == nn_to ) {
+		if ( nn_st > 0 && nn_st == nn_to ) {
 			/* ’P“_‚ÍAnofirst=true‚ğdefault‚É */
 			if (!zz_nf[0]) {
 				set_nofirst_true();
