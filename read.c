@@ -78,6 +78,11 @@ char lastmod_str[1024];
 char expires_str[1024];
 #endif
 
+#ifdef USE_MMAP
+static int zz_mmap_fd;
+static size_t zz_mmap_size;
+#endif
+
 char zz_bs[1024];
 char zz_ky[1024];
 char zz_ls[1024];
@@ -1006,10 +1011,10 @@ int dat_read(char const *fname,
 	}
 #ifdef USE_MMAP
 	BigBuffer = mmap(NULL,
-			 zz_fileSize + 0x10000,
+			 zz_mmap_size = zz_fileSize + 0x10000,
 			 PROT_READ | PROT_WRITE,
 			 MAP_PRIVATE,
-			 in,
+			 zz_mmap_fd = in,
 			 0);
 	if (BigBuffer == MAP_FAILED)
 		html_error(ERROR_NO_MEMORY);
@@ -1315,10 +1320,26 @@ int gzipped_fwrite(char *buf, int n, int m, void *dummy)
 #ifdef GZIP
 void atexitfunc(void)
 {
+	/* html_error()での二重呼び出し防止 */
+	static int isCalled = 0;
+	if (isCalled) return;
+	isCalled = 1;
+
+#ifdef USE_MMAP
+	if (BigBuffer && BigBuffer != MAP_FAILED) {
+		munmap(BigBuffer, zz_mmap_size);
+		close(zz_mmap_fd);
+	}
+#else
+	/* あちこちに散らばってたのでまとめてみた */
+	if (BigBuffer)
+		free(BigBuffer);
+#endif
 #ifdef ZLIB
 	if (gzip_flag) {
-		gzflush(pStdout, Z_FINISH);
-		fflush(stdout);
+		/* gzclose()だけで十分と思う... */
+		/* gzflush(pStdout, Z_FINISH);
+		fflush(stdout); */
 		gzclose(pStdout);
 
 		if ( outlen != 0 && outbuf == NULL ) {
@@ -1374,10 +1395,12 @@ int main()
 #ifdef RAWOUT
 	if(!rawmode)
 #endif
-		pPrintf(pStdout, "Content-type: text/html\n");
+		pPrintf(pStdout, "Content-Type: text/html\n");
 #ifdef RAWOUT
 	else
-		pPrintf(pStdout, "Content-type: application/octet-stream\n");
+		/* pPrintf(pStdout, "Content-Type: application/octet-stream\n"); */
+		/* 現在の.datの MIME type に合わせる．テキストデータだし... */
+		pPrintf(pStdout, "Content-Type: text/plain\n");
 #endif
 #ifdef LASTMOD
 	sprintf(fname, "../%.256s/dat/%.256s.dat", zz_bs, zz_ky);
@@ -1486,13 +1509,15 @@ int main()
 		fflush(stdout);
 
 		/*  prepare zlib */
-		pStdout = gzdopen(1, "wb");
+		/* dup()しないとgzclose()でstdoutを閉じてしまうので */
+		pStdout = gzdopen(dup(1), "wb9");
 
 		/*  終了処理登録 */
 		atexit(atexitfunc);
 		pPrintf = gzprintf;
-		gzsetparams(pStdout, Z_BEST_COMPRESSION,
-			    Z_DEFAULT_STRATEGY);
+		/* gzdopen()で"wb9"を指定したので不要 */
+		/* gzsetparams(pStdout, Z_BEST_COMPRESSION,
+			Z_DEFAULT_STRATEGY); */
 
 		/* put 2048byte */
 		while (whitespace--)
@@ -1522,11 +1547,6 @@ int main()
 #else
 	dat_out();
 #endif
-#ifndef USE_MMAP
-	if (BigBuffer)
-		free(BigBuffer);
-#endif
-	BigBuffer = NULL;
 	return 0;
 }
 /****************************************************************/
@@ -1563,11 +1583,6 @@ void html_error(enum html_error_t errorcode)
 	if(rawmode) {
 		/* ?....はエラー。 */
 		pPrintf(pStdout, "-ERR %s\n", mes);
-#ifndef USE_MMAP
-		if (BigBuffer)
-			free(BigBuffer);
-#endif
-		BigBuffer = NULL;
 		exit(0);
 	}
 #endif
@@ -1612,12 +1627,6 @@ void html_error(enum html_error_t errorcode)
 
 	pPrintf(pStdout, R2CH_HTML_ERROR_6);
 
-#ifndef USE_MMAP
-	if (BigBuffer)
-		free(BigBuffer);
-#endif
-	BigBuffer = NULL;
-
 	exit(0);
 }
 /****************************************************************/
@@ -1633,11 +1642,6 @@ int html_error999(char *mes)
 	if(rawmode) {
 		/* ?....はエラー。 */
 		pPrintf(pStdout, "-ERR %s\n", mes);
-#ifndef USE_MMAP
-		if (BigBuffer)
-			free(BigBuffer);
-#endif
-		BigBuffer = NULL;
 		exit(0);
 	}
 #endif
@@ -1651,12 +1655,6 @@ int html_error999(char *mes)
 		lineMax, tmp_time, zz_bs, zz_soko, tmp, tmp);
 	html_banner();
 	pPrintf(pStdout, R2CH_HTML_ERROR_999_2);
-
-#ifndef USE_MMAP
-	if (BigBuffer)
-		free(BigBuffer);
-#endif
-	BigBuffer = NULL;
 
 	exit(0);
 }
