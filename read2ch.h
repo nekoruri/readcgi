@@ -17,7 +17,7 @@
 /* #define ENGLISH */
 
 #define CONFIG_TIMEZONE "JST-9"
-#define	LIMIT_PM	23
+#define	LIMIT_PM	22
 #define	LIMIT_AM	3
 
 #define DAT_DIR "../%.256s/dat/"
@@ -180,9 +180,19 @@
 /* dat落ち、過去ログをread.cgiで読む */
 /* #define READ_KAKO */
 /* #define READ_TEMP */
+/* #define AUTO_KAKO */
 
 /* READ_KAKOで過去ログに誘導するときに範囲指定を継承する */
 #define READ_KAKO_THROUGH
+
+/* AUTO_KAKOで過去ログを取得/閲覧できる制限を設定
+  0 = RAWモード時のみ、temp/,kako/どちらのdatも取得可能
+  1 = RAWモード以外は、temp/のみ閲覧可能
+  2 = RAWモード以外でも、temp/,kako/どちらも閲覧可能  */
+#define	AUTO_KAKO_MODE	0
+
+/* ログ形式を実行時に判別する。READ_KAKO/AUTO_KAKO用 */
+/* #define AUTO_LOGTYPE */
 
 /* 名前末尾・メール末尾・<br>タグ前・レス末尾の空白を
 (可能なら)全て削除する */

@@ -121,6 +121,9 @@ char read_kako[256] = "";
 #ifdef	AUTO_KAKO
 int zz_dat_where;	/* 0: dat/  1: temp/  2: kako/ */
 #endif
+#ifdef	AUTO_LOGTYPE
+int zz_log_type;	/* 0: non-TYPE_TERI  1: TYPE_TERI */
+#endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
@@ -310,7 +313,7 @@ char flagtable[256] = {
 	______,______,______,______,______,______,______,______, /*  10-17 */
 	______,______,______,______,______,______,______,______, /*  18-1F */
 	_0____,__1___,______,__1___,__1___,__1___,_01___,______, /*  20-27 !"#$%&' */
-#ifdef	TYPE_TERI
+#if	defined(TYPE_TERI) && !defined(AUTO_LOGTYPE)
 	______,______,__1___,__1___,__1___,__1___,__1___,__1___, /*  28-2F ()*+,-./ */
 #else
 	______,______,__1___,__1___,_01___,__1___,__1___,__1___, /*  28-2F ()*+,-./ */
@@ -325,7 +328,7 @@ char flagtable[256] = {
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  68-6F hijklmno */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  70-77 pqrstuvw */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,______, /*  78-7F xyz{|} */
-#ifdef	TYPE_TERI
+#if	defined(TYPE_TERI) && !defined(AUTO_LOGTYPE)
 	____3_,___23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  80-87 */
 #else
 	____3_,_0_23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  80-87 */
@@ -350,7 +353,9 @@ char flagtable[256] = {
 typedef struct { /*  class... */
 	char **buffers; /* csvの要素 */
 	int rest; /* 残りのバッファサイズ・・厳密には判定してないので、数バイトは余裕が欲しい */
+#ifdef	AUTO_LOGTYPE
 	int isTeri;
+#endif
 } ressplitter;
 
 /* read.cgi呼び出しのLINK先作成 */
@@ -510,11 +515,13 @@ void zz_init_cgi_path(void)
   bufsize 厳密には判定してないので、数バイトは余裕が欲しい
   */
 
-void ressplitter_init(ressplitter *This, char **toparray, char *buff, int bufsize/*, bool isteri*/)
+void ressplitter_init(ressplitter *This, char **toparray, char *buff, int bufsize)
 {
 	This->buffers = toparray;
 	This->rest = bufsize;
-	This->isTeri = true; /* レス１をstrstr("<>")した結果を設定すべき */
+#ifdef	AUTO_LOGTYPE
+	This->isTeri = zz_log_type;
+#endif
 	*This->buffers = buff;
 }
 
@@ -763,6 +770,14 @@ static int needspace_strict(const char *buftop, const char *bufp)
 #else
 # define	add_tailspace_strict(buftop, bufp)	((void)0)
 #endif
+
+#if	defined(AUTO_LOGTYPE)
+#define		IS_TYPE_SAKI	(!This->isTeri)
+#elif	defined(TYPE_TERI)
+#define		IS_TYPE_SAKI	0
+#else
+#define		IS_TYPE_SAKI	1
+#endif
 /*
 	レスを全走査するが、コピーと変換(と削除)を同時に行う
 	p コピー前のレス(BigBuffer内の１レス)
@@ -859,21 +874,21 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 			case '\n':
 				goto Break;
 				/*	break;	*/
-#ifndef TYPE_TERI
+#if	!defined(TYPE_TERI) || defined(AUTO_LOGTYPE)
 			case COMMA_SUBSTITUTE_FIRSTCHAR: /*  *"＠"(8197)  "｀"(814d) */
-				/* if (!This->isTeri) { */
-				if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {
-					ch = ',';
-					p += 4 - 1;
+				if (IS_TYPE_SAKI) {
+					if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {
+						ch = ',';
+						p += 4 - 1;
+					}
 				}
-				/* } */
 				break;
 			case ',':
-				/* if (!This->isTeri) { */
-				p++;
-				goto Break;
-				/* } */
-				/* break; */
+				if (IS_TYPE_SAKI) {
+					p++;
+					goto Break;
+				}
+				break;
 #endif
 			case '\0':
 				/* 読み飛ばしのほうが、動作としては適切かも */
@@ -897,12 +912,13 @@ Break:
 	
 	/* 区切り直後の空白を削除 */
 	if (*p == ' ') {
-#ifdef	TYPE_TERI
-		if (!(*(p+1) == '<' && *(p+2) == '>'))
-#else
-		if (!(*(p+1) == ','))
-#endif
-			++p;
+		if (IS_TYPE_SAKI) {
+			if (!(*(p+1) == ','))
+				++p;
+		} else {
+			if (!(*(p+1) == '<' && *(p+2) == '>'))
+				++p;
+		}
 	}
 	return p;
 }
@@ -920,6 +936,25 @@ void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 	if (s[1][0] == '0' && s[1][1] == '\0')
 		s[1][0] = '\0';
 }
+
+#ifdef	AUTO_LOGTYPE
+static void check_logtype()
+{
+	if (lineMax) {
+		const char *p;
+		
+		zz_log_type = 0;	/* non-TYPE_TERI */
+		for (p = BigLine[0]; p < BigLine[1]; ++p) {
+			if (*p == '<' && *(p+1) == '>') {
+				zz_log_type = 1;	/* TYPE_TERI */
+				break;
+			}
+		}
+	}
+}
+#else
+#define	check_logtype()		/*	*/
+#endif
 
 /* タイトルを取得してzz_titleにコピー
 */
@@ -1247,6 +1282,10 @@ int dat_out(int level)
 		threadStopped=1;
 	if ( !is_imode() )
 		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
+#ifdef	AUTO_KAKO
+	if (zz_dat_where)
+		pPrintf(pStdout, R2CH_HTML_CAUTION_KAKO);
+#endif
 #ifdef RELOADLINK
 	if (
 #ifdef USE_INDEX
@@ -1314,6 +1353,7 @@ int dat_read(char const *fname,
 #endif
 
 	lineMax = getLineMax();
+	check_logtype();
 	get_title();
 /*
 html_error(ERROR_MAINTENANCE);

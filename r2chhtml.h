@@ -559,7 +559,11 @@
 #define COMMA_SUBSTITUTE_LEN 4
 
 /* 投稿日欄に入るストッパー判定文字列をカンマ区切りで並べる */
-#define STOPPER_MARKS "ストッパー", "停止"
+#define STOPPER_MARKS "ストッパー", "停止", "移転したよ"
+
+/* 過去ログ閲覧時の注意 */
+#define	R2CH_HTML_CAUTION_KAKO	\
+	"<font color=red>[注] このスレッドは過去ログであり、書きこみは出来ません<br></font>"
 
 #ifdef USE_INDEX
 
