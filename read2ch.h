@@ -76,8 +76,32 @@
  *          "メモリの確保に失敗しました。"
  *          "調整中。。。"
  *          "なんか不調です。"
+ *  リクエストにIf-Modified-Sinceが無く、
+ *  取得済みサイズとdatのファイルサイズが一致した場合、非圧縮の
+ *  [+OK 0/maxK]
+ *  の一行だけが返り、LastModified,Content-Length,Cotent-Encoding等は含まれない
  */
 #define RAWOUT
+
+/* raw=0.0のリクエスト時、st=nn, to=nn, ls=nnを参照する
+ * ・有効な場合にはステータスが以下のように変わる
+ * [+PARCIAL size/maxK]
+ * ・またステータス行に、以下の情報がTAB区切りで加えられる。
+ * Range:n1-n2/n3
+ *     送信バイトの位置情報。
+ *     HTTP レスポンスヘッダのContent-Range: bytes 以下と同じもの。
+ * Res:n1-n2/n3
+ *     送信レスのレス番号情報。
+ *     Rangeと異なり、1から始まり最後まで送った場合はn2==n3となる。
+ * ・その他、以下の情報が含まれるようになる可能性がある。
+ * Status:Stopped
+ *     スレッドストップがかかったと判定された場合。
+ * Location:temp/
+ *     datはhtml化を待っている状態の過去ログである(書きこめない)
+ * Location:kako/
+ *     datはhtml化されている過去ログである(書きこめない)
+ */
+#define	RAWOUT_PARTIAL
 
 /* mmap(2) を活用。
    資源の開放は積極的にサボりたい。 */
@@ -163,6 +187,13 @@
 
 /* かちゅーしゃによるアクセスを拒絶する */
 #define Katjusha_Beta_kisei
+
+/* かちゅ〜しゃgzip化DLLのリクエストに応答する
+ * あぼーんが想定される場合、
+ * [-ERR どこかであぼーんがあったみたいです。]
+ * を返し、本文の再送は行わない。
+ */
+#define Katjusha_DLL_REPLY
 
 /* 名前の緑表示をCSSを使って表示 */
 /* #define USE_CSS */
