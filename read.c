@@ -584,7 +584,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mto = to;
 				}
 
-				d += sprintf(d, "<a href=%s target=\"_blank\">", 
+				d += sprintf(d, "<a href=%s " TARGET_BLANK ">", 
 #if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR) && defined(USE_CHUNK_LINK)
 					create_link(mst, mto, 0, 0, st)
 #else
@@ -671,7 +671,7 @@ int geturltaillen(const char *p)
 int urlcopy(char *bufp, const char *url, int urllen)
 {
 	return sprintf(bufp,
-		"<a href=\"%.*s\" target=\"_blank\">%.*s</a>", 
+		"<a href=\"%.*s\" " TARGET_BLANK ">%.*s</a>", 
 		/* 小文字にしてすこーーーしだけ圧縮効果を期待したり */
 		/* "<A HREF=\"%.*s\" TARGET=\"_blank\">%.*s</A>", */
 		urllen, url, urllen, url);

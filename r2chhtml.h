@@ -15,6 +15,9 @@
 #define NO_FIRST "&nofirst=true"
 #endif
 
+#define TARGET_BODY "target=body"
+#define TARGET_BLANK "target=_blank"
+
 /*
  * BANNERS: スレが無い等のエラー時に出る広告。
  */
@@ -52,7 +55,7 @@
 /* 使われてない...はず。 */
 #define	R2CH_HTML_BANNER \
 	"<center>" \
-	"<a href=\"http://www.pinknavi.com/?pinkid=PB0001&prg=3&act=0&txt=おいでませ&url=http://www.seiai.com/\" target=\"_blank\">おいでませアダルトサイト</a><br>" \
+	"<a href=\"http://www.pinknavi.com/?pinkid=PB0001&prg=3&act=0&txt=おいでませ&url=http://www.seiai.com/\" " TARGET_BLANK ">おいでませアダルトサイト</a><br>" \
 	"<br><a href=\"http://www.maido3.com/mentai/\"><b><font size=4>深夜でも快適なレンタルサーバサービス</font></b></a><br>" \
 	"</center>" \
 	"<p>"
@@ -60,7 +63,7 @@
 /* 使われてない...はず。 */
 #define	R2CH_HTML_BANNER \
 	"<center>" \
-	"<a href=\"http://www.maido3.com/server/\" target=\"_blank\">" \
+	"<a href=\"http://www.maido3.com/server/\" " TARGET_BLANK ">" \
 	"深夜でも快適なレンタルサーバサービス" \
 	"</a>" \
 	"<br>あの巨大なサイトも使っています。" \
@@ -218,7 +221,7 @@
 #define R2CH_HTML_ERROR_2 \
 	"<dt>2 名前：<font color=green><b>" CGIVER "</b></font>投稿日：2001/04/12(木) 15:11<dd>"\
 	"<br>" \
-	"<p><a href=\"http://www.maido3.com/server/\" target=\"_blank\">" \
+	"<p><a href=\"http://www.maido3.com/server/\" " TARGET_BLANK ">" \
 	"http://www.maido3.com/server/" \
 	"</a><br>" \
 	"さぶドメインシリーズ登場<br>" \
@@ -227,18 +230,18 @@
 	"　　　*****.<b><font size=+1 face=\"Arial\" color=deeppink>zansu</font></b>.com<br>" \
 	"おすきな名前を無料で使えます。早い者勝ち。<br>" \
 	"<font color=deeppink><b>工夫しだいで、楽しさ100倍。</b></font>" \
-	"<p><a target=\"_blank\" href=\"http://www.maido3.com/server/\">" \
+	"<p><a " TARGET_BLANK " href=\"http://www.maido3.com/server/\">" \
 	"深夜でも快適なレンタルサーバサービス" \
 	"</a>" \
 	"<br>あの巨大なサイトも使っています。<br><br>" \
 	"<table cellspacing=0 cellpadding=0 border=0 width=100%%>" \
 	"<tr><td height=1 bgcolor=#efefef><img height=1 width=1 src=\"/space1.gif\"></td></tr>" \
 	"<tr bgcolor=#cccccc><td height=20 nowrap><font size=2>&nbsp;" \
-	"| <a href=\"http://www.maido3.com/\" class=\"BigLine\" target=\"_blank\">おすすめ</a>" \
-	"| <a href=\"http://news.kakiko.com/2chwatch/\" class=\"BigLine\" target=\"_blank\">2chサーバ監視所</a>" \
-	"| <a href=\"http://www.binboserver.com/\" class=\"BigLine\" target=\"_blank\">BinboServer</a>" \
-	"| <a href=\"http://www.maido3.com/server/subdomain.html\" class=\"BigLine\" target=\"_blank\">Hikky.Zansu.com</a>" \
-	"| <a href=\"http://news.kakiko.com/\" class=\"BigLine\" target=\"_blank\">無料サービス</a>" \
+	"| <a href=\"http://www.maido3.com/\" class=\"BigLine\" " TARGET_BLANK ">おすすめ</a>" \
+	"| <a href=\"http://news.kakiko.com/2chwatch/\" class=\"BigLine\" " TARGET_BLANK ">2chサーバ監視所</a>" \
+	"| <a href=\"http://www.binboserver.com/\" class=\"BigLine\" " TARGET_BLANK ">BinboServer</a>" \
+	"| <a href=\"http://www.maido3.com/server/subdomain.html\" class=\"BigLine\" " TARGET_BLANK ">Hikky.Zansu.com</a>" \
+	"| <a href=\"http://news.kakiko.com/\" class=\"BigLine\" " TARGET_BLANK ">無料サービス</a>" \
 	"|</font></td></tr>" \
 	"<tr><td height=1 bgcolor=#333333><img height=1 width=1 src=\"/space1.gif\"></td></tr>" \
 	"<tr><td height=1 bgcolor=#efefef><img height=1 width=1 src=\"/space1.gif\"></td></tr>" \
@@ -564,7 +567,7 @@ h1,.c{text-align:center}
 
 <input type=submit value=\"スレッド作成\" name=submit><input type=hidden name=bbs value=hp><input type=hidden name=time value=998848311>
 <a href=http://www.2ch.net/before.html>書き込む前に読んでね</a> ｜ <a href=http://www.2ch.net/guide/>2chガイド</a> ｜ <a href=\"http://www.2ch.net/guide/faq.html\">FAQ</a></form>
-<p><a href=http://210.150.210.150/sage/bbstable.html target=_blank>■掲示板一覧■</a></p>
+<p><a href=http://210.150.210.150/sage/bbstable.html " TARGET_BLANK ">■掲示板一覧■</a></p>
 </div>
 
 <div class=m>
@@ -575,7 +578,7 @@ h1,.c{text-align:center}
 	"<a href=\"" label "\">" title "</a>\n"
 
 #define R2CH_HTML_INDEX_ANCHOR(anchor, num, title) \
-	"<a href=\"" anchor "/l50\" target=\"body\">" num ": " title "</a>\n"
+	"<a href=\"" anchor "/l50\" " TARGET_BODY ">" num ": " title "</a>\n"
 
 #define R2CH_HTML_INDEX_AD \
 "<p><a href=\"-\">スレッド一覧</a></p>
@@ -595,22 +598,22 @@ h1,.c{text-align:center}
 
 <table border=1 cellspacing=0 cellpadding=0 width=95%%><tr bgcolor=black><td colspan=2>
 <table width=100%%><tr bgcolor=#FFCC44><td>
-■ 2chは、<a href=\"http://www.maido3.com/server/usagi/news.html\" target=\"_blank\"><font color=navy size=+1><b>ここのサーバ</b></font></a>を使ってるです。。。
+■ 2chは、<a href=\"http://www.maido3.com/server/usagi/news.html\" " TARGET_BLANK "><font color=navy size=+1><b>ここのサーバ</b></font></a>を使ってるです。。。
 </td></tr></table>
 </td></tr><tr><td bgcolor=black>
 <font color=#CCFFCC>
-　<font size=+1 face=\"Arial\"><b>.jp</b></font> ドメインお持ちのお客様大歓迎。<a href=\"http://welcome.maido3.jp/\" target=\"_blank\"><font size=+1 face=\"Arial\" color=red><b>maido3.jp</b></font></a><br>
-　<font size=+1 face=\"Arial\"><b>.com .net .org</b></font> 取得代行します。(US$10) <a href=\"http://www.maido3.com/server/\" target=\"_blank\"><font size=+1 face=\"Arial\" color=cyan><b>maido3.com</b></font></a><br>
+　<font size=+1 face=\"Arial\"><b>.jp</b></font> ドメインお持ちのお客様大歓迎。<a href=\"http://welcome.maido3.jp/\" " TARGET_BLANK "><font size=+1 face=\"Arial\" color=red><b>maido3.jp</b></font></a><br>
+　<font size=+1 face=\"Arial\"><b>.com .net .org</b></font> 取得代行します。(US$10) <a href=\"http://www.maido3.com/server/\" " TARGET_BLANK "><font size=+1 face=\"Arial\" color=cyan><b>maido3.com</b></font></a><br>
 　<font size=+1 face=\"Arial\" color=white><b>.cc .to .tv .fm .ca</b></font> 取得代行はじめました。<font color=white face=\"Arial\" size=-1><b>NEW</b></font><br>
 </td><td align=center>
 無料ホームページスペース<P>
-<a href=\"http://space.kakiko.com/\" target=\"_blank\"><font size=+1 face=\"Arial\" color=blue><b>Space.Kakiko.com</b></font></a><br>
+<a href=\"http://space.kakiko.com/\" " TARGET_BLANK "><font size=+1 face=\"Arial\" color=blue><b>Space.Kakiko.com</b></font></a><br>
 </font>
 </td></tr><tr bgcolor=black><td colspan=2>
 <table width=100%%><tr bgcolor=black><td>
-<font color=#ccffcc>月々1,000円からの</font> <a href=\"http://www.binboserver.com/\" target=\"_blank\"><font color=cyan face=\"Arial\"><b>BinboServer.com</b></font></a>
+<font color=#ccffcc>月々1,000円からの</font> <a href=\"http://www.binboserver.com/\" " TARGET_BLANK "><font color=cyan face=\"Arial\"><b>BinboServer.com</b></font></a>
 </td><td>
-<font color=#ccffcc>２ちゃんねるも使っている</font> <a href=\"http://www.maido3.com/server/\" target=\"_blank\"><font color=cyan face=\"Arial\"><b>Big-Server.com</b></font></a>
+<font color=#ccffcc>２ちゃんねるも使っている</font> <a href=\"http://www.maido3.com/server/\" " TARGET_BLANK "><font color=cyan face=\"Arial\"><b>Big-Server.com</b></font></a>
 </td></tr></table>
 </td></tr><tr bgcolor=black><td colspan=2>
 <table width=100%%><tr bgcolor=#FFCC44><td align=right>
@@ -654,7 +657,7 @@ h1,.c{text-align:center}
 	"<html><head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
 	"</head>" \
-	"<body target=\"body\">" \
+	"<body " TARGET_BODY ">" \
 	"<font size=-1>\n"
 
 #define R2CH_HTML_SUBBACK_ITEM(anchor, num, title) \
