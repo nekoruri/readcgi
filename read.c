@@ -24,7 +24,9 @@
 # ifndef GZIP
 #  define GZIP			/* gzip由来のコードも使用するので */
 # endif
-# include	<zlib.h>
+#endif
+#if	defined(ZLIB) || defined(PUT_ETAG)
+#include	<zlib.h>
 #endif
 
 #if defined(GZIP) && !defined(ZLIB)
@@ -45,13 +47,18 @@ static int pid;
 # include        "util_date.h" /* from Apache 1.3.20 */
 #endif
 
+#if	('\xFF' != 0xFF)
+#error	-funsigned-char required.
+	/* このシステムでは、-funsigned-charを要求する */
+#endif
+
 #if	(defined(CHUNK_ANCHOR) && CHUNK_NUM > RES_NORMAL) 
 # error "Too large CHUNK_NUM!!"
 #endif
 
 /* CHUNK_ANCHOR のコードに依存している */
-#if defined(SEPARATE_CHUNK_ANCHOR) || defined(CHUNKED_ANCHOR_WITH_FORM)
-# define CHUNK_ANCHOR
+#if defined(SEPARATE_CHUNK_ANCHOR) && !defined(CHUNK_ANCHOR)
+#error	SEPARATE_CHUNK_ANCHOR require CHUNK_ANCHOR
 #endif
 
 #if !defined(READ_KAKO)
@@ -74,7 +81,7 @@ char const *zz_query_string;
 char *zz_temp;
 char const *zz_http_user_agent;
 char const *zz_http_language;
-#ifdef GZIP
+#if	defined(GZIP) || defined(RAWOUT)
 char const *zz_http_encoding;
 enum compress_type_t {
 	compress_none,
@@ -361,7 +368,6 @@ typedef struct { /*  class... */
 const char *create_link(int st, int to, int ls, int nf, int sst)
 {
 	static char url_expr[128];
-	static char *url_p = NULL;
 	char *p;
 	const char * key = zz_ky;
 #ifdef READ_KAKO
@@ -369,7 +375,9 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 		key = read_kako;
 #endif
 
+#ifdef	CREATE_OLD_LINK
 	if (path_depth) {
+#endif
 		p = url_expr;
 #ifdef USE_INDEX
 		if (path_depth == 2) {
@@ -403,7 +411,9 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 #endif
 		if ( p == url_expr )
 			p += sprintf(p, "./"); /* 全部 */
+#ifdef	CREATE_OLD_LINK
 	} else {
+		static char *url_p = NULL;
 		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
 			url_p = url_expr;
 			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", 
@@ -433,6 +443,7 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 #endif
 		*p++ = '\"';
 	}
+#endif
 	*p = '\0';
 	return url_expr;
 }
@@ -997,7 +1008,7 @@ int BadAccess(void)
 
 	if ( is_head() )
 		return 0;
-#if defined(GZIP) && defined(RAWOUT)
+#if defined(RAWOUT)
 	if ( rawmode ) {
 #if	0	/*#ifdef	Katjusha_DLL_REPLY*/
 		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
@@ -1748,7 +1759,7 @@ void zz_GetEnv(void)
 	zz_temp = getenv("REMOTE_USER");
 	zz_http_user_agent = getenv("HTTP_USER_AGENT");
 	zz_http_language = getenv("HTTP_ACCEPT_LANGUAGE");
-#ifdef GZIP
+#if	defined(GZIP) || defined(RAWOUT)
 	zz_http_encoding = getenv("HTTP_ACCEPT_ENCODING");
 #endif
 #ifdef CHECK_MOD_GZIP
@@ -1820,7 +1831,7 @@ void zz_GetEnv(void)
 		}
 	}
 #endif
-#ifdef GZIP
+#if	defined(GZIP) || defined(RAWOUT)
 	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
 		gzip_flag = compress_x_gzip;
 	} else if (zz_http_encoding && strstr(zz_http_encoding, "gzip")) {
@@ -2232,16 +2243,6 @@ int main(void)
 
 	int st, to, ls;
 
-#if	('\xFF' != 0xFF)
-#error	-funsigned-char required.
-	/* このシステムでは、-funsigned-charを要求する */
-	if ((char)0xFF != (unsigned char)0xFF) {
-		puts("Content-Type: text/plain\n\n"
-		     "-funsigned-char required.");
-		return 0;
-	}
-#endif
-
 #ifdef ZLIB
 	pStdout = (gzFile) stdout;
 #endif
@@ -2360,7 +2361,7 @@ int main(void)
 	}
 #endif
 
-#if	defined(GZIP) && defined(RAWOUT) && defined(Katjusha_DLL_REPLY)
+#if	defined(RAWOUT) && defined(Katjusha_DLL_REPLY)
 	/* BadAccess中で設定すると、早目のファイルサイズ判定が出来ないので */
 	if (rawmode && gzip_flag)
 		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
@@ -2780,11 +2781,6 @@ char const *LastChar(char const *src, char c)
 	return (p + 1);
 }
 
-#ifdef	SEPARATE_CHUNK_ANCHOR
-#ifndef	CHUNK_ANCHOR
-#error	SEPARATE_CHUNK_ANCHOR needs CHUNK_ANCHOR
-#endif
-#endif
 #ifdef	CHUNK_ANCHOR
 /* first-lastまでのCHUNKED anchorを表示
    firstとlastはレス番号。firstに0は渡すなー */
