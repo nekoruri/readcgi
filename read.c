@@ -1095,15 +1095,15 @@ int dat_out(int level)
 #endif
 	}
 	out_html1(level);
-#ifdef RELOADLINK
-	if (!level && lineMax == lineLast) {
-		html_reload(lineLast);	/*  Button: Reload */
-	}
-#endif
 	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
 	if (!*p)
 		return 1; 
 	if( s[2]!=0 && strstr( s[2], "ストッパー" )) threadStopped=1;
+#ifdef RELOADLINK
+	if (!level && lineMax == lineLast && lineMax <= RES_RED && !threadStopped) {
+		html_reload(lineLast);	/*  Button: Reload */
+	}
+#endif
 	html_foot(level, lineMax, threadStopped);
 
 	return 0;
