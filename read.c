@@ -112,7 +112,6 @@ char *zz_GetString(char *dst, size_t dst_size, char const *tgt);
 char *doReplace(char *des, char const *str0, char const *str1);
 void html_foot_im(int,int);
 void html_head(int level, char const *title, int line);
-int res_split(char **s, char *p);
 void someReplace(char const *src, char *des, char const *str0, char const *str1);
 static void html_foot(int level, int line,int);
 int getLineMax(void);
@@ -2009,85 +2008,6 @@ int whatKanji(char *str)
 		val |= 8;
 
 	return val;
-}
-/****************************************************************/
-/*								*/
-/****************************************************************/
-#ifdef	TYPE_TERI
-char *findSplitter(char *stt, int sp)
-{
-	char *p = stt;
-	char ss = (unsigned char) (sp & 0x00ff);
-
-	while (*p) {
-/*
-		if( *p >= 0xa0 && *p <= 0xdf)	{p++	;continue;}
-		if((*p >= 0x81 && *p <= 0x9f || *p >= 0xe0 && *p <= 0xfc))	{p += 2	;continue;}
-*/
-		if (*p == ss && *(p + 1) == '>')
-			return p;
-		p++;
-	}
-	return NULL;
-}
-#else
-char *findSplitter(char *stt, int sp)
-{
-	char *p = stt;
-	char ss = (unsigned char) (sp & 0x00ff);
-
-	while (*p) {
-		if (*p >= 0xa0 && *p <= 0xdf) {
-			p++;
-			continue;
-		}
-		if (((*p >= 0x81 && *p <= 0x9f)
-		     || (*p >= 0xe0 && *p <= 0xfc))) {
-			p += 2;
-			continue;
-		}
-/*		if((*p >= 0x40 && *p <= 0xfc && *p != 0x7f))	p += 2	;*/
-		if (*p == ss)
-			return p;
-		p++;
-	}
-	return NULL;
-}
-#endif
-/****************************************************************/
-/*								*/
-/****************************************************************/
-int res_split(char **s, char *p)
-{
-	int i;
-	char *p0;
-
-	for (i = 0; i < 5; i++)
-		s[i] = KARA;
-
-	s[0] = p;
-	for (i = 1; i < 5; i++) {
-#ifdef	TYPE_TERI
-		p0 = findSplitter(s[i - 1], '<');
-		if (!p0) {
-			return 0;
-		}
-		*p0 = '\0';
-		p0++;
-		*p0 = '\0';
-		p0++;
-		s[i] = p0;
-#else
-		p0 = findSplitter(s[i - 1], ',');
-		if (!p0) {
-			return 0;
-		}
-		*p0 = '\0';
-		p0++;
-		s[i] = p0;
-#endif
-	}
-	return 1;
 }
 /****************************************************************/
 /*								*/
