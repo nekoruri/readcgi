@@ -1,5 +1,8 @@
 tag: HEAD
 
+
+tag: YAKIN20010922: 実験サーバ choco.2ch.net にて ver 5.23として採用。
+
 　dat落ちのメッセージ変更
 　USE_PATH時のimode出力対応
   USE_INDEX用処理の一部が#if 0になっていたので#ifdef USE_INDEXに訂正。
