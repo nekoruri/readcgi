@@ -893,6 +893,39 @@ int get_lastmod_str(time_t lastmod)
 }
 #endif
 /****************************************************************/
+/*	PATH_INFOを解析						*/
+/*	/board/datnnnnnn/[range] であるとみなす			*/
+/*	return:pathが有効だったら1を返す			*/
+/*	副作用: zz_bs, zz_kyが更新される場合がある		*/
+/****************************************************************/
+#ifdef USE_PATH
+static int get_path_info(char const *path_info)
+{
+	char buf[48];
+	char const *b, *k, *r;
+
+	/* PATH_INFO は、'/' で始まってるような気がしたり */
+	if (path_info[0] != '/')
+		return 0;
+
+	/* PATH_INFOから、トークンを2個以上抜き出す */
+	strncpy(buf, &path_info[1], sizeof(buf) - 1);
+	buf[sizeof(buf) - 1] = 0;
+	b = strtok(buf, "/");
+	k = strtok(NULL, "/");
+	r = strtok(NULL, "/");
+	if (!(b && k))
+		return 0;
+
+	/* さしあたって bs, ky を更新しる */
+	strncpy(zz_bs, b, 1024 - 1);
+	strncpy(zz_ky, k, 1024 - 1);
+
+	/* 処理は完了したものとみなす */
+	return 1;
+}
+#endif
+/****************************************************************/
 /*	GET Env							*/
 /****************************************************************/
 void zz_GetEnv(void)
@@ -928,7 +961,7 @@ void zz_GetEnv(void)
 		zz_http_referer = KARA;
 #ifdef USE_PATH
 	if (!zz_path_info)
-		zz_path_info = "";
+		zz_path_info = "";	/* XXX KARAを使い回すのは怖い */
 #endif
 	if (!zz_query_string)
 		zz_query_string = KARA;
@@ -957,22 +990,10 @@ void zz_GetEnv(void)
 	zz_GetString(zz_im, "imode");
 #endif
 #ifdef USE_PATH
-	if (zz_path_info[0] == '/') {
-		/* PATH_INFOから、トークンを2個抜き出す */
-		char buf[48];
-		char const *b, *k;
-		strncpy(buf, &zz_path_info[1], sizeof(buf) - 1);
-		buf[sizeof(buf) - 1] = 0;
-		b = strtok(buf, "/");
-		k = strtok(NULL, "/");
-		if (b && k) {
-			strncpy(zz_bs, b, 1023);
-			strncpy(zz_ky, k, 1023);
-		} else {
-			zz_path_info = "";
-		}
-	} else {
-		zz_path_info = "";
+	if (!get_path_info(zz_path_info)) {
+		/* これ以降、path が付与されているかどうかの
+		   判定は zz_path_info のテストで行ってくれ */
+		zz_path_info = NULL;
 	}
 #endif
 #ifdef COOKIE
