@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.5 2001/09/03 10:35:23 2ch Exp $ */
+ *  $Id: datindex.c,v 1.6 2001/09/03 11:57:15 2ch Exp $ */
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -83,6 +83,139 @@ static int get_date(struct tm *datetime,
 	return ofs;
 }
 /****************************************************************
+ *	指定された行(ただしchunk以内)の
+ *	行インデクスをつくりあげる
+ *	こいつはshared_idxをいじらない
+ *	進んだオフセットを返す
+ ****************************************************************/
+static int buildup_line(struct DATINDEX_LINE *line,
+			int line_n,
+			char const *dat,
+			int datlen,
+			time_t dat_lastmod,
+			int *valid_lines,
+			time_t *newest_lastmod)
+{
+	int ofs;
+	int linenum;
+
+	/* まずは epoch から始めよ */
+	*newest_lastmod = 0;
+
+	for (ofs = 0, linenum = 0;
+	     ofs < datlen && linenum < line_n;
+	     line++, linenum++) {
+		int i, n;
+		int orig_ofs;
+		struct tm datetime;
+
+		/* わかんないフラグが多すぎてごめんね */
+		int aborted = 0;	/* あぼーん? */
+		int completed = 0;	/* パースが通ったらセットすべし */
+		time_t lastmod = dat_lastmod;
+
+		orig_ofs = ofs;
+
+		/* name<>mailto<>date id<>text<>[subject]\n */
+		/* name, mailtoをスキップする */
+		for (i = 0; i < 2; i++) {
+			if (i == 0)
+				line->name.p = &dat[ofs];
+			else if (i == 1)
+				line->mailto.p = &dat[ofs];
+
+			while (!(dat[ofs] == '<' && dat[ofs + 1] == '>')) {
+				if (dat[ofs] == '\n') {
+					ofs++;
+					goto can_not_parse;
+				}
+				ofs++;
+				ofs += strcspn(&dat[ofs], "<>\n");
+			}
+
+			if (i == 0)
+				line->name.len = &dat[ofs] - line->name.p;
+			else if (i == 1)
+				line->mailto.len = &dat[ofs] - line->mailto.p;
+
+			ofs += 2;
+		}
+
+		/* 日付を解析する
+		   日付文字がまったく得られなかったら、
+		   あぼーんと見なす */
+		n = get_date(&datetime, &dat[ofs]);
+		if (n == 0) {
+			/* あぼーんと見なす
+			   このまま行の処理を打ち切ってもいいのだが
+			   スレタイトルを取得したい場合があるので、
+			   その場合はフラグを立てて続行(鬱 */
+			aborted = 1;
+		} else {
+			/* 取得した時刻を L-M としてセットしておく */
+			lastmod = mktime(&datetime);
+		}
+		/* dateの残り、本文をスキップする */
+		for (i = 0; i < 2; i++) {
+			if (i == 0)
+				line->date.p = &dat[ofs];
+			else if (i == 1)
+				line->text.p = &dat[ofs];
+
+			while (!(dat[ofs] == '<' && dat[ofs + 1] == '>')) {
+				if (dat[ofs] == '\n') {
+					ofs++;
+					goto can_not_parse;
+				}
+				ofs++;
+				ofs += strcspn(&dat[ofs], "<>\n");
+			}
+
+			if (i == 0)
+				line->date.len = &dat[ofs] - line->mailto.p;
+			else if (i == 1)
+				line->text.len = &dat[ofs] - line->date.p;
+
+			ofs += 2;
+		}
+		/* ここまで来れたらあぼーんではないと見なす
+		   (除 aborted がセットされてる場合 )*/
+		if (!aborted) {
+			completed = 1;
+		}
+		/* スレタイトルがあるかもしれないが、読み飛ばす */
+		ofs += 1 + strcspn(&dat[ofs], "\n");
+
+	can_not_parse:
+		if (completed) {
+			line->lastmod = lastmod;
+		} else {
+			/* 行の解析が完了していない場合 */
+
+			static struct DATINDEX_LINE ab =
+			{
+				{"あぼーん", 8},
+				{"あぼーん", 8},
+				{"あぼーん", 8},
+				{"あぼーん", 8},
+				0, 0
+			};
+
+			*line = ab;
+		}
+
+		line->len = ofs - orig_ofs;	/* \n までの長さ */
+
+		/* あぼーん行であるときは、
+		   lastmod が最新時刻のままであるはず */
+		if (*newest_lastmod < lastmod)
+			*newest_lastmod = lastmod;
+	}
+
+	*valid_lines = linenum;
+	return ofs;
+}
+/****************************************************************
  *	用意された領域に
  *	新たにインデクスをつくりあげる
  *	private_datにファイルが読まれているのが前提
@@ -102,133 +235,48 @@ static int buildup_index(DATINDEX_OBJ *dat,
 
 	chunk = linenum / DATINDEX_CHUNK_SIZE;
 	linenum %= DATINDEX_CHUNK_SIZE;
-	for (/* nil */;
-		      (ofs < datlen
-		       && (DATINDEX_CHUNK_SIZE * chunk + linenum
-			   < DATINDEX_MAX_ARTICLES));
-		      linenum++, (linenum + 1 >= DATINDEX_CHUNK_SIZE
-				  ? idx->idx[chunk].nextofs = ofs
-				  : 0)) {
+
+	for (;
+	     (ofs < datlen
+	      && (DATINDEX_CHUNK_SIZE * chunk + linenum
+		  < DATINDEX_MAX_ARTICLES));
+	     chunk++, linenum = 0) {
 		struct DATINDEX_LINE *line;
 		int i, n;
-		int orig_ofs;
-		struct tm datetime;
 
-		/* わかんないフラグが多すぎてごめんね */
-		int aborted = 0;	/* あぼーん? */
-		int completed = 0;	/* パースが通ったらセットすべし */
-		time_t lastmod = idx->lastmod;
+		int n_line_processed;
+		time_t chunk_lastmod;
 
-		if (linenum >= DATINDEX_CHUNK_SIZE) {
-			/* 繰り上がり */
-			idx->idx[++chunk].lastmod = 0; /* epoch(藁 */
-			linenum = 0;
-			/* XXX nextofs は、
-			   ループ境界で更新している */
+		n = DATINDEX_CHUNK_SIZE * chunk + linenum;
+		line = &dat->line[n];
+
+		/* 行インデクスを生成させる */
+		ofs += buildup_line(line,
+				    DATINDEX_CHUNK_SIZE - linenum,
+				    &p[ofs],
+				    datlen - ofs,
+				    idx->lastmod,
+				    &n_line_processed,
+				    &chunk_lastmod);
+
+		idx->idx[chunk].lastmod = chunk_lastmod;
+		idx->idx[chunk].nextofs = ofs;
+
+		/* 有効な行に対してフラグ立ててく */
+		for (i = n; i < n + n_line_processed; i++) {
+			if (line[i].lastmod)
+				idx->valid_bitmap[i >> 5] |= 1 << (i & 31);
 		}
 
-		line = &dat->line[DATINDEX_CHUNK_SIZE * chunk + linenum];
-		orig_ofs = ofs;
-
-		/* name<>mailto<>date id<>text<>[subject]\n */
-		/* name, mailtoをスキップする */
-		for (i = 0; i < 2; i++) {
-			if (i == 0)
-				line->name.p = &p[ofs];
-			else if (i == 1)
-				line->mailto.p = &p[ofs];
-
-			while (!(p[ofs] == '<' && p[ofs + 1] == '>')) {
-				if (p[ofs] == '\n') {
-					ofs++;
-					goto can_not_parse;
-				}
-				ofs++;
-				ofs += strcspn(&p[ofs], "<>\n");
-			}
-
-			if (i == 0)
-				line->name.len = &p[ofs] - line->name.p;
-			else if (i == 1)
-				line->mailto.len = &p[ofs] - line->mailto.p;
-
-			ofs += 2;
-		}
-
-		/* 日付を解析する
-		   日付文字がまったく得られなかったら、
-		   あぼーんと見なす */
-		n = get_date(&datetime, &p[ofs]);
-		if (n == 0) {
-			/* あぼーんと見なす
-			   このまま行の処理を打ち切ってもいいのだが
-			   スレタイトルを取得したい場合があるので、
-			   その場合はフラグを立てて続行(鬱 */
-			if (chunk == 0 && linenum == 0)
-				aborted = 1;
-		} else {
-			/* 取得した時刻を L-M としてセットしておく */
-			lastmod = mktime(&datetime);
-		}
-		/* dateの残り、本文をスキップする */
-		for (i = 0; i < 2; i++) {
-			if (i == 0)
-				line->date.p = &p[ofs];
-			else if (i == 1)
-				line->text.p = &p[ofs];
-
-			while (!(p[ofs] == '<' && p[ofs + 1] == '>')) {
-				if (p[ofs] == '\n') {
-					ofs++;
-					goto can_not_parse;
-				}
-				ofs++;
-				ofs += strcspn(&p[ofs], "<>\n");
-			}
-
-			if (i == 0)
-				line->date.len = &p[ofs] - line->mailto.p;
-			else if (i == 1)
-				line->text.len = &p[ofs] - line->date.p;
-
-			ofs += 2;
-		}
-		/* ここまで来れたらあぼーんではないと見なす
-		   (除 aborted がセットされてる場合 )*/
-		if (!aborted) {
-			n = DATINDEX_CHUNK_SIZE * chunk + linenum;
-			idx->valid_bitmap[n >> 5] |= 1 << (n & 31);
-			completed = 1;
-		}
-		/* スレタイトル取得を試みる */
-		if (chunk == 0 && linenum == 0) {
-			idx->title_ofs = ofs;
-		}
-		ofs += 1 + strcspn(&p[ofs], "\n");
-
-	can_not_parse:
-		if (!completed) {
-			/* 行の解析が完了していない場合 */
-
-			static struct DATINDEX_LINE ab =
-			{
-				{"あぼーん", 8},
-				{"あぼーん", 8},
-				{"あぼーん", 8},
-				{"あぼーん", 8},
-				0, 0
-			};
-
-			*line = ab;
-		}
-
-		line->lastmod = lastmod;
-		line->len = ofs - orig_ofs;	/* \n までの長さ */
-
-		/* あぼーん行であるときは、
-		   lastmod が最新時刻のままであるはず */
-		if (idx->idx[chunk].lastmod < lastmod)
-			idx->idx[chunk].lastmod = lastmod;
+		/* サブジェクトが採れていそうだったら、採る */
+		if (n == 0
+		    && line->len
+		    && memcmp(&line->text.p[line->text.len],
+			      "<>",
+			      2) == 0)
+			idx->title_ofs = (line->text.p
+					  - line->name.p
+					  + line->text.len + 2);
 	}
 
 	/* linenum が CHUNK_SIZE を超えてる場合があるが、
