@@ -386,7 +386,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 
 #ifdef USE_PATH
 	if (path_depth == 0) {
-		sprintf(depth_expr, "./read.cgi?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
+		sprintf(depth_expr, "./" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
 	} else
 	if (path_depth == 2) {
 		strncpy(depth_expr,
@@ -397,7 +397,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	} else
 		depth_expr[0] = 0;
 #else
-	sprintf(depth_expr, "./read.cgi?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
+	sprintf(depth_expr, "./" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
 #endif
 
 	/* 閉じ位置を探す */
