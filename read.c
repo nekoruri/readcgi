@@ -137,10 +137,12 @@ int zz_log_type;	/* 0: non-TYPE_TERI  1: TYPE_TERI */
 int nn_st, nn_to, nn_ls;
 
 #define MAX_RANGE 20 
-struct range { 
-	int from, to; 
-} nn_range_array[MAX_RANGE]; 
-int nn_range_count = 0;
+struct range {
+	int count;
+	struct range_elem { 
+		int from, to; 
+	} array[MAX_RANGE]; 
+} nn_range = {0};
 
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 2];
@@ -382,16 +384,103 @@ typedef struct { /*  class... */
 	int rest; /* 残りのバッファサイズ・・厳密には判定してないので、数バイトは余裕が欲しい */
 } ressplitter;
 
-/* read.cgi呼び出しのLINK先作成 */
-/* 一つの pPrintf() で一度しか使ってはいけない */
-/* st,to,ls,nfは、それぞれの呼び先。nf=1でnofirst=true
-** 使わないものは、0にして呼ぶ
-** sstは、CHUNK_LINKの場合の#番号
-*/
-const char *create_link(int st, int to, int ls, int nf, int sst)
+/****************************************************************/
+/* 範囲リスト range へ追加する
+ * st, toの1文字目が共に '-' ならば処理しない
+ * rangeが満杯ならば追加しない
+ */
+static void add_range( struct range *range, const char *st, const char *to )
 {
-	static char url_expr[128];
-	char *p;
+	int i_st;
+	int i_to;
+	int i;
+
+	if ( *st == '-' && *to == '-' )
+		return;
+
+	i_st = atoi(st);
+	i_to = atoi(to);
+	if ( i_st < 1 )
+		i_st = 0;
+	if ( i_to < 0 )
+		i_to = 0;
+	switch ( *to ) {
+	case '-':
+		i_to = i_st;
+		break;
+	case '\0':
+		i_to = RES_RED;
+		break;
+	}
+	if ( i_st > i_to ) {
+		i_to = i_st;
+	}
+
+	/* merge */
+	for ( i = 0 ; i < range->count ; ++i ) {
+		if ( i_st <= (range->array[i].to + 1) && (range->array[i].from - 1) <= i_to ) {
+			if ( range->array[i].from > i_st )
+				range->array[i].from = i_st;
+			if ( range->array[i].to < i_to )
+				range->array[i].to = i_to;
+			return;
+		}
+	}
+
+	/* append */
+	if ( range->count >= MAX_RANGE )
+		return;
+
+	range->array[range->count].from = i_st;
+	range->array[range->count].to = i_to;
+	range->count++;
+}
+
+/* rangeの上下限取得
+ */
+int get_range_minmax( const struct range * range, int * st, int *to )
+{
+
+	int i, i_st, i_to;
+	if ( range->count <= 0 )
+		return false;
+
+	i_st = range->array[0].from;
+	i_to = range->array[0].to;
+	for ( i = 1 ; i < range->count ; ++i ) {
+		if ( i_st > range->array[i].from )
+			i_st = range->array[i].from;
+		if ( i_to < range->array[i].to )
+			i_to = range->array[i].to;
+	}
+	if ( i_to >= RES_RED )
+		i_to = 0;
+	*st = i_st;
+	*to = i_to;
+	return true;
+}
+
+/* range内判定
+   rangeが空ならばfalseを返してしまうので注意
+ */
+int in_range( const struct range * range, int lineNo )
+{
+	int i;
+	for ( i = 0 ; i < range->count ; ++i ) {
+		if ( range->array[i].from <= lineNo &&
+		     range->array[i].to >= lineNo )
+			return true;
+	}
+	return false;
+}
+
+/****************************************************************/
+/* linkの先頭部分(板まで)の生成
+ * 戻り値は終端null文字を指す
+ */
+char *create_link_head(char * url_expr)
+{
+	char *p = url_expr;
 #if defined(USE_INDEX) || defined(CREATE_OLD_LINK)
 	const char * key = zz_ky;
 #ifdef READ_KAKO
@@ -403,11 +492,27 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 #ifdef	CREATE_OLD_LINK
 	if (path_depth) {
 #endif
-		p = url_expr;
 #ifdef USE_INDEX
 		if (path_depth == 2) {
 			p += sprintf(p, "%.40s/", key );
 		}
+#endif
+#ifdef	CREATE_OLD_LINK
+	} else {
+		p = url_expr;
+		p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, key);
+	}
+#endif
+	*p = '\0';
+	return p;
+}
+
+/* linkの中間部分の生成
+ */
+char *create_link_mid(char * p, int st, int to, int ls, int nf)
+{
+#ifdef	CREATE_OLD_LINK
+	if (path_depth) {
 #endif
 		if (ls) {
 			p += sprintf(p,"l%d",ls);
@@ -423,10 +528,34 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 			}
 			p += sprintf(p, "%d", to); /* 終点 */
 		}
-		if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
-			ls = 10;
 		if (nf && ((st!=to && st>1) || ls))	/* 単点と1を含むときはは'n'不要 */
 			*p++ = 'n';
+#ifdef	CREATE_OLD_LINK
+	} else {
+		if (ls) {
+			p += sprintf(p,"&ls=%d",ls);
+		} else {
+			if ( st > 1 )
+				p += sprintf(p, "&st=%d", st);
+			if ( to )
+				p += sprintf(p, "&to=%d", to);
+		}
+		if (nf && (st>1 || ls) ) {		/* 1を含むときは不要 */
+			p += sprintf(p, NO_FIRST );
+		}
+	}
+#endif
+	*p = '\0';
+	return p;
+}
+
+/* linkの末尾部分の生成
+ */
+char *create_link_tail(char * url_expr, char * p, int st, int sst)
+{
+#ifdef	CREATE_OLD_LINK
+	if (path_depth) {
+#endif
 		if (is_imode())
 			*p++ = 'i';
 #ifdef CREATE_NAME_ANCHOR
@@ -438,26 +567,6 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 			p += sprintf(p, "./"); /* 全部 */
 #ifdef	CREATE_OLD_LINK
 	} else {
-		static char *url_p = NULL;
-		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
-			url_p = url_expr;
-			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", 
-						zz_bs, key);
-		}
-		p = url_p;
-		if (ls) {
-			p += sprintf(p,"&ls=%d",ls);
-		} else {
-			if ( st > 1 )
-				p += sprintf(p, "&st=%d", st);
-			if ( to )
-				p += sprintf(p, "&to=%d", to);
-		}
-		if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
-			ls = 10;
-		if (nf && (st>1 || ls) ) {		/* 1を含むときは不要 */
-			p += sprintf(p, NO_FIRST );
-		}
 		if (is_imode()) {
 			p += sprintf(p, "&imode=true" );
 		}
@@ -470,7 +579,60 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	}
 #endif
 	*p = '\0';
+	return p;
+}
+
+/* read.cgi呼び出しのLINK先作成 */
+/* 一つの pPrintf() で一度しか使ってはいけない */
+/* st,to,ls,nfは、それぞれの呼び先。nf=1でnofirst=true
+** 使わないものは、0にして呼ぶ
+** sstは、CHUNK_LINKの場合の#番号
+*/
+const char *create_link(int st, int to, int ls, int nf, int sst)
+{
+	static char url_expr[128];
+	static char * mid_start = NULL;
+	char *p;
+	if ( !mid_start )
+		mid_start = create_link_head(url_expr);
+	p = mid_start;
+	if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
+		ls = 10;
+	p = create_link_mid(p, st, to, ls, nf);
+	create_link_tail(url_expr, p, st, sst);
 	return url_expr;
+}
+
+/* rangeに従ってリンク生成
+ * 戻り値は文字数
+ */
+int create_link_range(char * url_expr, const struct range * range, int nf, int sst)
+{
+	int st, to;
+	char *p;
+	int i;
+	st = to = 0;
+
+	get_range_minmax( range, &st, &to );
+
+	p = create_link_head(url_expr);
+	if (is_imode() && st==0 && to==0)	/* imodeの0-0はls=10相当 */
+		p = create_link_mid(p, 0, 0, 10, nf);
+	else {
+		for ( i = 0 ; i < range->count ; ++i ) {
+#ifdef	CREATE_OLD_LINK
+			if (path_depth)
+#endif
+			{
+				if ( i > 0 ) {
+					*p++ = ',';
+				}
+			}
+			p = create_link_mid(p, range->array[i].from, range->array[i].to, 0, nf);
+		}
+	}
+	p = create_link_tail(url_expr, p, st, sst);
+	return p - url_expr;
 }
 
 /* ディレクトリを指定段上がる文字列を作成する
@@ -567,6 +729,8 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	char const * copy_start;
 	int copy_len;
 	int st, to;
+	struct range range;
+	range.count = 0;
 	
 	while (*s != '>' && *s != '\n')
 		s++;
@@ -588,14 +752,34 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	if (memcmp(s, ">&gt;&gt;", 9) == 0)
 		s += 9;
 	copy_start = s;
-	st = to = atoi(s);
-	while (isdigit(*s))
-		++s;
-	if (*s == '-') {
-		to = atoi(++s);
-		while (isdigit(*s))
-			s++;
-	}
+
+	for (;;) {
+		char w_st[12];
+		char w_to[12];
+		while ( *s == ',' )
+			++s;
+		if ( *s != '-' && !isdigit(*s) )
+			break;
+		st = to = atoi(s);
+		sprintf( w_st, "%d", st );
+		sprintf( w_to, "%d", to );
+		while ( isdigit(*s) )
+			++s;
+		if (*s == '-') {
+			to = atoi(++s);
+			if ( to < 0 )
+				w_to[0] = '\0';
+			else
+				sprintf( w_to, "%d", to );
+			while (isdigit(*s))
+				s++;
+		}
+		add_range( &range, w_st, w_to );
+	} 
+	st = to = -1;
+ 	if ( range.count > 0 )
+		get_range_minmax( &range, &st, &to );
+
 	copy_len = s - copy_start;
 	if (copy_len == 0 || memcmp(s, "</a>", 4) != 0)
 		return 0;
@@ -615,7 +799,6 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					" " TARGET_BLANK,
 					"",
 				};
-				int mst, mto;
 				int nofirst = true;
 #if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR) && defined(USE_CHUNK_LINK)
 				nofirst = false;
@@ -623,20 +806,21 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 				mst = (st - 1) / CHUNK_NUM;
 				mto = (to - 1) / CHUNK_NUM;
 
-				if (mst == mto && (st != 1 || to != 1) ) {
+				if (range.count <= 1 && mst == mto && (st != 1 || to != 1) ) {
 					/* chunk範囲 */
 					mst = mst * CHUNK_NUM + 1;
 					mto = mto * CHUNK_NUM + CHUNK_NUM;
+					range.count = 1;
+					range.array[0].from = mst;
+					range.array[0].to = mto;
 				} else 
 #endif
 				{
 					/* chunkをまたぎそうなので、最小単位を。*/
-					mst = st;
-					mto = to;
 				}
-				d += sprintf(d, "<a href=%s%s>", 
-					create_link(mst, mto, 0, nofirst, st),
-					target_blank[is_imode()]);
+				d += sprintf(d, "<a href=" );
+				d += create_link_range( d, &range, nofirst, st );
+				d += sprintf(d, "%s>", target_blank[is_imode()] );
 			}
 	}
 
@@ -724,14 +908,8 @@ static int isprinted(int lineNo)
 			return false;
 		if (nn_ls && (lineNo-1) < lineMax - nn_ls)
 			return false;
-		if ( nn_range_count > 0 ) {
-			int i;
-			for ( i = 0 ; i < nn_range_count ; ++i ) {
-				if ( nn_range_array[i].from <= lineNo &&
-				     nn_range_array[i].to >= lineNo )
-					return true;
-			}
-			return false;
+		if ( nn_range.count > 0 ) {
+			return in_range( &nn_range, lineNo );
 		}
 	}
 	return true;
@@ -1639,53 +1817,6 @@ int get_lastmod_str(char *buf, time_t lastmod)
 	return (1);
 }
 /****************************************************************/
-/* */
-/****************************************************************/
-static void add_range( const char * st, const char * to )
-{
-	int i_st;
-	int i_to;
-	int i;
-	if ( nn_range_count >= MAX_RANGE )
-		return;
-
-	if ( *st == '-' && *to == '-' )
-		return;
-
-	i_st = atoi(st);
-	i_to = atoi(to);
-	if ( i_st < 1 )
-		i_st = 1;
-	switch ( *to ) {
-	case '-':
-		i_to = i_st;
-		break;
-	case '\0':
-		i_to = RES_RED;
-		break;
-	}
-	if ( i_st > i_to ) {
-		int w = i_st;
-		i_st = i_to;
-		i_to = w;
-	}
-
-	/* merge */
-	for ( i = 0 ; i < nn_range_count ; ++i ) {
-		if ( i_st <= (nn_range_array[i].to + 1) && (nn_range_array[i].from - 1) <= i_to ) {
-			if ( nn_range_array[i].from > i_st )
-				nn_range_array[i].from = i_st;
-			if ( nn_range_array[i].to < i_to )
-				nn_range_array[i].to = i_to;
-			return;
-		}
-	}
-	/* append */
-	nn_range_array[nn_range_count].from = i_st;
-	nn_range_array[nn_range_count].to = i_to;
-	++nn_range_count;
-}
-/****************************************************************/
 /*	PATH_INFOを解析						*/
 /*	/board/							*/
 /*	/board/							*/
@@ -1759,7 +1890,7 @@ static void parse_path_param(const char *s)
 			}
 		} else if (*s == ',') {
 			s++;
-			add_range( zz_st, zz_to );
+			add_range( &nn_range, zz_st, zz_to );
 			*zz_st = *zz_to = '-';
 		} else {
 			/* 規定されてない文字が来たので評価をやめる */
@@ -1769,19 +1900,12 @@ static void parse_path_param(const char *s)
 		}
 	}
 
-	add_range( zz_st, zz_to );
+	add_range( &nn_range, zz_st, zz_to );
 	*zz_st = *zz_to = '\0';
 
-	if ( zz_ls[0] == '\0' && nn_range_count > 0 ) {
-		int i;
-		nn_st = nn_range_array[0].from;
-		nn_to = nn_range_array[0].to;
-		for ( i = 1 ; i < nn_range_count ; ++i ) {
-			if ( nn_st > nn_range_array[i].from )
-				nn_st = nn_range_array[i].from;
-			if ( nn_to < nn_range_array[i].to )
-				nn_to = nn_range_array[i].to;
-		}
+	if ( zz_ls[0] == '\0' && nn_range.count > 0 ) {
+		get_range_minmax( &nn_range, &nn_st, &nn_to );
+
 		sprintf( zz_st, "%d", nn_st );
 		if ( nn_st == nn_to ) {
 			/* 単点は、nofirst=trueをdefaultに */
