@@ -891,6 +891,8 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				break;
 #endif
 			case '\0':
+				if (p >= BigBuffer + zz_fileSize)
+					goto Break;
 				/* ì«Ç›îÚÇŒÇµÇÃÇŸÇ§Ç™ÅAìÆçÏÇ∆ÇµÇƒÇÕìKêÿÇ©Ç‡ */
 				ch = '*';
 				break;
@@ -1336,7 +1338,7 @@ int dat_read(char const *fname,
 	}
 #ifdef USE_MMAP
 	BigBuffer = mmap(NULL,
-			 zz_mmap_size = zz_fileSize,
+			 zz_mmap_size = zz_fileSize + 1,
 			 PROT_READ,
 			 MAP_SHARED,	/* MAP_PRIVATE */
 			 zz_mmap_fd = in,
@@ -1350,6 +1352,7 @@ int dat_read(char const *fname,
 
 	read(in, BigBuffer, zz_fileSize);
 	close(in);
+	BigBuffer[zz_fileSize] = '\0';
 #endif
 
 	lineMax = getLineMax();
