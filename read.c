@@ -2078,9 +2078,8 @@ void html_head(int level, char const *title, int line)
 				title);
 		else
 			pPrintf(pStdout,
-				R2CH_HTML_HEADER_1("%s", "/%s/index2.html"),
-				title,
-				zz_bs);
+				R2CH_HTML_HEADER_1("%s", "/%s/index2.htm%s"),
+				title, zz_bs, gzip_flag ? "" : "l");
 #ifdef ALL_ANCHOR
 		if (path_depth)
 			pPrintf(pStdout,
