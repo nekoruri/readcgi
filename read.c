@@ -724,7 +724,7 @@ static int isprinted(int lineNo)
 			return false;
 		if (nn_ls && (lineNo-1) < lineMax - nn_ls)
 			return false;
-		{
+		if ( nn_range_count > 0 ) {
 			int i;
 			for ( i = 0 ; i < nn_range_count ; ++i ) {
 				if ( nn_range_array[i].from <= lineNo &&
