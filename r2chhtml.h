@@ -68,7 +68,11 @@
 /*
  * 名前ラベル
  */
+#ifdef CUT_NAME_STRING
+#define R2CH_HTML_NAME "："
+#else
 #define R2CH_HTML_NAME "名前："
+#endif
 /*
  * 投稿日ラベル
  */

@@ -122,6 +122,9 @@ mod_gzipが導入されていたら、「掲示板に戻る」のリンク先を
 /板名/ にする。
 (OFFにすると、戻り先はaccept-encodingによって、/index.htmか/index.htmlになる)
 
+△CUT_NAME_STRING
+"名前："を非表示にする
+
 △CUT_DATE_STRING
 "投稿日："を非表示にする
 

@@ -106,6 +106,9 @@
 /* check server use mod_gzip? */
 #define CHECK_MOD_GZIP
 
+/* "名前："を非表示にする */ 
+#define CUT_NAME_STRING
+
 /* "投稿日："を非表示にする */ 
 #define CUT_DATE_STRING
 
