@@ -1,4 +1,8 @@
 tag: HEAD
+
+
+tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。
+
   imodeでPREV_NEXT_ANCHOR機能追加
   ENGLISH condition 追加
   CONFIG_TIMEZONE 追加("JST-9")
