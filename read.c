@@ -372,12 +372,7 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 		if (ls) {
 			p += sprintf(p,"l%d",ls);
 		} else if (to==0) {
-			if (st<=1) {
-#ifdef USE_INDEX
-				if(path_depth!=2)
-#endif
-					p += sprintf(p, "./" ); /* 全部 */
-			} else
+			if (st>1)
 				p += sprintf(p,"%d-",st);
 			
 		} else {
@@ -397,6 +392,8 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 			p += sprintf(p,"#%d",sst);
 		}
 #endif
+		if ( p == url_expr )
+			p += sprintf(p, "./"); /* 全部 */
 	} else
 #endif	/* USE_PATH */
 	{
@@ -431,6 +428,26 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	return url_expr;
 }
 
+/* ディレクトリを指定段上がる文字列を作成する
+ *
+ * 戻り値は生成文字数
+ * bufのサイズは (up * 3 + 1)必要
+ */
+int up_path( char * buf, size_t up )
+{
+	size_t i;
+	char * w = buf;
+	for ( i = 0 ; i < up ; ++i )
+	{
+		w[0] = '.';
+		w[1] = '.';
+		w[2] = '/';
+		w += 3;
+	}
+	*w = '\0';
+	return w - buf;
+}
+
 /* 掲示板に戻るのLINK先作成 */
 void zz_init_parent_link(void)
 {
@@ -439,16 +456,16 @@ void zz_init_parent_link(void)
 #ifdef USE_PATH
 #ifdef USE_INDEX
 	if (path_depth==2)
-		p += sprintf(p,"../");
+		p += up_path(p, 1);
 	else
 #endif
 	{
-		strncpy(p, "../../../../../", (path_depth+1)*3);
-		p += (path_depth+1)*3;
+		p += up_path(p, path_depth+1);
 		p += sprintf(p, "%.20s/", zz_bs);
 	}
 #else
-	p += sprintf(p,"../%.20s/",zz_bs);
+	p += up_path(p,1);
+	p += sprintf(p,"%.20s/",zz_bs);
 #endif
 	if (is_imode() ) {
 		strcpy(p,"i/");
@@ -469,7 +486,7 @@ void zz_init_cgi_path(void)
 {
 	zz_cgi_path[0] = '\0';
 #ifdef USE_PATH
-	strncpy(zz_cgi_path, "../../../../../", path_depth*3);
+	up_path( zz_cgi_path, path_depth );
 #endif
 }
 
@@ -1865,10 +1882,14 @@ int match_etag(const char *etag)
 #ifdef	REFERDRES_SIMPLE
 int can_simplehtml(void)
 {
-	char buff[1024];
+	char buff[128];
 	const char *p;
 	const char *ref;
-	static const char cginame[] = "/test/" CGINAME "?";
+#ifdef ALWAYS_PATH
+	const char * cginame = zz_script_name;
+#else
+	static const char cginame[] = "/test/" CGINAME;
+#endif
 	static const char indexname[] = "index.htm";
 	
 	if (!isbusytime)
@@ -1885,7 +1906,26 @@ int can_simplehtml(void)
 	ref = getenv("HTTP_REFERER");
 	if (!ref || !*ref)
 		return false;
+	return true;
 	
+	p = strstr(ref, cginame);
+	if (p) {
+		p += strlen(cginame);
+		if ( *p == '?' ) {
+			char bbs[sizeof(zz_bs)];
+			char key[sizeof(zz_ky)];
+			const char * query_string = p;
+			GetString(query_string, bbs, sizeof(bbs), "bbs");
+			GetString(query_string, key, sizeof(key), "key");
+			return (strcmp(zz_bs, bbs) == 0) && (strcmp(zz_ky, key) == 0);
+		}
+#ifdef	USE_PATH
+		sprintf(buff, "/%.50s/%.50s/", zz_bs, zz_ky);
+		if (!strncmp(p, buff, strlen(buff)))
+			return true;
+#endif
+	}
+
 	sprintf(buff, "/%.50s/", zz_bs);
 	p = strstr(ref, buff);
 	if (p) {
@@ -1895,20 +1935,7 @@ int can_simplehtml(void)
 		if (strncmp(p, indexname, sizeof(indexname)-1) == 0)
 			return true;
 	}
-	p = strstr(ref, cginame);
-	if (p) {
-		char bbs[sizeof(zz_bs)];
-		char key[sizeof(zz_ky)];
-		const char * query_string = p + sizeof(cginame)-1;
-		GetString(query_string, bbs, sizeof(bbs), "bbs");
-		GetString(query_string, key, sizeof(key), "key");
-		return (strcmp(zz_bs, bbs) == 0) && (strcmp(zz_ky, key) == 0);
-	}
-#ifdef	USE_PATH
-	sprintf(buff, "/test/" CGINAME "/%.50s/%.50s/", zz_bs, zz_ky);
-	if (strstr(ref, buff))
-		return true;
-#endif
+
 	return false;
 }
 
@@ -2247,7 +2274,7 @@ const char * create_kako_link(const char * dir_type, const char * key)
 	
 	if (path_depth) {
 #ifdef ALWAYS_PATH
-		wp += sprintf(wp, "%s", zz_script_name );
+		wp += sprintf(wp, "%.40s", zz_script_name );
 #else
 		wp += sprintf(wp, "/test/" CGINAME );
 #endif
