@@ -117,6 +117,9 @@
 /* #define REWRITE_HREF2 */
 
 /* "投稿日："を非表示にする */ 
-#define CUT_DATE_STRING 
+#define CUT_DATE_STRING
+
+/* <a name=...>をつける。これをつけないときはCHUNK_ANCHORも無効にしたほうが良い */ 
+#define CREATE_NAME_ANCHOR 
 
 #endif /* READ2CH_H__ */

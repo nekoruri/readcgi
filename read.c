@@ -450,6 +450,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 			// タグ除去 /
 		} else
 		{
+#ifdef CREATE_NAME_ANCHOR
 			/* 新しい表現をブチ込む */
 			if (isprinted(st) && isprinted(to))
 			{
@@ -457,6 +458,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					     "<a href=#%u>", 
 					     st);
 			} else
+#endif
 			{
 				/* chunk仕様を生かすためのkludgeは以下に。 */
 #ifdef CHUNK_ANCHOR
@@ -475,14 +477,26 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mto = to;
 				}
 
+#ifdef CREATE_NAME_ANCHOR
 				d += sprintf(d,
-#ifdef USE_PATH
+# ifdef USE_PATH
 					     "<a href=\"%s%d-%d#%d\">",
-#else
+# else
 					     "<a href=\"%s&st=%d&to=%d&nofirst=true#%d\">",
-#endif
+# endif
 					     depth_expr,
 					     mst, mto, st );
+#else
+
+				d += sprintf(d,
+# ifdef USE_PATH
+					     "<a href=\"%s%d-%d\">",
+# else
+					     "<a href=\"%s&st=%d&to=%d&nofirst=true\">",
+# endif
+					     depth_expr,
+					     mst, mto );
+#endif
 			}
 		}
 
@@ -647,11 +661,14 @@ static int rewrite_href2(char **dp,		/* 書き込みポインタ */
 			return 1;
 		}
 #ifdef	USE_PATH
+# ifdef CREATE_NAME_ANCHOR
 		if (isprinted(st) && isprinted(to)) {
 			/* <a href="#123">&gt;&gt;123<> に書き換え */
 			*dp += sprintf(*dp, "<a href=#%u>%.*s</a>", st, pr_end - pr_start, pr_start);
 			*sp = strchr(pr_end, '>') + 1;
-		} else {
+		} else 
+# endif
+		{
 			/* PATH形式に書き換え */
 			*dp += sprintf(*dp, st == to ? 
 				"<a href=\"../test/read.cgi/%s/%s/%u\">":
@@ -1210,22 +1227,46 @@ static int out_html(int level, int line, int lineNo)
 #endif
 			if (r1 && strcmp(r1, "sage") == 0) {
 #ifdef SAGE_IS_PLAIN
+# ifdef CREATE_NAME_ANCHOR
 				pPrintf(pStdout,
 					R2CH_HTML_RES_SAGE("%d", "%d", "%s", "%s", "%s"),
 					lineNo, lineNo, r0, s[2], r3);
+# else
+				pPrintf(pStdout,
+					R2CH_HTML_RES_SAGE("%d", "%s", "%s", "%s"),
+					lineNo, r0, s[2], r3);
+# endif
 #else
+# ifdef CREATE_NAME_ANCHOR
 				pPrintf(pStdout,
 					R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
 					lineNo, lineNo, r1, r0, s[2], r3);
+# else
+				pPrintf(pStdout,
+					R2CH_HTML_RES_MAIL("%d", "%s", "%s", "%s", "%s"),
+					lineNo, r1, r0, s[2], r3);
+# endif
 #endif
 			} else if (*r1) {
+# ifdef CREATE_NAME_ANCHOR
 				pPrintf(pStdout,
 					R2CH_HTML_RES_MAIL("%d", "%d", "%s", "%s", "%s", "%s"),
 					lineNo, lineNo, r1, r0, s[2], r3);
+# else
+				pPrintf(pStdout,
+					R2CH_HTML_RES_MAIL("%d", "%s", "%s", "%s", "%s"),
+					lineNo, r1, r0, s[2], r3);
+# endif
 			} else {
+# ifdef CREATE_NAME_ANCHOR
 				pPrintf(pStdout,
 					R2CH_HTML_RES_NOMAIL("%d", "%d", "%s", "%s", "%s"),
 					lineNo, lineNo, r0, s[2], r3);
+# else
+				pPrintf(pStdout,
+					R2CH_HTML_RES_NOMAIL("%d", "%s", "%s", "%s"),
+					lineNo, r0, s[2], r3);
+# endif
 			}
 		} else {
 			pPrintf(pStdout, R2CH_HTML_RES_BROKEN_HERE("%d"),

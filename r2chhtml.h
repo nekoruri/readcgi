@@ -77,6 +77,9 @@
 /*
  * BROWSERでレスを表示。
  */
+#ifdef CREATE_NAME_ANCHOR 
+
+/* アンカー名あり */
 /* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_MAIL(n, l, m, nm, d, t) \
 	"<dt>" n " " R2CH_HTML_NAME "<a name=" l " href=\"mailto:" m " \"><b>" nm " </b></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
@@ -88,6 +91,22 @@
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_SAGE(n, l, nm, d, t) \
 	"<dt>" n " <a name=" l ">" R2CH_HTML_NAME "<font color=#0000c0><b>" nm " </b></font></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
+
+#else
+
+/* アンカー名なし */
+/* レス(mailtoあり): %d=レス番号  %s=mailto %s=名前 %s=投稿日 %s=本文*/
+#define R2CH_HTML_RES_MAIL(n, m, nm, d, t) \
+	"<dt>" n " " R2CH_HTML_NAME "<a href=\"mailto:" m " \"><b>" nm " </b></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
+
+/* レス(mailto無し): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
+#define R2CH_HTML_RES_NOMAIL(n, nm, d, t) \
+	"<dt>" n " " R2CH_HTML_NAME "<font color=green><b>" nm " </b></font> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
+
+/* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
+#define R2CH_HTML_RES_SAGE(n, nm, d, t) \
+	"<dt>" n " " R2CH_HTML_NAME "<font color=#0000c0><b>" nm " </b></font> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
+#endif
 
 /* レス(ここ壊れています): %d=レス番号 */
 #define R2CH_HTML_RES_BROKEN_HERE(n) \
