@@ -75,9 +75,6 @@ enum compress_type_t {
 	compress_x_gzip,
 } gzip_flag;
 #endif
-#ifdef CHECK_MOD_GZIP
-char const *zz_server_software;
-#endif
 
 char const *zz_http_if_modified_since;
 time_t zz_fileLastmod;
@@ -102,6 +99,10 @@ char zz_rw[1024];
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
+
+/* 各種リンク等で使うリンク先を統一するため、あらかじめ作成しておく */
+char zz_thread_name[256];
+char zz_board_name[80];
 
 #define is_imode() (*zz_im == 't')
 #define is_nofirst() (*zz_nf == 't')
@@ -357,27 +358,10 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 			 char const **sp,	/* 読み出しポインタ */
 			 int istagcut)		/* タグカットしていいか? */
 {
-	char depth_expr[64];
 	char *d = *dp;
 	char const *s = *sp;
 	int n;
 	int f_processed = 0;
-
-#ifdef USE_PATH
-	if (path_depth == 0) {
-		sprintf(depth_expr, "./" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
-	} else
-	if (path_depth == 2) {
-		strncpy(depth_expr,
-			zz_ky,
-			sizeof(depth_expr) - 4);
-		depth_expr[sizeof(depth_expr) - 4] = 0;
-		strcat(depth_expr, "/");
-	} else
-		depth_expr[0] = 0;
-#else
-	sprintf(depth_expr, "./" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky );
-#endif
 
 	/* 閉じ位置を探す */
 	n = strcspn(*sp, ">");
@@ -460,7 +444,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mto = to;
 				}
 
-				d += sprintf(d, "<a href=\"%s", depth_expr );
+				d += sprintf(d, "<a href=\"%s", zz_thread_name );
 #ifdef USE_PATH
 				if ( path_depth != 0 ) {
 					if ( mst != mto )
@@ -1421,9 +1405,6 @@ void zz_GetEnv(void)
 #ifdef GZIP
 	zz_http_encoding = getenv("HTTP_ACCEPT_ENCODING");
 #endif
-#ifdef CHECK_MOD_GZIP
-	zz_server_software = getenv("SERVER_SOFTWARE");
-#endif
 	zz_http_if_modified_since = getenv("HTTP_IF_MODIFIED_SINCE");
 
 	if (!zz_remote_addr)
@@ -1488,6 +1469,49 @@ void zz_GetEnv(void)
 	readSettingFile(zz_bs);
 #endif
 	isbusytime = IsBusy2ch();
+}
+
+#ifdef	USE_PATH
+#define	SELFORMAT(a,b)	(path_depth ? a:b)
+#else
+#define	SELFORMAT(a,b)	(0 ? 0:b)
+#endif
+/* zz_board_nameとzz_thread_nameを設定 */
+static void setlinknames()
+{
+	/* gzip_flagがあるので、zz_GetEnv()の末尾では設定できない */
+	char indexname[40];
+
+	/* 板のリンク先 */
+	strcpy(indexname, "index.htm");
+#ifdef GZIP
+	if (!gzip_flag)
+		strcat(indexname, "l");
+#endif
+#ifdef	CHECK_MOD_GZIP
+	{
+		const char *zz_server_software = getenv("SERVER_SOFTWARE");
+		if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL)
+			indexname[0] = '\0';
+	}
+#endif
+	sprintf(zz_board_name, SELFORMAT("../../../../%.40s/%s%s", "../%.40s/%s%s"),
+		zz_bs, is_imode() ? "i/":"", indexname);
+
+	/* スレッドのリンク先 */
+	/* ../kako/...の場合も考えて、keyは少し長めに */
+	sprintf(zz_thread_name, /*"./"*/ CGINAME "?bbs=%.40s&key=%.60s%s",
+		zz_bs, zz_ky, is_imode() ? "&imode=true":"");
+#ifdef USE_PATH
+	/* ここだけ、あらかじめimodeに対応しておくことができない */
+	if (path_depth) {
+		if (path_depth == 2) {
+			sprintf(zz_thread_name, "%.60s/", zz_ky);
+		} else
+			zz_thread_name[0] = '\0';
+	}
+#endif
+	/*selecthtml();*/
 }
 
 /*----------------------------------------------------------------------
@@ -1997,7 +2021,8 @@ int main(void)
 #endif /* ZLIB */
 	}
 #endif /* GZIP */
-
+	setlinknames();
+	
 	logOut("");
 
 #ifdef	PUT_ETAG
@@ -2376,8 +2401,6 @@ static int last_line()
 /****************************************************************/
 void html_head(int level, char const *title, int line)
 {
-	char buf[1024];
-
 	if (level) {
 		pPrintf(pStdout,
 			R2CH_HTML_DIGEST_HEADER_2("%s"),
@@ -2394,30 +2417,9 @@ void html_head(int level, char const *title, int line)
 				title);
 		else 
 #endif
-		{
-#ifdef USE_PATH
-			if (path_depth)
-				sprintf(buf, "../../../../%.256s/", zz_bs);
-			else
-#endif
-				sprintf(buf, "../%.256s/", zz_bs);
-#ifdef CHECK_MOD_GZIP
-			if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
-				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "%s"),
-					title, buf);
-			} else
-#endif
-#ifdef GZIP
-				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "%sindex.htm%s"),
-					title, buf, gzip_flag ? "" : "l");
-#else
-				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "%sindex.htm"),
-					title, buf);
-#endif
-		}
+			pPrintf(pStdout,
+				R2CH_HTML_HEADER_1("%s", "%s"),
+				title, zz_board_name);
 	/* ALL_ANCHOR は常に生きにする
 	   ただし、CHUNK_ANCHORが生きで、かつisbusytimeには表示しない */
 #if defined(CHUNK_ANCHOR) || defined(PREV_NEXT_ANCHOR)
@@ -2589,7 +2591,6 @@ void html_reload(int startline)
 /****************************************************************/
 static void html_foot(int level, int line, int stopped)
 {
-	char buf[1024];
 #ifdef PREV_NEXT_ANCHOR
 	int nchunk;
 #endif
@@ -2604,28 +2605,10 @@ static void html_foot(int level, int line, int stopped)
 #ifdef PREV_NEXT_ANCHOR
 	if (!isbusytime)
 	{
-#ifdef USE_PATH
-		if (path_depth)
-			sprintf(buf, "../../../../%.256s/", zz_bs);
-		else
-#endif
-			sprintf(buf, "../%.256s/", zz_bs);
-#ifdef CHECK_MOD_GZIP
-		if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
-			pPrintf(pStdout,
-				R2CH_HTML_RETURN_BOARD("%s"),
-				buf);
-		} else
-#endif
-#ifdef GZIP
-			pPrintf(pStdout,
-				R2CH_HTML_RETURN_BOARD("%sindex.htm%s"),
-				buf, gzip_flag ? "" : "l");
-#else
-			pPrintf(pStdout,
-				R2CH_HTML_RETURN_BOARD("%sindex.htm"),
-				buf);
-#endif
+		pPrintf(pStdout,
+			R2CH_HTML_RETURN_BOARD("%s"),
+			zz_board_name);
+
 #ifdef USE_PATH
 		if (path_depth)
 			pPrintf(pStdout,
@@ -2706,9 +2689,9 @@ static void html_foot(int level, int line, int stopped)
 	else
 #endif
 		pPrintf(pStdout,
-		R2CH_HTML_LATEST_ANCHOR,
-		zz_bs, zz_ky,
-		LATEST_NUM, LATEST_NUM);
+			R2CH_HTML_LATEST_ANCHOR,
+			zz_bs, zz_ky,
+			LATEST_NUM, LATEST_NUM);
 	if (isbusytime && need_tail_comment)
 		pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
 #endif
