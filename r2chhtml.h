@@ -315,11 +315,12 @@
 #endif
 
 /* ブラウザで見たとき: %s=スレ名 %s=板 */
+/* </title> の前の空白は削除しないこと */
 #define R2CH_HTML_HEADER_1(title, board) \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
-	"<title>" title "</title>" \
+	"<title>" title " </title>" \
 	R2CH_HTML_COOKIE_SCRIPT \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
@@ -363,11 +364,12 @@
 
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
                      %s=板 %s=スレ番号 %d=一度に表示するレス数 %d=一度に表示するレス数 */
+/* </title>の前の空白は削除しないこと */
 #define R2CH_HTML_IMODE_HEADER_1 \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
-	"<title>%s</title>" \
+	"<title>%s </title>" \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"/%s/i/\">■掲示板に戻る■</a>" \
@@ -399,12 +401,13 @@
 	"</td></tr></table>" 
 
 /* スレ名: %s=スレ名 */
+/* </font> の前の空白は削除しないこと */
 #define R2CH_HTML_HEADER_2 \
-	"<p><font size=+1 color=red>%s</font>" \
+	"<p><font size=+1 color=red>%s </font>" \
 	"<dl>"
 
 #define R2CH_HTML_HEADER_2_I \
-	"<p><font size=+1 color=red>%s</font>"
+	"<p><font size=+1 color=red>%s </font>"
 
 /*
  * RELOAD
