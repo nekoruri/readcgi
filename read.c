@@ -649,6 +649,10 @@ static int geturltaillen(const char *p)
 			/* &quot;‚ÅˆÍ‚Ü‚ê‚½URL‚Ì––”ö”»’è */
 			if (strncmp(p, "&quot;", 6) == 0)
 				break;
+			if (strncmp(p, "&lt;", 4) == 0)
+				break;
+			if (strncmp(p, "&gt;", 4) == 0)
+				break;
 		}
 		++len;
 		++p;

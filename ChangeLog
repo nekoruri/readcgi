@@ -1,9 +1,10 @@
 tag: HEAD
 
   IEで問題が出たため、文字コードE0hの文字をSJIS1バイト目と判定するようにした。
+  geturltaillenでのURL終端判定に &gt; と &lt; を追加した
 
 
-tag: YAKIN20011012: 実験サーバ choco.2ch.net にて ver 5.25として採用。
+tal: YAKIN20011012: 実験サーバ choco.2ch.net にて ver 5.25として採用。
 
   out_simplehtml()でHEADER_0を出していなかった
   can_simplehtml()でREFERERが旧形式の時にbbsを取りそこなっていた
