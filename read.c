@@ -253,6 +253,9 @@ struct {
 #define isSJIS1(c) (flagtable[(unsigned char)(c)] & _S_)
 #define hrefStop(c) (!(flagtable[(unsigned char)(c)] & _U_))
 
+#define	LINK_URL_MAXLEN		256
+		/*	レス中でURLとみなす文字列の最大長。短い？	*/
+
 #define _0____ (1<<0)
 #define __1___ (1<<1)
 #define ___2__ (1<<2)
@@ -266,15 +269,24 @@ struct {
 #define _0_23_ (_0____|___2__|____3_|0)
 
 
+/*
+	'\n'と':'を isCheck(_C_) に追加
+	TYPE_TERIの時は、'\x81'と','をはずしてみた
+	すこーーしだけ違うかも
+*/
 char flagtable[256] = {
 	_0____,______,______,______,______,______,______,______, /*  00-07 */
-	______,______,______,______,______,______,______,______, /*  08-0F */
+	______,______,_0____,______,______,______,______,______, /*  08-0F */
 	______,______,______,______,______,______,______,______, /*  10-17 */
 	______,______,______,______,______,______,______,______, /*  18-1F */
 	_0____,__1___,______,__1___,__1___,__1___,_01___,______, /*  20-27 !"#$%&' */
+#ifdef	TYPE_TERI
+	______,______,__1___,__1___,__1___,__1___,__1___,__1___, /*  28-2F ()*+,-./ */
+#else
 	______,______,__1___,__1___,_01___,__1___,__1___,__1___, /*  28-2F ()*+,-./ */
+#endif
 	__1___,__1___,__1___,__1___,__1___,__1___,__1___,__1___, /*  30-37 01234567 */
-	__1___,__1___,__1___,__1___,_0____,__1___,______,__1___, /*  38-3F 89:;<=>? */
+	__1___,__1___,_01___,__1___,_0____,__1___,______,__1___, /*  38-3F 89:;<=>? */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  40-47 @ABCDEFG */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  48-4F HIJKLMNO */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  50-57 PQRSTUVW */
@@ -283,7 +295,11 @@ char flagtable[256] = {
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  68-6F hijklmno */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_, /*  70-77 pqrstuvw */
 	__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,__1_3_,______, /*  78-7F xyz{|} */
+#ifdef	TYPE_TERI
+	____3_,___23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  80-87 */
+#else
 	____3_,_0_23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  80-87 */
+#endif
 	___23_,___23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  88-8F */
 	___23_,___23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  90-97 */
 	___23_,___23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  98-9F */
@@ -300,7 +316,6 @@ char flagtable[256] = {
 	___23_,___23_,___23_,___23_,___23_,___23_,___23_,___23_, /*  F0-F7 */
 	___23_,___23_,___23_,___23_,___23_,______,______,______, /*  F8-FF */
 };
-
 
 typedef struct { /*  class... */
 	char **buffers; /* csvの要素 */
@@ -446,17 +461,76 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 }
 
 /*
-findSplitterの代わり
-レスを全走査するが、コピーと変換(と削除)を同時に行う
-p コピー前のレス(BigBuffer内の１レス)
-istagcut <a href=...>と</a>をcutするか
-Return 次のpの先頭
-non-TYPE_TERIなdatには,"<>"は含まれないはずなので、#ifdef TYPE_TERI は略
+	pは、"http://"の':'を指してるよん
+	何文字さかのぼるかを返す。0ならnon-match
+	４文字前(httpの場合)からスキャンしているので、
+	安全を確認してから呼ぶ
 */
-const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
+int isurltop(const char *p)
+{
+	if (strncmp(p-4, "http://", 7) == 0)
+		return 7-3;
+	if (strncmp(p-3, "ftp://", 6) == 0)
+		return 6-3;
+	return 0;
+}
+/*
+	pは、"http://www.2ch.net/..."の最初の'w'を指してる
+	http://wwwwwwwww等もできるだけ判別
+	urlでないとみなしたら、0を返す
+*/
+int geturltaillen(const char *p)
+{
+	const char *top = p;
+	int len = 0;
+	while (!hrefStop(*p)) {
+		if (*p == '&') {
+			/*  cutWordOff(url, "&quot;");
+				ちょっとやっていることがわからないが、そのまま動作を再現
+				どうせならstrnicmp()の方が・・・
+			*/
+			if (strncmp(p, "&quot;", 6) == 0)
+				break;
+		}
+		++len;
+		++p;
+	}
+	if (len) {
+		if (memchr(top, '.', len) == NULL	/* '.'が含まれないURLは無い */
+			|| *(top + len - 1) == '.')	/* '.'で終わるURLは(普通)無い */
+			len = 0;
+		if (len > LINK_URL_MAXLEN)	/* 長すぎたら却下 */
+			len = 0;
+	}
+	return len;
+}
+
+/*
+	urlから始まるurllen分の文字列をURLとみなしてbufpにコピー。
+	合計何文字バッファに入れたかを返す。
+*/
+int urlcopy(char *bufp, const char *url, int urllen)
+{
+	return sprintf(bufp,
+		"<A HREF=\"%.*s\" TARGET=\"_blank\">%.*s</A>", 
+		urllen, url, urllen, url);
+}
+
+/*
+	findSplitterの代わり
+	レスを全走査するが、コピーと変換(と削除)を同時に行う
+	p コピー前のレス(BigBuffer内の１レス)
+	resnumber	レス本文である場合にレス番号(行番号＋１)、それ以外は0を渡す
+	istagcut	<a href=...>と</a>をcutするか
+	Return		次のpの先頭
+	non-TYPE_TERIなdatには,"<>"は含まれないはずなので、#ifdef TYPE_TERI は略
+*/
+const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 {
 	char *bufp = *This->buffers;
 	int bufrest = This->rest;
+	int istagcut = (LINKTAGCUT && isbusytime && resnumber > 1) || rawmode || is_imode();
+	/*	ループ中、*This->Buffersはバッファの先頭を保持している	*/
 	while (--bufrest > 0) {
 		int ch = *p;
 		if (isCheck(ch)) {
@@ -490,28 +564,30 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 					p += 2;
 					goto Teri_Break;
 				}
-				if (path_depth
-				    && p[1] == 'a'
-				    && isspace(p[2])) {
-					char *tdp = bufp;
-					char const *tsp = p;
-					if (!rewrite_href(&tdp, &tsp, istagcut))
-						goto Break;
-					bufp = tdp;
-					p = tsp;
-					continue;
-				} else if (istagcut) {
-					/* if (*(p+1) != 'b' || *(p+2) != 'r') { */
-					/* <a ....> </a> をサパーリ削るらしい */
-					if ((*(p+1) == 'a' && *(p+2) == ' ')
-					    || (*(p+1) == '/' && *(p+2) == 'a')) {
-						while (*p != '>') { /* strchr(p, '>') */
-							if (*p == '\0')
-								goto Break;
-							++p;
-						}
-						++p;
+				if (resnumber) {
+					if (path_depth
+					    && p[1] == 'a'
+					    && isspace(p[2])) {
+						char *tdp = bufp;
+						char const *tsp = p;
+						if (!rewrite_href(&tdp, &tsp, istagcut))
+							goto Break;
+						bufp = tdp;
+						p = tsp;
 						continue;
+					} else if (istagcut) {
+						/* if (*(p+1) != 'b' || *(p+2) != 'r') { */
+						/* <a ....> </a> をサパーリ削るらしい */
+						if ((*(p+1) == 'a' && *(p+2) == ' ')
+						    || (*(p+1) == '/' && *(p+2) == 'a')) {
+							while (*p != '>') {
+								if (*p == '\n')
+									goto Break;
+								++p;
+							}
+							++p;
+							continue;
+						}
 					}
 				}
 				break;
@@ -521,6 +597,36 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 						p += 4 - 1;
 				}
 				break;
+			case ':':
+#if	1
+				if (resnumber) {
+#else
+				if (resnumber && !istagcut) {
+					/* urlのリンクを(時間帯によって)廃止するなら */
+#endif
+					if (*(p+1) == '/' && *(p+2) == '/' && isalnum(*(p+3))) {
+						/*
+							正常なdat(名前欄が少なくとも1文字)ならば、
+							pの直前は最低、" ,,,"となっている(さらに投稿日の余裕がある)。
+							なので、4文字("http")まではオーバーフローの危険はない
+							ただし、これらは、resnumberが、正確に渡されているのが前提。
+						*/
+						int pdif = isurltop(p);	/*	http://の場合、4が返る	*/
+						if (pdif) {
+							int taillen = geturltaillen(p + 3);
+							if (taillen && bufrest > taillen * 2 + 60) {
+								bufp -= pdif, p -= pdif, bufrest += pdif, taillen += pdif + 3;
+								pdif = urlcopy(bufp, p, taillen);
+								bufp += pdif, bufrest -= pdif, p += taillen;
+								continue;
+							}
+						}
+					}
+				}
+				break;
+			case '\n':
+				goto Break;
+				/*	break;	*/
 #ifndef TYPE_TERI
 			case 0x81: /*  *"＠"(8197) */
 				/* if (!This->isTeri) { */
@@ -538,8 +644,8 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 				/* break; */
 #endif
 			case '\0':
-				goto Break;
-				/* break; */
+				ch = '*';
+				break;
 			default:
 				break;
 			}
@@ -561,7 +667,7 @@ Break:
 	return p;
 }
 
-void splitting_copy(char **s, char *bufp, const char *p, int size)
+void splitting_copy(char **s, char *bufp, const char *p, int size, int linenum)
 {
 	ressplitter res;
 	ressplitter_init(&res, s, bufp, size);
@@ -569,8 +675,7 @@ void splitting_copy(char **s, char *bufp, const char *p, int size)
 	p = ressplitter_split(&res, p, false); /* name */
 	p = ressplitter_split(&res, p, false); /* mail */
 	p = ressplitter_split(&res, p, false); /* date */
-	p = ressplitter_split(&res, p, (LINKTAGCUT && isbusytime)
-			      || rawmode); /* text */
+	p = ressplitter_split(&res, p, linenum+1); /* text */
 	p = ressplitter_split(&res, p, false); /* title */
 }
 
@@ -852,7 +957,7 @@ static int out_html1(int level)
 		return 1;
 	res_split(s, p);
 #else
-	splitting_copy(s, p, BigLine[0], sizeof(p) - 20);
+	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 	if (!*p)
 		return 1; 
 #endif
@@ -895,7 +1000,7 @@ static int out_html(int level, int line, int lineNo)
 			return 1;
 		res_split(s, p);
 #else
-		splitting_copy(s, p, BigLine[0], sizeof(p) - 20);
+		splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 		if (!*p)
 			return 1; 
 #endif
@@ -920,7 +1025,7 @@ static int out_html(int level, int line, int lineNo)
 		return 1;
 	res_split(s, p);
 #else
-	splitting_copy(s, p, BigLine[line], sizeof(p) - 20);
+	splitting_copy(s, p, BigLine[line], sizeof(p) - 20, line);
 	if (!*p)
 		return 1; 
 #endif
@@ -935,10 +1040,16 @@ static int out_html(int level, int line, int lineNo)
 	someReplace(s[3], r3, "＠｀", ",");
 	someReplace(r3, r3, "&amp;", "&");
 #endif
+#ifndef	CUTRESLINK
 	hlinkReplace(r3);
+#endif
 
 	if (!is_imode()) {	/* no imode */
+#ifndef	CUTRESLINK
 		if (*r3 && strlen(r3) < 8192) {
+#else
+		if (*r3 && s[4]-r3 < 8192) {
+#endif
 			if (r1 && strcmp(r1, "sage") == 0) {
 #ifdef SAGE_IS_PLAIN
 				pPrintf(pStdout,
@@ -1015,6 +1126,20 @@ static int out_html(int level, int line, int lineNo)
 /*	Output raw data file					*/
 /****************************************************************/
 #ifdef RAWOUT
+#ifdef	CUTRESLINK
+#if	0
+/* BigLineをnul-terminatedではなく'\n'-terminatedにする場合 */
+int getlinelen(const char *line)
+{
+	const char *last = BigBuffer + zz_fileSize;
+	const char *end = memchr(line, '\n', last - line);
+	if (end)
+		return end + 1 - line;
+	return last - line;
+}
+#endif
+#endif
+
 int dat_out_raw(void)
 {
 	int i;
@@ -1024,7 +1149,12 @@ int dat_out_raw(void)
 	if(raw_lastnum > 0
 	   && !(raw_lastnum <= lineMax
 		&& (BigLine[raw_lastnum - 1]
+#ifndef	CUTRESLINK
 		    + strlen(BigLine[raw_lastnum - 1]) + 1
+#else
+			+ (BigLine[raw_lastnum] - BigLine[raw_lastnum - 1])
+			/* + getlinelen(BigLine[raw_lastnum - 1]) */
+#endif
 		    - BigBuffer) == raw_lastsize)) {
 		pPrintf(pStdout, "-INCR\n");
 		/* 全部を送信するように変更 */
@@ -1089,7 +1219,7 @@ int dat_out(int level)
 		return 1;
 	res_split(s, p);
 #else
-	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20);
+	splitting_copy(s, p, BigLine[lineMax-1], sizeof(p) - 20, lineMax-1);
 	if (!*p)
 		return 1; 
 #endif
@@ -1107,13 +1237,14 @@ int dat_read(char const *fname,
 	     int to,
 	     int ls)
 {
-	int i;
 	int in;
 
 	zz_fileSize = getFileSize(fname);
 
 	if (zz_fileSize > MAX_FILESIZE)
 		html_error(ERROR_TOO_HUGE);
+	if (zz_fileSize < 10)
+		html_error(ERROR_NOT_FOUND); /* エラー種別は別にした方がいいかも */
 	if (*zz_ky == '.')
 		html_error(ERROR_NOT_FOUND);
 
@@ -1168,12 +1299,16 @@ int dat_read(char const *fname,
 	read(in, BigBuffer, zz_fileSize);
 	close(in);
 #endif
+#ifndef	CUTRESLINK
 	/* XXX ところどころに 0 が現れるの? */
-	i = strlen(BigBuffer);
-	while(i < zz_fileSize) {
-		BigBuffer[i] = '*';
-		i += strlen(BigBuffer + i);
+	{
+		char *end = BigBuffer + zz_fileSize;
+		char *p = BigBuffer;
+		while ((p = memchr(p, '\0', end - p)) != NULL) {
+			*p = '*';
+		}
 	}
+#endif
 
 	lineMax = getLineMax();
 /*
@@ -1193,6 +1328,7 @@ int getLineMax(void)
 	if (!p)
 		return -8;
 
+#ifndef	CUTRESLINK
 	while ((p1 = strchr(p, '\n')) != NULL) {
 		BigLine[line] = p;
 		*p1 = '\0';
@@ -1202,6 +1338,27 @@ int getLineMax(void)
 		line++;
 		p++;
 	}
+#else
+	p1 = BigBuffer + zz_fileSize;	/* p1 = 最後の\nの次のポインタ */
+	while (p < p1 && *(p1-1) != '\n')	/* 最後の行末を探す 正常なdatなら問題無し */
+		p1--;
+	if (p1 - p < 10)	/* 適当だけど、問題は出ないはず */
+		return -8;
+	do {
+		BigLine[line] = p;
+		if (line > RES_RED)
+			break;
+		++line;
+		p = memchr(p, '\n', p1-p) + 1;
+	} while(p != p1);
+	
+	/*
+		最後のレスの次に、ファイル末へのポインタを入れておく。
+		これにより、レスの長さはポインタの差ですむ。
+		(dat_out_rawでstrlenしている部分への対応)
+	*/
+	BigLine[line+1] = BigBuffer + zz_fileSize;
+#endif
 	return line;
 }
 /****************************************************************/
