@@ -135,6 +135,13 @@ int zz_dat_where;	/* 0: dat/  1: temp/  2: kako/ */
 int zz_log_type;	/* 0: non-TYPE_TERI  1: TYPE_TERI */
 #endif
 int nn_st, nn_to, nn_ls;
+
+#define MAX_RANGE 20 
+struct range { 
+	int from, to; 
+} nn_range_array[MAX_RANGE]; 
+int nn_range_count = 0;
+
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 2];
 char zz_title[256];
@@ -717,6 +724,15 @@ static int isprinted(int lineNo)
 			return false;
 		if (nn_ls && (lineNo-1) < lineMax - nn_ls)
 			return false;
+		{
+			int i;
+			for ( i = 0 ; i < nn_range_count ; ++i ) {
+				if ( nn_range_array[i].from <= lineNo &&
+				     nn_range_array[i].to >= lineNo )
+					return true;
+			}
+			return false;
+		}
 	}
 	return true;
 }
@@ -1623,6 +1639,53 @@ int get_lastmod_str(char *buf, time_t lastmod)
 	return (1);
 }
 /****************************************************************/
+/* */
+/****************************************************************/
+static void add_range( const char * st, const char * to )
+{
+	int i_st;
+	int i_to;
+	int i;
+	if ( nn_range_count >= MAX_RANGE )
+		return;
+
+	if ( *st == '-' && *to == '-' )
+		return;
+
+	i_st = atoi(st);
+	i_to = atoi(to);
+	if ( i_st < 1 )
+		i_st = 1;
+	switch ( *to ) {
+	case '-':
+		i_to = i_st;
+		break;
+	case '\0':
+		i_to = RES_RED;
+		break;
+	}
+	if ( i_st > i_to ) {
+		int w = i_st;
+		i_st = i_to;
+		i_to = w;
+	}
+
+	/* merge */
+	for ( i = 0 ; i < nn_range_count ; ++i ) {
+		if ( i_st <= (nn_range_array[i].to + 1) && (nn_range_array[i].from - 1) <= i_to ) {
+			if ( nn_range_array[i].from > i_st )
+				nn_range_array[i].from = i_st;
+			if ( nn_range_array[i].to < i_to )
+				nn_range_array[i].to = i_to;
+			return;
+		}
+	}
+	/* append */
+	nn_range_array[nn_range_count].from = i_st;
+	nn_range_array[nn_range_count].to = i_to;
+	++nn_range_count;
+}
+/****************************************************************/
 /*	PATH_INFOを解析						*/
 /*	/board/							*/
 /*	/board/							*/
@@ -1694,6 +1757,10 @@ static void parse_path_param(const char *s)
 				/* to=∞とする */
 				zz_to[0] = '\0';
 			}
+		} else if (*s == ',') {
+			s++;
+			add_range( zz_st, zz_to );
+			*zz_st = *zz_to = '-';
 		} else {
 			/* 規定されてない文字が来たので評価をやめる */
 			if (strchr(s, '/'))
@@ -1702,27 +1769,28 @@ static void parse_path_param(const char *s)
 		}
 	}
 
-	if (zz_to[0] == '-') {
-		/* 範囲指定はないので、
-		   単点ポイントと見なす */
-		strcpy(zz_to, zz_st);
-		if ( zz_st[0] == '-' ) {
-			/* stの指定もなかった */
-			zz_to[0] = '\0';
-		} else {
+	add_range( zz_st, zz_to );
+	*zz_st = *zz_to = '\0';
+
+	if ( zz_ls[0] == '\0' && nn_range_count > 0 ) {
+		int i;
+		nn_st = nn_range_array[0].from;
+		nn_to = nn_range_array[0].to;
+		for ( i = 1 ; i < nn_range_count ; ++i ) {
+			if ( nn_st > nn_range_array[i].from )
+				nn_st = nn_range_array[i].from;
+			if ( nn_to < nn_range_array[i].to )
+				nn_to = nn_range_array[i].to;
+		}
+		sprintf( zz_st, "%d", nn_st );
+		if ( nn_st == nn_to ) {
 			/* 単点は、nofirst=trueをdefaultに */
 			if (!zz_nf[0]) {
 				set_nofirst_true();
 			}
+		} else {
+			sprintf( zz_to, "%d", nn_to );
 		}
-	}
-	if (zz_st[0] == '-') {
-		/* stがない時は1から */
-		zz_st[0] = '\0';
-	}
-	if (zz_ls[0]) {
-		/* lsを優先 */
-		zz_st[0] = zz_to[0] = '\0';
 	}
 }
 
