@@ -1058,6 +1058,9 @@ int dat_out(int level)
 	if (!*p)
 		return 1; 
 	if( s[2]!=0 && (strstr( s[2], "ストッパー" ) || strstr( s[2], "停止" )) ) threadStopped=1;
+
+	pPrintf(pStdout,
+		R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
 	if (!level && lineMax == line && lineMax <= RES_RED && !threadStopped) {
 		html_reload(line);	/*  Button: Reload */

@@ -486,8 +486,10 @@
 #endif
 	
 /* ブラウザのときのフッタ: %s=投稿者名 %s=mail %s=板 %s=スレ %ld=現在時刻 */
+#define R2CH_HTML_PREFOOTER \
+	"</dl>"
 #define R2CH_HTML_FOOTER \
-	"</dl><p>" CGIVER "</body></html>"
+	"<p>" CGIVER "</body></html>"
 
 /* i-MODEのときのFORM: %s=板 %s=スレ %ld=現在時刻 */
 #define R2CH_HTML_FORM_IMODE \
