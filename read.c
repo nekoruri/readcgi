@@ -402,8 +402,11 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 			ls = 10;
 		if (nf && ((st!=to && st>1) || ls))	/* 単点と1を含むときはは'n'不要 */
 			*p++ = 'n';
-		if (is_imode())
+		if (is_imode()) {
 			*p++ = 'i';
+			if (need_basehref)	/* J-PHONE対策。一番最後に付け加える */
+				*p++ = '/';
+		}
 #ifdef CREATE_NAME_ANCHOR
 		if (sst && sst!=st) {
 			p += sprintf(p,"#%d",sst);
