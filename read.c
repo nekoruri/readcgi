@@ -89,6 +89,13 @@ enum compress_type_t {
 	compress_x_gzip,
 } gzip_flag;
 #endif
+#ifdef	GZIP
+char *content_encoding[] = {
+	"",
+	"Content-Encoding: gzip" "\n",
+	"Content-Encoding: x-gzip" "\n",
+};
+#endif
 #ifdef CHECK_MOD_GZIP
 char const *zz_server_software;
 #endif
@@ -545,81 +552,54 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 {
 	char *d = *dp;
 	char const *s = *sp;
-	int n;
-	int f_processed = 0;
-
-	/* 閉じ位置を探す */
-	n = strcspn(*sp, ">");
-	if (n == 0)
+	char const * copy_start;
+	int copy_len;
+	int st, to;
+	
+	while (*s != '>' && *s != '\n')
+		s++;
+	if (memcmp(s, ">&gt;&gt;", 9) == 0)
+		s += 9;
+	copy_start = s;
+	st = to = atoi(s);
+	while (isdigit(*s))
+		++s;
+	if (*s == '-') {
+		to = atoi(++s);
+		while (isdigit(*s))
+			s++;
+	}
+	copy_len = s - copy_start;
+	if (copy_len == 0 || memcmp(s, "</a>", 4) != 0)
 		return 0;
-	s += n + 1;	/* まだdは進めないでおく */
-	if (!memcmp(s, "&gt;&gt;", 8)) {
-		char const * copy_start = s + 8; /* &gt;&gt;をスキップ */
-		int copy_len;
-		int st, to;
-		int mst, mto;
-		char buf[8];
-		s += 8;
-		/* 1番目の数字を処理する */
-		n = strspn(s, "0123456789");
-		if (n == 0)
-			return 0;
-		if (n > sizeof(buf) - 1)
-			n = sizeof(buf) - 1;
-		strncpy(buf, s, n);
-		s += n;
-		buf[n] = 0; /* sentinel */
-		st = to = atoi(buf);
-		f_processed = 1;
-		/* 2番目の数字があるなら、処理する */
-		if (s[0] == '-') {
-			n = strspn(++s, "0123456789");
-			if (n == 0)
-				return 0;
-			if (n > sizeof(buf) - 1)
-				n = sizeof(buf) - 1;
-			strncpy(buf, s, n);
-			s += n;
-			buf[n] = 0; /* sentinel */
-			to = atoi(buf);
-		}
-		/* </a>があるはずなので探し、捨てる */
-		s = strstr(s, "</a>");
-		if (!s)
-			return 0;
-		copy_len = s - copy_start;
-		s += 4; /* strlen("</a>") */
+	s += 4;
 
-		if (is_imode()
-		|| (st == 0 || to == 0 || st > lineMax || to > lineMax)
-#if	1
-		|| (istagcut && isprinted(st) && isprinted(to))
-#endif
-		)
-		{
-			// タグ除去 /
-		} else
-		{
-			copy_len = s - copy_start;
+	if (0 < st && st <= lineMax && 0 < to && to <= lineMax &&
+		!(istagcut && isprinted(st) && isprinted(to))) {
+			copy_len += 4;	/* strlen("</a>") */
 #ifdef CREATE_NAME_ANCHOR
 			/* 新しい表現をブチ込む */
-			if (isprinted(st) && isprinted(to))
-			{
-				d += sprintf(d,
-					     "<a href=#%u>", 
-					     st);
+			if (isprinted(st) && isprinted(to)) {
+				d += sprintf(d, "<a href=#%u>", st);
 			} else
 #endif
 			{
-				/* chunk仕様を生かすためのkludgeは以下に。 */
+				static const char *target_blank[] = {
+					" " TARGET_BLANK,
+					"",
+				};
+				int mst, mto;
+				int nofirst = true;
 #if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR) && defined(USE_CHUNK_LINK)
+				nofirst = false;
+				/* chunk仕様を生かすためのkludgeは以下に。 */
 				mst = (st - 1) / CHUNK_NUM;
 				mto = (to - 1) / CHUNK_NUM;
 
 				if (mst == mto && (st != 1 || to != 1) ) {
 					/* chunk範囲 */
-					mst = 1 + CHUNK_NUM * mst;
-					mto = CHUNK_NUM * (mto + 1);
+					mst = mst * CHUNK_NUM + 1;
+					mto = mto * CHUNK_NUM + CHUNK_NUM;
 				} else 
 #endif
 				{
@@ -627,42 +607,18 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					mst = st;
 					mto = to;
 				}
-
-				d += sprintf(d, "<a href=%s " TARGET_BLANK ">", 
-#if defined(CHUNK_ANCHOR) && defined(CREATE_NAME_ANCHOR) && defined(USE_CHUNK_LINK)
-					create_link(mst, mto, 0, 0, st)
-#else
-					create_link(mst, mto, 0, 1, st)
-#endif
-					);
+				d += sprintf(d, "<a href=%s%s>", 
+					create_link(mst, mto, 0, nofirst, st),
+					target_blank[is_imode()]);
 			}
-		}
-
-		/* "&gt;&gt;"は >> に置き換え、つづき.."</a>"を丸写し */
-		*d++ = '>';
-		*d++ = '>';
-		memcpy( d, copy_start, copy_len );
-		d += copy_len;
 	}
 
-	/* あとしまつ */
-	if (f_processed) {
-		/* ポインタが進んだはず */
-		*sp = s;
-	} else {
-		/* 単純に走査し直す */
-		s = *sp;
-		n = strcspn(s, ">");
-		if (n == 0)
-			return 0;
-		n++;
-		if (!istagcut) {
-			memcpy(d, s, n);
-			d += n;
-		}
-		s += n;
-		*sp = s;
-	}
+	/* "&gt;&gt;"は >> に置き換え、つづき.."</a>"を丸写し */
+	*d++ = '>';
+	*d++ = '>';
+	memcpy( d, copy_start, copy_len );
+	d += copy_len;
+	*sp = s;
 	*dp = d;
 	return 1;
 }
@@ -672,7 +628,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 	４文字前(httpの場合)からスキャンしているので、
 	安全を確認してから呼ぶ
 */
-int isurltop(const char *p)
+static int isurltop(const char *p)
 {
 	if (strncmp(p-4, "http://", 7) == 0)
 		return 7-3;
@@ -685,7 +641,7 @@ int isurltop(const char *p)
 	http://wwwwwwwww等もできるだけ判別
 	urlでないとみなしたら、0を返す
 */
-int geturltaillen(const char *p)
+static int geturltaillen(const char *p)
 {
 	const char *top = p;
 	int len = 0;
@@ -712,7 +668,7 @@ int geturltaillen(const char *p)
 	urlから始まるurllen分の文字列をURLとみなしてbufpにコピー。
 	合計何文字バッファに入れたかを返す。
 */
-int urlcopy(char *bufp, const char *url, int urllen)
+static int urlcopy(char *bufp, const char *url, int urllen)
 {
 	return sprintf(bufp,
 		"<a href=\"%.*s\" " TARGET_BLANK ">%.*s</a>", 
@@ -1513,65 +1469,8 @@ int get_lastmod_str(char *buf, time_t lastmod)
 /*	副作用: zz_bs, zz_ky, zz_st, zz_to, zz_nf		*/
 /*		などが更新される場合がある			*/
 /****************************************************************/
-static int get_path_info(char const *path_info)
+static void parse_path_param(const char *s)
 {
-	char const *s = path_info;
-	int n;
-
-	path_depth = 0;
-	/* PATH_INFO は、'/' で始まってるような気がしたり */
-	if (s[0] != '/')
-		return 0;
-
-	path_depth++;
-
-	/* 長すぎるPATH_INFOは怖いので受け付けない */
-	if (strlen(s) >= 256)
-		return 0;
-
-	/* PATH_INFOを走査。ボード名などを抜き出す。
-	   さまざまな理由により、'/'の有無もチェックしておく */
-	n = strcspn(++s, "/");
-	if (n == 0)
-		return 0;
-	/* 板名 */
-	strncpy(zz_bs, s, n);
-	s += n;
-	if (s[0] != '/') {
-		/* XXX ここで何かがしたい。hehehe */
-		return 0;
-	}
-	path_depth++;
-	/* つぎ… */
-	n = strcspn(++s, "/");
-	if (n == 0)
-		return 0;
-	strncpy(zz_ky, s, n);	/* パラメータかもしれないので取り込む */
-	if (n == 0 || s[n] != '/')
-		return 0;
-	path_depth++;
-	s += n;
-#ifdef READ_KAKO
-	if (strcmp(zz_ky,"kako")==0 
-#ifdef READ_TEMP
-	 || strcmp(zz_ky,"temp")==0
-#endif
-	) {
-		char *p = zz_ky+4;
-		n = strcspn(++s, "/");
-		if (n == 0)
-			return 0;
-		*p++ = '/';
-		strncpy(p, s, n);	/* パラメータかもしれないので取り込む */
-		if (n == 0 || s[n] != '/')
-			return 0;
-		path_depth++;
-		s += n;
-	}
-#endif
-	/* スレ */
-	s++;
-
 	/* st/to 存在ほかのチェックのため "-"を入れておく */
 	strcpy(zz_st, "-");
 	strcpy(zz_to, "-");
@@ -1635,7 +1534,8 @@ static int get_path_info(char const *path_info)
 			}
 		} else {
 			/* 規定されてない文字が来たので評価をやめる */
-			need_basehref = strchr(s, '/') != NULL;
+			if (strchr(s, '/'))
+				need_basehref = 1;
 			break;
 		}
 	}
@@ -1662,7 +1562,70 @@ static int get_path_info(char const *path_info)
 		/* lsを優先 */
 		zz_st[0] = zz_to[0] = '\0';
 	}
+}
 
+static const char *get_path_token(const char *s, char *buf)
+{
+	const char *next = strchr(s, '/');
+	if (next) {
+		memcpy(buf, s, next-s);
+		buf[next-s] = '\0';
+		path_depth++;
+		s = next + 1;
+	}
+	return s;
+}
+
+static int get_path_info(char const *path_info)
+{
+	char const *s = path_info;
+
+#if	1
+	/* index.html がbaseを出力した場合に一応備える。邪魔なら消して。 */
+	static const char index_based_path[] = "/test/" CGINAME;
+	if (memcmp(s, index_based_path, sizeof(index_based_path)-1) == 0) {
+		s += sizeof(index_based_path)-1;
+		need_basehref = 1;
+	}
+#endif
+	path_depth = 0;
+	/* PATH_INFO は、'/' で始まってるような気がしたり */
+	if (s[0] != '/')
+		return 0;
+	
+	/* 長すぎるPATH_INFOは怖いので受け付けない */
+	if (strlen(s) >= 256)
+		return 0;
+	
+	++s, ++path_depth;
+	s = get_path_token(s, zz_bs);
+#ifdef	READ_KAKO
+	if (memcmp(s, "kako/", 5) == 0
+#ifdef	READ_TEMP
+		|| memcmp(s, "temp/", 5) == 0
+#endif
+		) {
+		memcpy(read_kako, s, 5);
+		get_path_token(s += 5, read_kako+5);
+	}
+#endif
+	s = get_path_token(s, zz_ky);
+	
+	if (!*zz_ky && isdigit(*s)/* && strlen(s) >= 9*/) {
+		/* /test/read.cgi/board/999999999 でもリンクするための処置 */
+		strcpy(zz_ky, s);
+#ifdef	READ_KAKO
+		if (read_kako[0]) {
+			strcpy(read_kako+5, s);
+			++path_depth;
+		}
+#endif
+		s += strlen(s);
+		++path_depth;
+		need_basehref = 1;
+	}
+
+	parse_path_param(s);
 	/* 処理は完了したものとみなす */
 	return 1;
 }
@@ -1928,11 +1891,7 @@ void atexitfunc(void)
 			putchar('\n');
 			html_error(ERROR_NO_MEMORY);
 		}
-		if ( gzip_flag == compress_x_gzip ) {
-			puts("Content-Encoding: x-gzip");
-		} else {
-			puts("Content-Encoding: gzip");
-		}
+		printf("%s", content_encoding[gzip_flag]);
 #ifdef NN4_LM_WORKAROUND
 		if (!strncmp(zz_http_user_agent, "Mozilla/4.", 10)
 		    && !strstr(zz_http_user_agent, "compatible"))
@@ -2440,16 +2399,20 @@ int main(void)
 
 /* ここまでで、304 を返す可能性がある処理はおしまい */
 
-#if	defined(GZIP) && !defined(ZLIB)
-	switch ( gzip_flag ) {
-	case compress_x_gzip:
-		puts("Content-Encoding: x-gzip");
-		break;
-	case compress_gzip:
-		puts("Content-Encoding: gzip");
-		break;
+#ifdef	GZIP
+#ifdef	CHECK_MOD_GZIP
+	if (zz_server_software && strstr(zz_server_software,"mod_gzip/")!=NULL) {
+#ifdef NN4_LM_WORKAROUND
+		if (!(!strncmp(zz_http_user_agent, "Mozilla/4.", 10)
+		    && !strstr(zz_http_user_agent, "compatible")))
+#endif
+			gzip_flag = compress_none;
 	}
 #endif
+#if	!defined(ZLIB)
+	printf("%s", content_encoding[gzip_flag]);
+#endif
+#endif	/* GZIP */
 	zz_init_parent_link();
 	zz_init_cgi_path();
 
@@ -2641,7 +2604,7 @@ void html_error(enum html_error_t errorcode)
 	if(rawmode) {
 		/* -ERR (message)はエラー。 */
 		if (errorcode == ERROR_NOT_FOUND) {
-			if (find_kakodir(doko, tmp, "dat")) {
+			if (find_kakodir(doko, tmp, "dat") || find_kakodir(doko, tmp, "dat.gz")) {
 				pPrintf(pStdout, "-ERR " ERRORMES_DAT_FOUND "\n", doko);
 			} else if (find_tempdir(doko, tmp, "dat")) {
 				pPrintf(pStdout, "-ERR %s\n", ERRORMES_TEMP_FOUND);

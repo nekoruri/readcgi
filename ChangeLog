@@ -30,6 +30,10 @@ tag: HEAD
   index.htmに戻らないようにした
   User-Agentを見て携帯と判定したら自動的に初期値としてimode=trueと見なすようにした。
   1001レスオーバーのdatがあってもそこでファイルが終了したものと見なすようにした。
+  imode時のリンク削除を、全削除からbusytimeの仕様に変えた。
+  /read.cgi/board/999999999 でも動くようにした。
+  CHECK_MOD_GZIP時にmod_gzipを見つけたら、圧縮をmod_gzipに任せるようにした。
+  過去ログをKAKOから探す時、.dat.gzも探すようにした(rawmodeのみ)。
 
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。
