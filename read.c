@@ -215,6 +215,98 @@ void ressplitter_init(ressplitter *This, char **toparray, char *buff, int bufsiz
 	*This->buffers = buff;
 }
 
+/* <a href="xxx">をPATH向けに打ち直す
+   dp, sp はポインタを進められる
+   書き換える場合は</a>まで処理するが、
+   書き換え不要な場合は<a ....>までママコピ(もしくは削る)だけ
+   走査不能な場合は、0 を戻す
+
+   ad hocに、中身が&gt;で始まってたら
+   href情報をぜんぶ捨てて、
+   <A></A>で囲まれた部位を取り出し、
+   自ら打ち直すようにする
+   想定フォーマットは以下のもの。
+   &gt;&gt;nnn
+   &gt;&gt;xxx-yyy */
+static int rewrite_href(char **dp,		/* 書き込みポインタ */
+			 char const **sp,	/* 読み出しポインタ */
+			 int istagcut)		/* タグカットしていいか? */
+{
+	char *d = *dp;
+	char const *s = *sp;
+	int n;
+	int f_processed = 0;
+
+	/* 閉じ位置を探す */
+	n = strcspn(*sp, ">");
+	if (n == 0)
+		return 0;
+	s += n + 1;	/* まだdは進めないでおく */
+	if (!memcmp(s, "&gt;&gt;", 8)) {
+		int st, to;
+		char buf[8];
+		s += 8;
+		/* 1番目の数字を処理する */
+		n = strspn(s, "0123456789");
+		if (n == 0)
+			return 0;
+		if (n > sizeof(buf) - 1)
+			n = sizeof(buf) - 1;
+		strncpy(buf, s, n);
+		s += n;
+		buf[sizeof(buf) - 1] = 0; /* sentinel */
+		st = to = atoi(buf);
+		f_processed = 1;
+		/* 2番目の数字があるなら、処理する */
+		if (s[0] == '-') {
+			n = strspn(++s, "0123456789");
+			if (n == 0)
+				return 0;
+			if (n > sizeof(buf) - 1)
+				n = sizeof(buf) - 1;
+			strncpy(buf, s, n);
+			s += n;
+			buf[sizeof(buf) - 1] = 0; /* sentinel */
+			to = atoi(buf);
+		}
+		/* </a>があるはずなので探し、捨てる */
+		s = strstr(s, "</a>");
+		if (!s)
+			return 0;
+		s += 4;
+		/* 新しい表現をブチ込む */
+		if (st < to)
+			d += sprintf(d,
+				     "<a href=\"%d-%d\">&gt;&gt;%d-%d</a>",
+				     st, to, st, to);
+		else
+			d += sprintf(d,
+				     "<a href=\"%d\">&gt;&gt;%d</a>",
+				     st, st);
+	}
+
+	/* あとしまつ */
+	if (f_processed) {
+		/* ポインタが進んだはず */
+		*sp = s;
+	} else {
+		/* 単純に走査し直す */
+		s = *sp;
+		n = strcspn(s, ">");
+		if (n == 0)
+			return 0;
+		n++;
+		if (!istagcut) {
+			memcpy(d, s, n);
+			d += n;
+		}
+		s += n;
+		*sp = s;
+	}
+	*dp = d;
+	return 1;
+}
+
 /*
 findSplitterの代わり
 レスを全走査するが、コピーと変換(と削除)を同時に行う
@@ -260,8 +352,19 @@ const char *ressplitter_split(ressplitter *This, const char *p, int istagcut)
 					p += 2;
 					goto Teri_Break;
 				}
-				if (istagcut) {
+				if (zz_path_info
+				    && p[1] == 'a'
+				    && isspace(p[2])) {
+					char *tdp = bufp;
+					char const *tsp = p;
+					if (!rewrite_href(&tdp, &tsp, istagcut))
+						goto Break;
+					bufp = tdp;
+					p = tsp;
+					continue;
+				} else if (istagcut) {
 					/* if (*(p+1) != 'b' || *(p+2) != 'r') { */
+					/* <a ....> </a> をサパーリ削るらしい */
 					if ((*(p+1) == 'a' && *(p+2) == ' ')
 					    || (*(p+1) == '/' && *(p+2) == 'a')) {
 						while (*p != '>') { /* strchr(p, '>') */
@@ -714,11 +817,26 @@ int out_html(int line, int lineNo)
 				lineNo);
 		}
 		if (isbusytime && out_resN > RES_NORMAL) {
-			pPrintf(pStdout, R2CH_HTML_TAIL,
-				CGINAME, zz_bs, zz_ky, lineNo,
-				lineNo + RES_NORMAL, RES_NORMAL, CGINAME,
-				zz_bs, zz_ky, RES_NORMAL, RES_NORMAL,
-				LIMIT_PM - 12, LIMIT_AM);
+			if (zz_path_info)
+				pPrintf(pStdout,
+					R2CH_HTML_PATH_TAIL,
+					lineNo,
+					lineNo + RES_NORMAL,
+					RES_NORMAL,
+					RES_NORMAL,
+					RES_NORMAL,
+					LIMIT_PM - 12, LIMIT_AM);
+			else
+				pPrintf(pStdout,
+					R2CH_HTML_TAIL,
+					CGINAME, zz_bs, zz_ky,
+					lineNo,
+					lineNo + RES_NORMAL,
+					RES_NORMAL,
+					CGINAME, zz_bs, zz_ky,
+					RES_NORMAL,
+					RES_NORMAL,
+					LIMIT_PM - 12, LIMIT_AM);
 			return 1;
 		}
 	} else {		/* imode  */
@@ -1007,10 +1125,11 @@ static int get_path_info(char const *path_info)
 		}
 
 		/* nofirstの仕様をごまかすためのkludge XXX */
-		strcpy(zz_nf,
-		       (atoi(zz_st) == 1
-			? "false"
-			: "true"));
+		if (!zz_nf[0])
+			strcpy(zz_nf,
+			       (atoi(zz_st) == 1
+				? "false"
+				: "true"));
 	}
 
 	/* 処理は完了したものとみなす */
@@ -1607,18 +1726,41 @@ void html_head(char *title, int line)
 	if (!is_imode()) {	/* no imode       */
 		pPrintf(pStdout, R2CH_HTML_HEADER_1, title, zz_bs);
 #ifdef ALL_ANCHOR
-		pPrintf(pStdout, R2CH_HTML_ALL_ANCHOR, zz_bs, zz_ky); 
+		if (zz_path_info)
+			pPrintf(pStdout,
+				R2CH_HTML_PATH_ALL_ANCHOR); 
+		else
+			pPrintf(pStdout,
+				R2CH_HTML_ALL_ANCHOR,
+				zz_bs, zz_ky); 
 #endif
 #ifdef CHUNK_ANCHOR
 		for (i = 1; i <= line; i += CHUNK_NUM) {
-			pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
-					zz_bs, zz_ky, i, i + CHUNK_NUM - 1, 
-					(i == 1 ? "" : "&n=t"), i);
+			if (zz_path_info)
+				pPrintf(pStdout,
+					R2CH_HTML_PATH_CHUNK_ANCHOR,
+					i,
+					i + CHUNK_NUM - 1, 
+					i);
+			else
+				pPrintf(pStdout, R2CH_HTML_CHUNK_ANCHOR,
+					zz_bs, zz_ky,
+					i,
+					i + CHUNK_NUM - 1, 
+					(i == 1 ? "" : "&n=t"),
+					i);
 		}
 #endif /* CHUNK_ANCHOR */
 #ifdef LATEST_ANCHOR
-		pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR,
-				zz_bs, zz_ky, LATEST_NUM, LATEST_NUM);
+		if (zz_path_info)
+			pPrintf(pStdout,
+				R2CH_HTML_PATH_LATEST_ANCHOR,
+				LATEST_NUM, LATEST_NUM);
+		else
+			pPrintf(pStdout,
+				R2CH_HTML_LATEST_ANCHOR,
+				zz_bs, zz_ky,
+				LATEST_NUM, LATEST_NUM);
 #endif
 	} else {
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1,
@@ -1650,9 +1792,17 @@ void html_reload(int startline)
 	if (is_imode())	/*  imode */
 		pPrintf(pStdout, R2CH_HTML_RELOAD_I, zz_bs, zz_ky,
 			startline);
-	else
-		pPrintf(pStdout, R2CH_HTML_RELOAD, zz_bs, zz_ky,
-			startline);
+	else {
+		if (zz_path_info)
+			pPrintf(pStdout,
+				R2CH_HTML_PATH_RELOAD,
+				startline);
+		else
+			pPrintf(pStdout,
+				R2CH_HTML_RELOAD,
+				zz_bs, zz_ky,
+				startline);
+	}
 }
 #endif
 /****************************************************************/
