@@ -27,6 +27,7 @@
 
 #if defined(GZIP) && !defined(ZLIB)
 #include        <sys/wait.h>
+static int pid;
 #endif
 
 #include	"r2chhtml.h"
@@ -153,8 +154,6 @@ extern int gz_getdata(char **buf);
  *   int   len  : 圧縮後のbyte数
  *   char *data : 圧縮後のデータ、使用後free()すべき物
  */
-#else
-static int pid;
 #endif
 
 #ifdef	USE_SETTING_FILE
@@ -420,7 +419,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 			n = sizeof(buf) - 1;
 		strncpy(buf, s, n);
 		s += n;
-		buf[sizeof(buf) - 1] = 0; /* sentinel */
+		buf[n] = 0; /* sentinel */
 		st = to = atoi(buf);
 		f_processed = 1;
 		/* 2番目の数字があるなら、処理する */
@@ -432,7 +431,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 				n = sizeof(buf) - 1;
 			strncpy(buf, s, n);
 			s += n;
-			buf[sizeof(buf) - 1] = 0; /* sentinel */
+			buf[n] = 0; /* sentinel */
 			to = atoi(buf);
 		}
 		/* </a>があるはずなので探し、捨てる */
@@ -781,7 +780,7 @@ int BadAccess(void)
 {
 	char *agent_kick[] = {
 #ifdef	Katjusha_Beta_kisei
-		"Kathusha",
+		"Katjusha",
 #endif
 		"WebFetch",
 		"origin",
@@ -1311,7 +1310,7 @@ int getLineMax(void)
 		if (line > RES_RED)
 			break;
 		++line;
-		p = memchr(p, '\n', p1-p) + 1;
+		p = (char *)memchr(p, '\n', p1-p) + 1;
 	} while(p != p1);
 	
 	/*
@@ -2266,11 +2265,11 @@ void html_head(int level, char const *title, int line)
 #endif
 		{
 #ifdef CHECK_MOD_GZIP
-				if ( strstr(zz_server_software,"mod_gzip/") != NULL ) {
-					pPrintf(pStdout,
-						R2CH_HTML_HEADER_1("%s", "/%s/"),
-						title, zz_bs);
-				} else
+			if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
+				pPrintf(pStdout,
+					R2CH_HTML_HEADER_1("%s", "/%s/"),
+					title, zz_bs);
+			} else
 #endif
 #ifdef GZIP
 				pPrintf(pStdout,
@@ -2378,8 +2377,10 @@ static void html_foot(int level, int line, int stopped)
 {
 	out_resN = 0;	/* ここで初期化するといいらしい? */
 
-	if (is_imode())
-		return html_foot_im(line,stopped);
+	if (is_imode()) {
+		html_foot_im(line,stopped);
+		return;
+	}
 	if (line <= RES_RED && !stopped) {
 #ifdef USE_PATH
 		if (path_depth == 3)
