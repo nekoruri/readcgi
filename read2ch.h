@@ -165,4 +165,7 @@
 /* ETagを出力する */
 /* #define PUT_ETAG */
 
+/* dat落ち、過去ログをread.cgiで読む */
+#define READ_KAKO
+
 #endif /* READ2CH_H__ */

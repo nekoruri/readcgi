@@ -166,6 +166,11 @@ HTTPヘッダにETagを出力し、クライアントが更新問合せをできるようにする。
 ▲NO_LINK_URL_BUSY
 混雑時間帯にレス本文内のURLをリンク化しないようにする
 
+▲READ_KAKO
+dat落ち、過去ログのdatをread.cgiで読む
+read.cgi/tech/temp/nnnn/
+read.cgi/tech/kako/nnnn/
+
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
 

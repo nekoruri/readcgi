@@ -111,6 +111,9 @@ long nn_ky;	/* zz_kyを数字にしたもの */
 #ifdef RAWOUT
 char zz_rw[1024];
 #endif
+#ifdef READ_KAKO
+char read_kako[256] = "";
+#endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
 char const *BigLine[RES_RED + 16];
@@ -389,7 +392,12 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	{
 		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
 			url_p = url_expr;
-			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, zz_ky);
+#ifdef READ_KAKO
+			if (read_kako[0])
+				url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, read_kako);
+			else
+#endif
+				url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, zz_ky);
 		}
 		p = url_p;
 		if (ls) {
@@ -428,11 +436,14 @@ void zz_init_parent_link(void)
 		p += sprintf(p,"../");
 	else
 #endif
-	if (path_depth)
-		p += sprintf(p,"../../../../%.20s/",zz_bs);
-	else
+	{
+		strncpy(p, "../../../../../", (path_depth+1)*3);
+		p += (path_depth+1)*3;
+		p += sprintf(p, "%.20s/", zz_bs);
+	}
+#else
+	p += sprintf(p,"../%.20s/",zz_bs);
 #endif
-		p += sprintf(p,"../%.20s/",zz_bs);
 	if (is_imode() ) {
 		strcpy(p,"i/");
 		return;
@@ -450,18 +461,10 @@ void zz_init_parent_link(void)
 /* bbs.cgiのLINK先作成 */
 void zz_init_cgi_path(void)
 {
-	char * p = zz_cgi_path;
+	zz_cgi_path[0] = '\0';
 #ifdef USE_PATH
-#ifdef USE_INDEX
-	if (path_depth==2)
-		p += sprintf(p,"../../");
-	else
+	strncpy(zz_cgi_path, "../../../../../", path_depth*3);
 #endif
-	if (path_depth)
-		p += sprintf(p,"../../../");
-	else
-#endif
-		*p = '\0';
 }
 
 /*
@@ -1120,10 +1123,12 @@ int dat_out(int level)
 	char *s[20]; 
 	char p[SIZE_BUF]; 
 
-	if (!isdigit(*zz_ky)) {
+#ifdef READ_KAKO
+	if (read_kako[0]) {
 		threadStopped = 1;
 		/* 過去ログはFORMもRELOADLINKも非表示にするため */
 	}
+#endif
 	for (line = 0; line < lineMax; line++) { 
 		int lineNo = line + 1; 
 		if (!isprinted(lineNo)) 
@@ -1330,8 +1335,23 @@ static int get_path_info(char const *path_info)
 	if (n == 0 || s[n] != '/')
 		return 0;
 	path_depth++;
+	s += n;
+#ifdef READ_KAKO
+	if (strcmp(zz_ky,"kako")==0 || strcmp(zz_ky,"temp")==0) {
+		char *p = zz_ky+4;
+		n = strcspn(++s, "/");
+		if (n == 0)
+			return 0;
+		*p++ = '/';
+		strncpy(p, s, n);	/* パラメータかもしれないので取り込む */
+		if (n == 0 || s[n] != '/')
+			return 0;
+		path_depth++;
+		s += n;
+	}
+#endif
 	/* スレ */
-	s += n + 1;
+	s++;
 
 	/* st/to 存在ほかのチェックのため "-"を入れておく */
 	strcpy(zz_st, "-");
@@ -1565,6 +1585,16 @@ void zz_GetEnv(void)
 #ifdef RAWOUT
 	zz_rw[0] = '\0';
 	GetString(zz_query_string, zz_rw, sizeof(zz_rw), "raw");
+#endif
+
+#ifdef READ_KAKO
+	if (strncmp(zz_ky, "kako/", 5)==0) {
+		strcpy(read_kako, zz_ky);
+		strcpy(zz_ky, zz_ky+5);
+	} else if (strncmp(zz_ky, "temp/", 5)==0) {
+		strcpy(read_kako, zz_ky);
+		strcpy(zz_ky, zz_ky+5);
+	}
 #endif
 	/* zz_ky は単なる32ビット数値なので、
 	   以降、数字でも扱えるようにしておく */
@@ -1945,7 +1975,17 @@ int main(void)
 #endif
 		puts("Content-Type: text/html");
 
-	sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
+#ifdef READ_KAKO
+	if (read_kako[0] == 'k') {
+		char buf[256];
+		kako_dirname(buf, zz_ky);
+		sprintf(fname, KAKO_DIR "%.20s/%.20s.dat", zz_bs, buf, zz_ky);
+	} else if (read_kako[0] == 't') {
+		sprintf(fname, TEMP_DIR "%.20s.dat", zz_bs, zz_ky);
+	} else
+#endif
+		sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
+
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
 #endif
@@ -2118,6 +2158,14 @@ int main(void)
 		return 0;
 	}
 #endif
+#ifdef READ_KAKO
+	if (path_depth && read_kako[0]) {
+		if (path_depth!=4) {
+			html_error(ERROR_NOT_FOUND);
+			return 0;
+		}
+	} else
+#endif
 	if (path_depth && path_depth!=3) {
 		html_error(ERROR_NOT_FOUND);
 		return 0;
@@ -2211,14 +2259,24 @@ void html_error(enum html_error_t errorcode)
 			sprintf(doko, KAKO_DIR "%.50s/%.50s.dat",
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
+#ifdef READ_KAKO
+				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
+					zz_cgi_path, zz_bs, "kako/", tmp, tmp);
+#else
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
 					zz_cgi_path, doko, tmp);
+#endif
 			} else {
 				sprintf(doko, TEMP_DIR "%.50s.dat",
 					zz_bs, tmp);
 				if (!stat(doko, &CountStat)) {
+#ifdef READ_KAKO
+					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
+						zz_cgi_path, zz_bs, "temp/", tmp, tmp);
+#else
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
 						tmp);
+#endif
 				} else {
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_NONE,
 						zz_cgi_path, zz_bs);
@@ -2473,8 +2531,16 @@ void html_head(int level, char const *title, int line)
 	pPrintf(pStdout, R2CH_HTML_HEADER_0);
 #ifdef ALWAYS_PATH
 	if (path_depth < 3 && zz_server_name && zz_script_name) {
-		pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, zz_ky);
-		path_depth = 3;
+#ifdef READ_KAKO
+		if (read_kako[0]) {
+			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, read_kako);
+			path_depth = 4;
+		} else
+#endif
+		{
+			pPrintf(pStdout, R2CH_HTML_BASE_DEFINE, zz_server_name, zz_script_name, zz_bs, zz_ky);
+			path_depth = 3;
+		}
 	}
 #endif
 	zz_init_parent_link();

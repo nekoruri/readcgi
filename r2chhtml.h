@@ -261,6 +261,12 @@
 #define R2CH_HTML_ERROR_5_HTML \
 	"隊長! 過去ログ倉庫で、<a href=\"%s%s\">スレッド %s.html</a> を発見しました。\n"
 
+#ifdef READ_KAKO
+#define R2CH_HTML_ERROR_5_DAT \
+	"隊長! 過去ログ倉庫で、<a href=\"%s" CGINAME "/%s/%s%s/\">スレッド %s.dat</a> を発見しました。\n"
+#define R2CH_HTML_ERROR_5_TEMP \
+	"隊長! dat落ちした、<a href=\"%s" CGINAME "/%s/%s%s/\">スレッド %s.dat</a> を発見しました。\n"
+#else
 /* エラー(5b/6,DAT): %s=場所 %s=スレ番号 */
 #define R2CH_HTML_ERROR_5_DAT \
 	"隊長! 過去ログ倉庫で、<a href=\"%s%s\">スレッド %s.dat</a> を発見しました。<br>" \
@@ -270,6 +276,7 @@
 #define R2CH_HTML_ERROR_5_TEMP \
 	"隊長! スレッド <font color=deeppink><b>%s.dat</b></font> は、html化されるのを待っているようです。<br>" \
 	"しばらく待つしかない。\n"
+#endif
 
 /* エラー(5c/6,NONE): %s=板 */
 #define R2CH_HTML_ERROR_5_NONE \
