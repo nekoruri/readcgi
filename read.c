@@ -1911,21 +1911,6 @@ int main(void)
 	}
 #endif
 
-	/*  I—¹ˆ—“o˜^ */
-	atexit(atexitfunc);
-#ifdef	PUT_ETAG
-	if (need_etag(st, to, ls)) {
-		char etag[60];
-		dat_read(fname, st, to, ls);
-		create_etag(etag);
-		if (match_etag(etag)) {
-			puts("Status: 304 Not Modified\n");
-			return 0;
-		}
-		printf("ETag: %s\n", etag);
-	}
-#endif
-
 #ifdef GZIP
 	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
 		gzip_flag = compress_x_gzip;
@@ -1944,6 +1929,21 @@ int main(void)
 		break;
 	}
 #endif
+#endif
+
+	/*  I—¹ˆ—“o˜^ */
+	atexit(atexitfunc);
+#ifdef	PUT_ETAG
+	if (need_etag(st, to, ls)) {
+		char etag[60];
+		dat_read(fname, st, to, ls);
+		create_etag(etag);
+		if (match_etag(etag)) {
+			puts("Status: 304 Not Modified\n");
+			return 0;
+		}
+		printf("ETag: %s\n", etag);
+	}
 #endif
 
 /*  Get Last-Modified Date */

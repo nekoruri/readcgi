@@ -152,4 +152,7 @@
 /* 混雑時間帯にレス本文内のURLをリンク化しないようにする */
 /* #define NO_LINK_URL_BUSY */
 
+/* ETagを出力する */
+/* #define PUT_ETAG */
+
 #endif /* READ2CH_H__ */
