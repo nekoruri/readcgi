@@ -1,5 +1,8 @@
 tag: HEAD
+
 　dat落ちのメッセージ変更
+　USE_PATH時のimode出力対応
+
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。
 
