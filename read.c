@@ -1373,7 +1373,7 @@ void zz_GetEnv(void)
 	currentTime = (long) time(&t_now);
 	putenv("TZ=JST-9");
 	tzset();
-	localtime_r(&t_now, &tm_now);
+	tm_now = *localtime(&t_now);
 
 	zz_remote_addr = getenv("REMOTE_ADDR");
 	zz_remote_host = getenv("REMOTE_HOST");
