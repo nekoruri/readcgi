@@ -395,8 +395,18 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 		s += 4;
 
 		/* chunk仕様を生かすためのkludgeは以下に。 */
-		mst = 1 + (st - 1) / CHUNK_NUM * CHUNK_NUM;
-		mto = (to + CHUNK_NUM - 1) / CHUNK_NUM * CHUNK_NUM;
+		mst = (st - 1) / CHUNK_NUM;
+		mto = (to - 1) / CHUNK_NUM;
+
+		if (mst == mto) {
+			/* chunk範囲 */
+			mst = 1 + CHUNK_NUM * mst;
+			mto = CHUNK_NUM * (mto + 1);
+		} else {
+			/* chunkをまたぎそうなので、最小単位を。*/
+			mst = st;
+			mto = to;
+		}
 
 		/* 新しい表現をブチ込む */
 		if (st < to)
