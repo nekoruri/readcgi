@@ -1,19 +1,26 @@
-.SUFFIXES: .c .cgi
-
 CC            = gcc
 DEFS          = -DHAVE_READ2CH_H
 # DEFS        = -DCUTRESLINK -DRELOADLINK -DLASTMOD -DNEWBA -DGSTR2 \
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
 CFLAGS        = -g -Wall
 LIBS          = -lz
-SOURCES       = read.c util_date.c
+#SOURCES       = read.c util_date.c
+OBJS          = read.o util_date.o
 INCLUDES      = read2ch.h read2ch.h r2chhtml.h
 
+.SUFFIXES: .c .o .cgi
+
+# phony targets
+.PHONY:all clean test dat strip
+
+# targets
+read.cgi: $(OBJS)
 
 all: read.cgi
 
-read.cgi: $(SOURCES) $(INCLUDES)
-	$(CC) $(LIBS) $(CFLAGS) $(DEFS) -o $@ $(SOURCES)
+#read.cgi: $(SOURCES) $(INCLUDES)
+#	$(CC) $(LIBS) $(CFLAGS) $(DEFS) -o $@ $(SOURCES)
+
 clean:
 	rm -f read.cgi *.o
 
@@ -29,8 +36,17 @@ dat:
 	wget -O tech/dat/998845501.dat \
 		http://piza2.2ch.net/tech/dat/998845501.dat )
 
-#%.cgi: %.c
-#	$(CC) $(CFLAGS) $< -o $@
+strip:
+	$(MAKE) 'CFLAGS=-O2 -Wall' read.cgi
+	strip read.cgi
 
-.PHONY:all clean test dat
+# implicit rules
+.o.cgi:
+	$(CC) $^ $> $(LIBS) -o $@
 
+.c.o:
+	$(CC) -c $< $(DEFS) $(CFLAGS) -o $@
+
+# dependencies
+read.o: read.c r2chhtml.h
+util_date.o: util_date.c util_date.h
