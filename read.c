@@ -82,7 +82,6 @@ char *zz_temp;
 char const *zz_http_user_agent;
 char const *zz_http_language;
 #if	defined(GZIP) || defined(RAWOUT)
-char const *zz_http_encoding;
 enum compress_type_t {
 	compress_none,
 	compress_gzip,
@@ -97,7 +96,7 @@ char *content_encoding[] = {
 };
 #endif
 #ifdef CHECK_MOD_GZIP
-char const *zz_server_software;
+int mod_gzip_exist;
 #endif
 
 char const *zz_http_if_modified_since;
@@ -131,9 +130,6 @@ int zz_dat_where;	/* 0: dat/  1: temp/  2: kako/ */
 #endif
 #ifdef	AUTO_LOGTYPE
 int zz_log_type;	/* 0: non-TYPE_TERI  1: TYPE_TERI */
-#endif
-#ifdef	Katjusha_DLL_REPLY
-int zz_katjusha_raw;
 #endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
@@ -179,6 +175,9 @@ void html_reload(int);
 #ifdef RAWOUT
 int rawmode;
 int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
+#ifdef	Katjusha_DLL_REPLY
+int zz_katjusha_raw;
+#endif
 #endif
 #ifdef PREV_NEXT_ANCHOR
 int need_tail_comment = 0;
@@ -501,7 +500,7 @@ void zz_init_parent_link(void)
 	}
 #if	0
 #ifdef CHECK_MOD_GZIP
-	if (zz_server_software && strstr(zz_server_software,"mod_gzip/")!=NULL)
+	if (mod_gzip_exist)
 		return;
 #endif
 #ifdef GZIP
@@ -975,9 +974,9 @@ int BadAccess(void)
 		return 0;
 #if defined(RAWOUT)
 	if ( rawmode ) {
-#if	0	/*#ifdef	Katjusha_DLL_REPLY*/
-		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
-			/*&& strstr(zz_http_user_agent, "Katjusha")*/);
+#ifdef	CHECK_MOD_GZIP
+		if (mod_gzip_exist)
+			return 0;
 #endif
 		return !gzip_flag;
 	}
@@ -1744,6 +1743,7 @@ int is_imode_agent( const char * user_agent )
 void zz_GetEnv(void)
 {
 	char const * request_method;
+	char const * env;
 	currentTime = (long) time(&t_now);
 #ifdef CONFIG_TIMEZONE
 	putenv("TZ=" CONFIG_TIMEZONE);
@@ -1765,12 +1765,6 @@ void zz_GetEnv(void)
 	zz_temp = getenv("REMOTE_USER");
 	zz_http_user_agent = getenv("HTTP_USER_AGENT");
 	zz_http_language = getenv("HTTP_ACCEPT_LANGUAGE");
-#if	defined(GZIP) || defined(RAWOUT)
-	zz_http_encoding = getenv("HTTP_ACCEPT_ENCODING");
-#endif
-#ifdef CHECK_MOD_GZIP
-	zz_server_software = getenv("SERVER_SOFTWARE");
-#endif
 	zz_http_if_modified_since = getenv("HTTP_IF_MODIFIED_SINCE");
 
 	if (!zz_remote_addr)
@@ -1823,6 +1817,22 @@ void zz_GetEnv(void)
 	/* zz_ky は単なる32ビット数値なので、
 	   以降、数字でも扱えるようにしておく */
 	nn_ky = atoi(zz_ky);
+
+#if	defined(GZIP) || defined(RAWOUT)
+	gzip_flag = compress_none;
+	env = getenv("HTTP_ACCEPT_ENCODING");
+	if (env) {
+		if (strstr(env, "x-gzip")) {
+			gzip_flag = compress_x_gzip;
+		} else if (strstr(env, "gzip")) {
+			gzip_flag = compress_gzip;
+		}
+	}
+#ifdef CHECK_MOD_GZIP
+	env = getenv("SERVER_SOFTWARE");
+	mod_gzip_exist = (env && strstr(env,"mod_gzip/")!=NULL);
+#endif
+#endif
 #ifdef RAWOUT
 	rawmode = (*zz_rw != '\0');
 	if(rawmode) {
@@ -1837,15 +1847,10 @@ void zz_GetEnv(void)
 		if(!p || raw_lastsize < 0) {
 			raw_lastsize = 0;	/* -INCR を返すため */
 		}
-	}
+#ifdef	Katjusha_DLL_REPLY
+		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
+			/*&& strstr(zz_http_user_agent, "Katjusha")*/);
 #endif
-#if	defined(GZIP) || defined(RAWOUT)
-	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
-		gzip_flag = compress_x_gzip;
-	} else if (zz_http_encoding && strstr(zz_http_encoding, "gzip")) {
-		gzip_flag = compress_gzip;
-	} else {
-		gzip_flag = compress_none;
 	}
 #endif
 #ifdef	USE_SETTING_FILE
@@ -2362,24 +2367,19 @@ int main(void)
 				return 0;
 			}
 		}
-	}
-#endif
-
-#if	defined(RAWOUT) && defined(Katjusha_DLL_REPLY)
-	/* BadAccess中で設定すると、早目のファイルサイズ判定が出来ないので */
-	if (rawmode && gzip_flag)
-		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
-			/*&& strstr(zz_http_user_agent, "Katjusha")*/);
-	if (zz_katjusha_raw && zz_fileSize) {
-		if (zz_fileSize < raw_lastsize) {
-			/* ここでhtml_error()を呼ぶと非圧縮のテキストを返すが、構わないはず。
-			   Content-EncodingもLastModifiedも出力しない。*/
-			char buff[120];
-			printf("Content-Length: %d\n""\n""%s",
-				sprintf(buff, "-ERR %s\n", ERRORMES_ABORNED), buff);
-			/*html_error(ERROR_ABORNED);*/
-			return 0;
+#ifdef	Katjusha_DLL_REPLY
+		if (zz_katjusha_raw && zz_fileSize) {
+			if (zz_fileSize < raw_lastsize) {
+				/* ここでhtml_error()を呼ぶと非圧縮のテキストを返すが、構わないはず。
+				   Content-EncodingもLastModifiedも出力しない。*/
+				char buff[120];
+				printf("Content-Length: %d\n""\n""%s",
+					sprintf(buff, "-ERR %s\n", ERRORMES_ABORNED), buff);
+				/*html_error(ERROR_ABORNED);*/
+				return 0;
+			}
 		}
+#endif
 	}
 #endif
 	/*  終了処理登録 */
@@ -2401,7 +2401,7 @@ int main(void)
 
 #ifdef	GZIP
 #ifdef	CHECK_MOD_GZIP
-	if (zz_server_software && strstr(zz_server_software,"mod_gzip/")!=NULL) {
+	if (mod_gzip_exist) {
 #ifdef NN4_LM_WORKAROUND
 		if (!(!strncmp(zz_http_user_agent, "Mozilla/4.", 10)
 		    && !strstr(zz_http_user_agent, "compatible")))
