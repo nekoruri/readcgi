@@ -103,7 +103,7 @@
 
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_SAGE(n, l, nm, d, t) \
-	"<dt>" n " <a name=" l ">" R2CH_HTML_NAME "<font color=#0000c0><b>" nm " </b></font></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
+	"<dt>" n " <a name=" l ">" R2CH_HTML_NAME "<font color=blue><b>" nm " </b></font></a> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 
 #else
 
@@ -123,7 +123,7 @@
 
 /* レス(sage): %d=レス番号 %s=名前 %s=投稿日 %s=本文*/
 #define R2CH_HTML_RES_SAGE(n, nm, d, t) \
-	"<dt>" n " " R2CH_HTML_NAME "<font color=#0000c0><b>" nm " </b></font> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
+	"<dt>" n " " R2CH_HTML_NAME "<font color=blue><b>" nm " </b></font> " R2CH_HTML_DATE d "<dd>" t "<br><br>"
 #endif
 
 /* レス(ここ壊れています): %d=レス番号 */
@@ -151,7 +151,7 @@
 	%02d=制限開始時刻 %02d=制限終了時刻 */
 #define R2CH_HTML_PATH_TAIL \
 	R2CH_HTML_T_TAIL("%d-%d", "%d", \
-			 "./=%d", "%d")
+			 "./l%d", "%d")
 
 /*
  * i-MODEでレスを表示。
@@ -416,7 +416,7 @@
 	R2CH_HTML_T_CHUNK_ANCHOR("%d-%d", "%d")
 /* %d=レス個数 %d=レス個数 */
 #define R2CH_HTML_PATH_LATEST_ANCHOR \
-	R2CH_HTML_T_LATEST_ANCHOR("./=%d", "%d")
+	R2CH_HTML_T_LATEST_ANCHOR("./l%d", "%d")
 
 
 /* i-Modeで見たとき: %s=スレ名 %s=板 %s=板 %s=スレ番号 %d=一度に表示するレス数
@@ -615,11 +615,11 @@ h1,.c{text-align:center}
 <small>"
 
 #define R2CH_HTML_INDEX_LABEL(anchor, num, label, title) \
-	"<a href=\"" anchor "/=50\">" num ":</a> " \
+	"<a href=\"" anchor "/l50\">" num ":</a> " \
 	"<a href=\"" label "\">" title "</a>\n"
 
 #define R2CH_HTML_INDEX_ANCHOR(anchor, num, title) \
-	"<a href=\"" anchor "/=50\" target=\"body\">" num ": " title "</a>\n"
+	"<a href=\"" anchor "/l50\" target=\"body\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_INDEX_AD \
 "<p><a href=\"-\">スレッド一覧</a></p>
@@ -700,7 +700,7 @@ h1,.c{text-align:center}
 	"<font size=-1>\n"
 
 #define R2CH_HTML_SUBBACK_ITEM(anchor, num, title) \
-	"<a href=\"" anchor "/=50\">" num ": " title "</a>\n"
+	"<a href=\"" anchor "/l50\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_SUBBACK_FOOTER \
 	"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></div></body></html>"

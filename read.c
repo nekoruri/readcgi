@@ -466,7 +466,7 @@ static int rewrite_href(char **dp,		/* 書き込みポインタ */
 					if ( mst != mto )
 						d += sprintf(d, "%d-%d" "n", mst, mto );
 					else
-						d += sprintf(d, "%d" "n", mst);
+						d += sprintf(d, "%d" /*"n"*/, mst); /*単点はn不要 */
 				} else
 #endif
 					d += sprintf(d, "&st=%d&to=%d" NO_FIRST, mst, mto );
@@ -1289,7 +1289,7 @@ static int get_path_info(char const *path_info)
 		} else if (*s == 'n') {
 			strcpy(zz_nf,"true");
 			s++;
-		} else if (*s == '=') {
+		} else if (*s == 'l') {
 			s++;
 			/* lsを取り出す */
 			if (isdigit(*s)) {
@@ -1322,7 +1322,7 @@ static int get_path_info(char const *path_info)
 		/* 範囲指定はないので、
 		   単点ポイントと見なす */
 		strcpy(zz_to, zz_st);
-		if ( zz_to[0] == '-' ) {
+		if ( zz_st[0] == '-' ) {
 			/* stの指定もなかった */
 			zz_to[0] = '\0';
 		} else {
@@ -1337,6 +1337,7 @@ static int get_path_info(char const *path_info)
 		strcpy(zz_st,"1");
 	}
 	if (zz_ls[0]) {
+		/* lsを優先 */
 		zz_st[0] = zz_to[0] = '\0';
 	}
 
@@ -1545,9 +1546,9 @@ void atexitfunc(void)
 			puts("Content-Encoding: gzip");
 		}
 #ifdef NN4_LM_WORKAROUND
-		if (!memcmp(zz_http_user_agent, "Mozilla/", 8)
-		    && zz_http_user_agent[8] <= '4'
-		    && !strstr(zz_http_user_agent, "MSIE"))
+		if (!strncmp(zz_http_user_agent, "Mozilla/4.", 10)
+		    && zz_http_user_agent[10] >= '5'
+		    && !strstr(zz_http_user_agent, "compatible"))
 			putchar('\n');
 		else
 #endif
@@ -2016,13 +2017,19 @@ int main(void)
 		dat_out_raw();
 	else
 #endif
-#if 0	/* #ifdef USE_PATH */
+#ifdef USE_PATH
+	if (path_depth && path_depth!=3) {
+		html_error(ERROR_NOT_FOUND);
+		return 0;
+	}
+#if 0
 	if (path_depth == 2) {
 		if (zz_ky[0] == '-')
 			dat_out_subback();	/* スレ一覧 */
 		else
 			dat_out_index();	/* 板ダイジェスト */
 	} else
+#endif
 #endif
 #ifdef	REFERDRES_SIMPLE
 	if (can_simplehtml())

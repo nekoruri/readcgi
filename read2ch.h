@@ -143,7 +143,7 @@
 #define Katjusha_Beta_kisei
 
 /* 名前の緑表示をCSSを使って表示 */
-#define USE_CSS
+/* #define USE_CSS */
 
 /* 混雑時間帯に、>>nn形式のリンクから参照された場合に
    出力htmlから余分なリンク等を省く */

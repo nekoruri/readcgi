@@ -2,13 +2,14 @@ tag:
 　rawmodeで "+OK"と"-INCR"にサイズも表示するようにした
 　フッタ部分にまたがるHTMLタグの修正
 　HEADリクエスト時に処理軽減
-　PREV_NEXT_ANCHORをCHUNK_ANCHORとRELOADLINKに強調させた
+　PREV_NEXT_ANCHORをCHUNK_ANCHORとRELOADLINKに協調させた
 　REFERDRES_SIMPLE, NO_LINK_URL_BUSY追加
-　USE_CSS追加
+　USE_CSS追加、fusianasan等の対応待ち
 　「名前」も削除(CUT_NAME_STRING)
 　PUT_ETAG追加
 　他レスへのリンク指定 &gt;&gt; を >> に短縮置換
 　他レスへのリンクが PATH_INFO時常に範囲指定になっていたのを整理
+　PATH_INFOの=をlに。
 
 
 tag YAKIN20010915: 実験サーバ ex.2ch.net にて ver 5.21として採用。

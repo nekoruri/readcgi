@@ -170,8 +170,9 @@ HTTPヘッダにETagを出力し、クライアントが更新問合せをできるようにする。
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
 
-▲USE_CSS
+×USE_CSS
 名前の緑表示をCSSを使って表示
+fusianasan,<a name>の対応が必要
 
 ？CM_BBSPINK
 CM欄がBBSPINK用のものに置き換わる。
