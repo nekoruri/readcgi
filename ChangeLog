@@ -1,4 +1,8 @@
-tag:
+tag: HEAD
+　dat落ちのメッセージ変更
+
+tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。
+
 　rawmodeで "+OK"と"-INCR"にサイズも表示するようにした
 　フッタ部分にまたがるHTMLタグの修正
 　HEADリクエスト時に処理軽減
