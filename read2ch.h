@@ -4,7 +4,7 @@
 #define READ2CH_H__
 
 #define	CGINAME	"read.cgi"
-#define	CGIVER	"read.cgi ver5.20+ (01/09/10-)"
+#define	CGIVER	"read.cgi ver5.21+ (01/09/15-)"
 #define	RES_YELLOW	900
 #define	RES_REDZONE	950
 #define	RES_RED		1000
@@ -53,10 +53,13 @@
 #define ZLIB
 
 /* raw=xxx.yyyを有効にする。 xxx=最終レス番号, yyy=そのときのサイズ。
- * 一行目はステータス:
- *	[+OK] の場合は差分のみを送信する。
- *	[-INCR] (Incorrect)の場合はすべてのデータを送信する。
- *	[-ERR (テキスト)]の場合はなんかエラーが起きた。
+ * 出力の一行目はステータス:
+ *	[+OK size]
+ *        2行目以降はxxx番以降の差分データ。sizeは差分のデータサイズ。
+ *	[-INCR size] (yyy が一致していなかった場合に起きる; あぼーんの可能性?)
+ *        2行目以降はスレのデータ全部。sizeはデータサイズ。
+ *	[-ERR string]
+ *        なんかエラーが起きた。stringはエラーの内容。
  */
 #define RAWOUT
 
@@ -87,7 +90,6 @@
 /* 「最新レス LATEST_NUM」をつける */
 #define LATEST_ANCHOR
 #define LATEST_NUM 50
-
 
 /* sageレスのとき、名前を太字にしない */
 /* #define SAGE_IS_PLAIN */
@@ -128,9 +130,13 @@
 /* 「掲示板に戻る」「レスを全部」「最新レス」との統一が取れていない */
 /* #define　CHUNKED_ANCHOR_WITH_FORM */
 
+/* 1- 51- ...形式のリンクを上下に分けて表示する */
 /* #define SEPARATE_CHUNK_ANCHOR */
 
 /* 前50 次50 を上下につける。50=CHUNK_NUM */
 #define PREV_NEXT_ANCHOR
+
+/* かちゅーしゃによるアクセスを拒絶する */
+#define Katjusha_Beta_kisei
 
 #endif /* READ2CH_H__ */
