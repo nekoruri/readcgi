@@ -448,34 +448,119 @@
 /* スレダイジェスト用HTML */
 
 #define R2CH_HTML_INDEX_HEADER(title1, title2) \
-	"<HTML><TITLE>" title1 "</TITLE></HEAD>\n" \
-	"<BODY><H1>" title2 "</H1>" \
-	"<H2>各種ヘッダ、ここ</H2><HR>"
+"<head><META http-equiv=Content-Type content=\"text/html; charset=shift_jis\">
+
+<style type=\"text/css\">
+body{margin: 2%;} 
+h3{color:red} 
+img{border:solid 0} 
+div{border:.5em ridge;margin:1em;padding:1em} 
+.m{border-color:#cfc;background:#cfc} 
+.r{border-color:#eee;background:#eee} 
+dt{margin:1em 0 0} 
+b{color:#080} 
+h1, .c{text-align:center} 
+</style>
+<title>" title1 "</title></head><body bgcolor=white>
+
+<h1><a href=\"http://www.2ch.net/info.html\"><img src=\"http://www.geocities.co.jp/SiliconValley-Cupertino/5657/img20010514210907.gif\" border=0></a></h1>
+<div class=m>
+<form method=POST action=\"../test/bbs.cgi\">
+<h2>" title2 "</h2>
+<dl>
+<dt>■扱う話題■<dd><ul>
+<li>HTML、CSS、FLASHなどの<em>サイト制作の技術</em><li>JavaScript、VBScriptなどの<em>クライアントサイドプログラム</em><li>Webサイトの運営および管理についての情報交換・雑談<li>2chでは荒らし依頼はできません</ul>
+<dt>■板違いな話題■<dd><ul>
+<li>HP観察、ネットアイドル、ネット上の事件→『<a href=\"http://kaba.2ch.net/net/index2.html\">ネット事件板</a>』<li>レンタルサーバ、ドメイン→『<a href=\"/perl/index2.html\">レンタル鯖板</a>』<li>HPの宣伝、ネットするだけで儲かる話し等→『<a href=\"http://cocoa.2ch.net/ad/index2.html\">宣伝掲示板</a>』<li>CGI、Perl、PHPなどのサーバサイドプログラミング→『<a href=\"http://corn.2ch.net/php/index2.html\">WebProg</a>』</ul>
+<dt>■各種総合スレ■<dd><ul><li>自分のHPの評価を求める場合→『<a href=\"/test/read.cgi?bbs=hp&key=993635902\">■■HP評価スレッド■■</a>』<li>スタイルシートについての質問→『<a href=\"/test/read.cgi?bbs=hp&key=996828258\">CSS、スタイルシート質問用スレッド</a>』<li>FLASHについての質問→『<a href=\"/test/read.cgi?bbs=hp&key=994898823\">FLASHの製作に関する質問はここで♪</a>』<li>JavaScriptについての質問→『<a href=\"/test/read.cgi?bbs=hp&key=997445548\">JavaScriptの質問用スレッド</a>』<li>それ以外の質問・板案内→『<a href=\"/test/read.cgi?bbs=hp&key=995867650\">Webサイト制作初心者用スレッド</a>』<li>『<a href=\"/test/read.cgi?bbs=hp&key=991370397\">Dreamweaver</a>』、『<a href=\"/test/read.cgi?bbs=hp&key=997848771\">ホームページビルダー</a>』、『<a href=\"/test/read.cgi?bbs=hp&key=987875928\">Golive</a>』、『<a href=\"/test/read.cgi?bbs=hp&key=991367944\">Photoshop・illustrater</a>』等は専用スレがあります</ul>
+<dt>■スレッドをたてる前に■<dd><ul>
+<li>板違いではないか、既出ではないか、もう一度確認しましょう。<li>単発質問は禁止です。総合スレに書き込んでください。</ul>
+<dt>■住人の心得■<dd><ul>
+<li>板違い・スレ違いを発見したら優しく誘導してあげましょう。<li>勝手にスレッドを終了させるような行為は慎みましょう。<li>駄スレ糞スレにはレスせず完全放置。「放置の美学」です。<li>「空気を読む」のも忘れずに。<li>ﾏﾀｰﾘとね。</ul>
+</dl>
+
+<input type=submit value=\"スレッド作成\" name=submit><input type=hidden name=bbs value=hp><input type=hidden name=time value=998848311>
+<a href=http://www.2ch.net/before.html>書き込む前に読んでね</a> ｜ <a href=http://www.2ch.net/guide/>2chガイド</a> ｜ <a href=\"http://www.2ch.net/guide/faq.html\">FAQ</a></form>
+<p><a href=http://210.150.210.150/sage/bbstable.html Target=_blank>■掲示板一覧■</a></p>
+</div>
+
+<div class=m>
+<small>"
 
 #define R2CH_HTML_INDEX_LABEL(anchor, num, label, title) \
 	"<a href=\"" anchor "/?ls=50\">" num ":</a> " \
 	"<a href=\"" label "\">" title "</a>\n"
 
 #define R2CH_HTML_INDEX_ANCHOR(anchor, num, title) \
-	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
+	"<a href=\"" anchor "/?ls=50\" target=\"body\">" num ": " title "</a>\n"
 
 #define R2CH_HTML_INDEX_AD \
-	"<DIV align=right><A href=\"-\">スレ一覧はこちら</A></DIV>\n" \
-	"<HR><H2>広告などが入る</H2><HR>"
+"<p><a href=\"subback.html\">スレッド一覧</a></p>
+</small>
+</div>
+
+<div class=m>
+<a href=\"http://www.gekiura.com/index.shtml\"><img src=\"http://www.ceres.dti.ne.jp/~gekiura/banner/bana_m3.jpg\"></a>
+<a href=\"http://software.wakusei.ne.jp/free/\"><img src=\"http://www2.kitanet.ne.jp/~mail/2ch/fplnklgo.gif\"></a>
+<a href=\"http://www.uranews.com/articles/tools/\"><img src=\"http://www.uranews.com/articles/tools/utoolb.gif\"></a>
+<a href=\"http://www.jyukujyo.com/\"><img src=\"http://www.jyukujyo.com/ad/jyukujyo.gif\"></a>
+<a href=\"http://www.tanteifile.com\"><img src=\"http://homepage2.nifty.com/kirik/2ch/game.gif\"></a>
+<a href=\"http://homepage2.nifty.com/tbks/\"><img src=\"http://homepage2.nifty.com/tbks/chiee0ffff.jpg\"></a>
+<p><a href=\"http://www.2ch.net/ad.html\">広告出稿のお問い合わせ</a></p>
+</div>
+
+
+<TABLE BORDER=1 cellspacing=0 cellpadding=0 WIDTH=95%><TR bgcolor=black><TD colspan=2>
+<TABLE WIDTH=100%><TR bgcolor=#FFCC44><TD>
+■ 2chは、<A HREF=\"http://www.maido3.com/server/usagi/news.html\" TARGET=\"_blank\"><FONT COLOR=NAVY SIZE=+1><B>ここのサーバ</B></FONT></A>を使ってるです。。。
+</TD></TR></TABLE>
+</TD></TR><TR><TD bgcolor=black>
+<font color=#CCFFCC>
+　<FONT SIZE=+1 FACE=\"Arial\"><B>.jp</B></FONT> ドメインお持ちのお客様大歓迎。<A HREF=\"http://welcome.maido3.jp/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" COLOR=RED><B>maido3.jp</B></FONT></A><BR>
+　<FONT SIZE=+1 FACE=\"Arial\"><B>.com .net .org</B></FONT> 取得代行します。(US$10) <A HREF=\"http://www.maido3.com/server/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" color=cyan><B>maido3.com</B></FONT></A><BR>
+　<FONT SIZE=+1 FACE=\"Arial\" COLOR=WHITE><B>.cc .to .tv .fm .ca</B></FONT> 取得代行はじめました。<font color=white face=\"Arial\" size=-1><b>NEW</b></font><BR>
+</td><td align=center>
+無料ホームページスペース<P>
+<A HREF=\"http://space.kakiko.com/\" TARGET=\"_blank\"><FONT SIZE=+1 FACE=\"Arial\" color=BLUE><B>Space.Kakiko.com</B></FONT></A><BR>
+</font>
+</TD></TR><TR bgcolor=black><TD colspan=2>
+<TABLE WIDTH=100%><TR bgcolor=black><TD>
+<font color=#ccffcc>月々1,000円からの</font> <A HREF=\"http://www.binboserver.com/\" target=\"_blank\"><font color=cyan face=\"Arial\"><B>BinboServer.com</B></font></A>
+</TD><TD>
+<font color=#ccffcc>２ちゃんねるも使っている</font> <A HREF=\"http://www.maido3.com/server/\" target=\"_blank\"><font color=cyan face=\"Arial\"><B>Big-Server.com</B></font></A>
+</TD></TR></TABLE>
+</TD></TR><TR bgcolor=black><TD colspan=2>
+<TABLE WIDTH=100%><TR bgcolor=#FFCC44><TD align=right>
+&gt;&gt; ２ちゃんねる、<A HREF=\"http://news.kakiko.com/mentai/\"><FONT COLOR=NAVY>サーバ監視所</FONT></A>
+</TD></TR></TABLE>
+</TD></TR></TABLE>"
 
 #define R2CH_HTML_DIGEST_HEADER_1(label) \
-	"<HR><p>" \
-	"<a name=\"#" label "\">"
+"<div class=r><a name=\"#" label "\">"
 
 #define R2CH_HTML_DIGEST_HEADER_2(title) \
-	"<font size=+1 color=red>" title "</font></a>" \
-	"<DL>"
+"<h3>" title "</h3><dl>"
 
 #define R2CH_HTML_DIGEST_FOOTER \
-	"</DL><P>ひとつおわり</P><HR>"
+"<form method=POST action=\"../test/bbs.cgi\">
+<input type=hidden name=bbs value=hp><input type=hidden name=key value=998774537><input type=hidden name=time value=998848311>
+<input type=submit value=\"投稿\" name=submit> 名前：
+<INPUT TYPE=text NAME=FROM SIZE=19> E-mail：<INPUT TYPE=text NAME=mail SIZE=19>
+<ul>
+<textarea rows=5 cols=60 wrap=OFF name=MESSAGE></textarea>
+</ul>
+<a href=\"../test/read.cgi?bbs=hp&key=998774537\">全レス</a> <a href=\"../test/read.cgi?bbs=hp&key=998774537&ls=50\">最新50</a>
+</form></dl>
+</div>"
 
 #define R2CH_HTML_INDEX_FOOTER \
-	"<HR><H2>フッタはここ</H2><HR></BODY></HTML>"
+"<p class=c>
+<a href=\"http://www.honeyline.co.jp/\"><img src=\"http://honeyline.co.jp/link/img/honey8.gif\"></a> 
+<a href=http://FRIEND.P-CLUB.COM/WEB/link.cgi/DDN2785/HREF/hp><img src=http://FRIEND.P-CLUB.COM/WEB/link.cgi/DDN2785/IMG/hp></a><br>
+どのような形の削除依頼であれ公開させていただきます
+</p>
+
+</body>"
 
 
 /* スレインデクス用HTML */
