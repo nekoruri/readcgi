@@ -43,8 +43,9 @@ strip: read.cgi
 
 dist: read.tgz
 
-read.tgz: $(SRCS)
-	tar cf - $(SRCS) zlib/*.[ch] zlib/configure zlib/Makefile.in \
+read.tgz: $(SRCS) $(zlibdir)/gzio.c
+	tar cf - $(SRCS) $(zlibdir)/*.[ch] $(zlibdir)/configure \
+	$(zlibdir)/Makefile.in \
 	| gzip -9 > read.tgz
 
 tags: TAGS
@@ -52,7 +53,7 @@ tags: TAGS
 TAGS: *.c *.h
 	etags $^ $>
 
-$(zlibdir)/libz.a:
+$(zlibdir)/libz.a: $(zlibdir)/gzio.c
 	( cd $(zlibdir) && ./configure --libdir=. --includedir=. \
 		&& make libz.a)
 
