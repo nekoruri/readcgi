@@ -57,10 +57,12 @@
 
 /* raw=xxx.yyyを有効にする。 xxx=最終レス番号, yyy=そのときのサイズ。
  * 出力の一行目はステータス:
- *	[+OK size]
+ *	[+OK size/maxK]
  *        2行目以降はxxx番以降の差分データ。sizeは差分のデータサイズ。
- *	[-INCR size] (yyy が一致していなかった場合に起きる; あぼーんの可能性?)
+ *        maxはMAX_FILESIZE/1024。 
+ *	[-INCR size/maxK] (yyy が一致していなかった場合に起きる; あぼーんの可能性?)
  *        2行目以降はスレのデータ全部。sizeはデータサイズ。
+ *        maxはMAX_FILESIZE/1024。 
  *	[-ERR string]
  *        なんかエラーが起きた。stringはエラーの内容。
  *          "このスレッド大きすぎます。"
