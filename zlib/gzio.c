@@ -14,6 +14,10 @@
 #define TO_MEMORY
 
 #ifdef TO_MEMORY
+
+#define STDC
+#define HAS_vsnprintf
+
 /*
  * if gzip to memory, use gzdopen(0,"w");
  * only one flow can compressed to memory
@@ -603,13 +607,35 @@ int ZEXPORT gzwrite (file, buf, len)
 
 int ZEXPORTVA gzprintf (gzFile file, const char *format, /* args */ ...)
 {
+#ifdef TO_MEMORY
+    char buf1[Z_PRINTF_BUFSIZE];
+    char *buf = buf1;
+#else
     char buf[Z_PRINTF_BUFSIZE];
+#endif
     va_list va;
     int len;
 
     va_start(va, format);
 #ifdef HAS_vsnprintf
+# ifdef TO_MEMORY
+    len = vsnprintf(buf, sizeof(buf1), format, va);
+    if (len>=sizeof(buf1)) {
+	buf = malloc(len+1);
+	if (buf==NULL) {
+	    /* malloc error, use buf1, cut tail */
+	    buf = buf1;	/* malloc error */
+	    if (((gz_stream *)file)->file==stdout) {	/* make error for TO_MEMORY */
+		if (outlen!=0 && outbuf!=NULL) free(outbuf);
+		if (outlen==0) outlen = len;
+		outbuf = NULL;
+	    }
+	} else
+	    (void)vsnprintf(buf, len+1, format, va);
+    }
+# else
     (void)vsnprintf(buf, sizeof(buf), format, va);
+# endif
 #else
     (void)vsprintf(buf, format, va);
 #endif
@@ -617,7 +643,13 @@ int ZEXPORTVA gzprintf (gzFile file, const char *format, /* args */ ...)
     len = strlen(buf); /* some *sprintf don't return the nb of bytes written */
     if (len <= 0) return 0;
 
+#ifdef TO_MEMORY
+    len = gzwrite(file, buf, (unsigned)len);
+    if (buf!=buf1) free(buf);
+    return len;
+#else
     return gzwrite(file, buf, (unsigned)len);
+#endif
 }
 #else /* not ANSI C */
 
