@@ -5,6 +5,12 @@
 
 #include "read2ch.h"
 
+#ifdef USE_MMAP
+#ifndef MAP_FAILED
+#define MAP_FAILED (void *)(-1)
+#endif
+#endif
+
 enum html_error_t {
 	ERROR_TOO_HUGE,
 	ERROR_NOT_FOUND,
