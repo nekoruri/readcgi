@@ -2004,6 +2004,8 @@ int main(void)
 	}
 #endif
 #endif
+	zz_init_parent_link();
+	zz_init_cgi_path();
 
 	/*  I—¹ˆ—“o˜^ */
 	atexit(atexitfunc);
