@@ -2,8 +2,9 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.6 2001/09/03 11:57:15 2ch Exp $ */
+ *  $Id: datindex.c,v 1.7 2001/09/03 12:47:48 2ch Exp $ */
 
+#include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -263,9 +264,11 @@ static int buildup_index(DATINDEX_OBJ *dat,
 		idx->idx[chunk].nextofs = ofs;
 
 		/* 有効な行に対してフラグ立ててく */
-		for (i = n; i < n + n_line_processed; i++) {
+		for (i = 0; i < n_line_processed; i++) {
+			unsigned o = (n + i) >> 5;
+			unsigned b = (n + i) & 31;
 			if (line[i].lastmod)
-				idx->valid_bitmap[i >> 5] |= 1 << (i & 31);
+				idx->valid_bitmap[o] |= 1 << b;
 		}
 
 		/* サブジェクトが採れていそうだったら、採る */
@@ -474,4 +477,16 @@ int datindex_open(DATINDEX_OBJ *dat,
 	return 1;
 }
 
+/****************************************************************
+ *	lastmodを拾い上げる
+ *	first は、!is_nofirst() であることに注意
+ ****************************************************************/
+time_t datindex_lastmod(DATINDEX_OBJ const *dat,
+			int first,	/* 1番目を含める */
+			int st,
+			int to,
+			int ls)
+{
+	return dat->dat_stat.st_mtime;
+}
 /*EOF*/
