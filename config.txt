@@ -14,6 +14,7 @@
 △RELOADLINK
 一番最後に、「更新したレスを表示」のリンクを表示する
 連打されてもNotModifiedが返るので、大きな負荷にはならないはず。
+PREV_NEXT_ANCHOR使用時はoff推奨
 
 ◎GSTR2
 nofirst → n など、短縮形で指示できるようにする
@@ -75,6 +76,12 @@ CHUNK_ANCHORとCREATE_NAME_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
 
 △LATEST_ANCHOR
 「最新レス LATEST_NUM」をつける
+
+△PREV_NEXT_ANCHOR
+「1- 前50 次50」をつける
+ CHUNK_ANCHOR類ははずすこと。
+ RELOADLINKもはずす方が良い（次50とほぼ同じ）
+ 前後の数はCHUNK_NUMで定義
 
 ▲SAGE_IS_PLAIN
 sageレスのとき、名前を太字にしない

@@ -343,15 +343,28 @@
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>" \
 	"<a href=\"" board "\">■掲示板に戻る■</a>"
 
+#define R2CH_HTML_RETURN_BOARD(board) \
+	"<a href=\"" board "\">掲示板に戻る</a>"
+
 /* path=生成するURL */
+#ifdef PREV_NEXT_ANCHOR
+#define R2CH_HTML_T_ALL_ANCHOR(path) \
+	" <a href=\"" path "\">全部</a>"
+#else
 #define R2CH_HTML_T_ALL_ANCHOR(path) \
 	" <a href=\"" path "\">レスを全部読む</a>"
+#endif
 /* path=生成するURL st=開始位置 */
 #define R2CH_HTML_T_CHUNK_ANCHOR(path, st) \
 	" <a href=\"" path "\">" st "-</a>"
 /* path=生成するURL ls=記事数 */
+#ifdef PREV_NEXT_ANCHOR
+#define R2CH_HTML_T_LATEST_ANCHOR(path, ls) \
+	" <a href=\"" path "\">最新"ls"</a>"
+#else
 #define R2CH_HTML_T_LATEST_ANCHOR(path, ls) \
 	" <a href=\"" path "\">最新レス"ls"</a>"
+#endif
 
 /* 以下のものは、PATHナシ仕様で用いられる */
 

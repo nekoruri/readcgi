@@ -24,7 +24,7 @@
 #define LINKTAGCUT (1)
 
 /* 一番最後に、「更新したレスを表示」のリンクを表示する */
-#define RELOADLINK
+/* #define RELOADLINK */
 
 /* nofirst → n など、短縮形で指示できるようにする */
 #define GSTR2
@@ -75,7 +75,7 @@
 
 /* pageの topに、CHUNK_NUM番ごとに区切ったレスへの anchorをつける
  */
-#define CHUNK_ANCHOR
+/* #define CHUNK_ANCHOR */
 #define CHUNK_NUM 50
 
 /* CUUNK_ANCHOR使用時に>>nnをCHUNKごとのリンクにする */
@@ -125,6 +125,9 @@
 /* 「掲示板に戻る」「レスを全部」「最新レス」との統一が取れていない */
 /* #define　CHUNKED_ANCHOR_WITH_FORM */
 
-#define SEPARATE_CHUNK_ANCHOR
+/* #define SEPARATE_CHUNK_ANCHOR */
+
+/* 前50 次50 を上下につける。50=CHUNK_NUM */
+#define PREV_NEXT_ANCHOR
 
 #endif /* READ2CH_H__ */

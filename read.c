@@ -123,6 +123,9 @@ void html_reload(int);
 int rawmode;
 int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
 #endif
+#ifdef PREV_NEXT_ANCHOR
+int need_tail_comment = 0;
+#endif
 
 #ifdef ZLIB
 /*  zlib対応 */
@@ -918,6 +921,9 @@ static int out_html(int level, int line, int lineNo)
 				lineNo);
 		}
 		if (isbusytime && out_resN > RES_NORMAL) {
+#ifdef PREV_NEXT_ANCHOR
+			need_tail_comment = 1;
+#else
 #ifdef SEPARATE_CHUNK_ANCHOR
 			pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
 #else
@@ -943,6 +949,7 @@ static int out_html(int level, int line, int lineNo)
 					RES_NORMAL,
 					RES_NORMAL,
 					LIMIT_PM - 12, LIMIT_AM);
+#endif
 #endif
 			return 1;
 		}
@@ -2067,7 +2074,7 @@ static void html_thread_anchor(int first, int last)
 /* 最初と最後に表示されるレス番号を返す(レス１を除く)
    imode未対応, isprintedと同じ動作を。
 */
-#ifdef SEPARATE_CHUNK_ANCHOR
+#if defined(SEPARATE_CHUNK_ANCHOR) || defined(PREV_NEXT_ANCHOR)
 static int first_line()
 {
 	if (nn_st)
@@ -2134,7 +2141,7 @@ void html_head(int level, char const *title, int line)
 		}
 	/* ALL_ANCHOR は常に生きにする
 	   ただし、CHUNK_ANCHORが生きで、かつisbusytimeには表示しない */
-#ifdef	CHUNK_ANCHOR
+#if defined(CHUNK_ANCHOR) || defined(PREV_NEXT_ANCHOR)
 		if (!isbusytime)
 #endif
 		{
@@ -2148,6 +2155,21 @@ void html_head(int level, char const *title, int line)
 					R2CH_HTML_ALL_ANCHOR,
 					zz_bs, zz_ky); 
 		}
+#ifdef PREV_NEXT_ANCHOR
+		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
+			zz_bs, zz_ky, CHUNK_NUM);
+		if (first_line()>1)
+			pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
+				zz_bs, zz_ky,
+				(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+				first_line(),
+				CHUNK_NUM );
+		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
+			zz_bs, zz_ky,
+			last_line(),
+			last_line()+CHUNK_NUM,
+			CHUNK_NUM );
+#endif
 #ifdef	SEPARATE_CHUNK_ANCHOR
 		html_thread_anchor(1, first_line()-1);
 #else
@@ -2234,12 +2256,92 @@ void html_reload(int startline)
 /****************************************************************/
 static void html_foot(int level, int line, int stopped)
 {
+#ifdef PREV_NEXT_ANCHOR
+	int nchunk;
+#endif
 	/* out_resN = 0;	ダイジェスト用に再初期化 */
 	if (is_imode()) {
 		html_foot_im(line,stopped);
 		return;
 	}
+
+#ifdef PREV_NEXT_ANCHOR
+#ifndef RELOADLINK
+	pPrintf(pStdout, "<hr>");
+#endif
+	if (!isbusytime)
+	{
+#ifdef CHECK_MOD_GZIP
+		if (zz_server_software && strstr(zz_server_software,"mod_gzip/") != NULL) {
+			pPrintf(pStdout,
+				R2CH_HTML_RETURN_BOARD("../%s/"),
+				zz_bs);
+		} else
+#endif
+#ifdef GZIP
+			pPrintf(pStdout,
+				R2CH_HTML_RETURN_BOARD("../%s/index.htm%s"),
+				zz_bs, gzip_flag ? "" : "l");
+#else
+			pPrintf(pStdout,
+				R2CH_HTML_RETURN_BOARD("../%s/index.htm"),
+				zz_bs);
+#endif
+#ifdef USE_PATH
+		if (path_depth)
+			pPrintf(pStdout,
+				R2CH_HTML_PATH_ALL_ANCHOR); 
+		else
+#endif
+			pPrintf(pStdout,
+				R2CH_HTML_ALL_ANCHOR,
+				zz_bs, zz_ky); 
+	}
+
+	pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=1&to=%d\">1-</a>",
+		zz_bs, zz_ky, CHUNK_NUM);
+	if (!isbusytime && first_line()>1) {
+		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">前%d</a>",
+			zz_bs, zz_ky,
+			(first_line()<=CHUNK_NUM ? 1 : first_line()-CHUNK_NUM),
+			first_line(),
+			CHUNK_NUM );
+	}
+	if (isbusytime && need_tail_comment)
+		nchunk = RES_NORMAL;
+	else
+		nchunk = CHUNK_NUM;
+	if ( last_line() < lineMax) {
+		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">次%d</a>",
+			zz_bs, zz_ky,
+			last_line(),
+			last_line()+nchunk,
+			nchunk );
+	} else {
+		pPrintf(pStdout, " <a href=\"" CGINAME "?bbs=%s&key=%s&st=%d&to=%d\">未読</a>",
+			zz_bs, zz_ky,
+			last_line(),
+			last_line()+CHUNK_NUM);
+	}
+#ifdef USE_PATH
+	if (path_depth)
+		pPrintf(pStdout,
+			R2CH_HTML_PATH_LATEST_ANCHOR,
+			LATEST_NUM, LATEST_NUM);
+	else
+#endif
+		pPrintf(pStdout,
+		R2CH_HTML_LATEST_ANCHOR,
+		zz_bs, zz_ky,
+		LATEST_NUM, LATEST_NUM);
+	if (isbusytime && need_tail_comment)
+		pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE, LIMIT_PM - 12, LIMIT_AM);
+#endif
+
 #ifdef	SEPARATE_CHUNK_ANCHOR
+#if !defined(RELOADLINK) && !defined(PREV_NEXT_ANCHOR)
+	pPrintf(pStdout, "<hr>");
+#endif
 	if (last_line() < lineMax) {
 		/* RELOADLINKの表示条件の逆なんだけど */
 		html_thread_anchor(last_line() + 1, lineMax - LATEST_NUM);
