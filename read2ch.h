@@ -168,4 +168,7 @@
 /* dat落ち、過去ログをread.cgiで読む */
 /* #define READ_KAKO */
 
+/* READ_KAKOで過去ログに誘導するときに範囲指定を継承する */
+#define READ_KAKO_THROUGH
+
 #endif /* READ2CH_H__ */

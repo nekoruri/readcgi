@@ -21,7 +21,8 @@ tag: HEAD
 　rawmode +リザルトでデータサイズに続けて "/上限サイズK"も出力するようにした
 　>>nnリンクを削除する場合に余分な"</a>"が残ってしまっていたバグ修正
   READ_KAKO read.cgi/temp/nnnn/ read.cgi/kako/nnnn/で過去ログ読み出し
-    ■■■転送量の増加に注意、現在ON
+    ■■■転送量の増加に注意、現在OFF
+  READ_KAKO_THROUGH 過去ログに誘導するときに範囲指定を継承する
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。

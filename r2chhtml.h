@@ -263,9 +263,9 @@
 
 #ifdef READ_KAKO
 #define R2CH_HTML_ERROR_5_DAT \
-	"隊長! 過去ログ倉庫で、<a href=\"%s" CGINAME "/%s/%s%s/\">スレッド %s.dat</a> を発見しました。\n"
+	"隊長! 過去ログ倉庫で、<a href=\"%s%s%s>スレッド %s.dat</a> を発見しました。\n"
 #define R2CH_HTML_ERROR_5_TEMP \
-	"隊長! dat落ちした、<a href=\"%s" CGINAME "/%s/%s%s/\">スレッド %s.dat</a> を発見しました。\n"
+	"隊長! dat落ちした、<a href=\"%s%s%s>スレッド %s.dat</a> を発見しました。\n"
 #else
 /* エラー(5b/6,DAT): %s=場所 %s=スレ番号 */
 #define R2CH_HTML_ERROR_5_DAT \

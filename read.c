@@ -346,7 +346,7 @@ typedef struct { /*  class... */
 ** 使わないものは、0にして呼ぶ
 ** sstは、CHUNK_LINKの場合の#番号
 */
-const char *create_link(int st, int to, int ls, int nf, int sst)
+char *create_link(int st, int to, int ls, int nf, int sst)
 {
 	static char url_expr[128];
 	static char *url_p = NULL;
@@ -1164,6 +1164,7 @@ int dat_out(int level)
 
 	if (isthreadstopped())
 		threadStopped=1;
+
 	if ( !is_imode() )
 		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef RELOADLINK
@@ -2273,8 +2274,29 @@ void html_error(enum html_error_t errorcode)
 				zz_bs, zz_soko, tmp);
 			if (!stat(doko, &CountStat)) {
 #ifdef READ_KAKO
+				char *p;
+				zz_soko[0] = '\0';
+#ifdef USE_PATH
+#ifdef ALWAYS_PATH
+				path_depth = 3;
+#endif
+				if (path_depth)
+					sprintf(zz_soko, CGINAME "/%s/kako/%s/", zz_bs, tmp);
+#endif
+				strcpy(zz_ky,"kako/");
+				strcat(zz_ky,tmp);
+#ifdef READ_KAKO_THROUGH
+				p = create_link(atoi(zz_st), atoi(zz_to), atoi(zz_ls), is_nofirst(), 0);
+#else
+				p = create_link(0, 0, 0, 0, 0);
+#endif
+				if (*p == '\"')
+					++p;		/* "はもっと前につける */
+				else
+					strcat(p,"\"");	/* path形式の最後にも"を */
+				if (p[0]=='.'&&p[1]=='/') p += 2;	/* "./"は邪魔 */
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
-					zz_cgi_path, zz_bs, "kako/", tmp, tmp);
+					zz_cgi_path, zz_soko, p, tmp);
 #else
 				pPrintf(pStdout, R2CH_HTML_ERROR_5_DAT,
 					zz_cgi_path, doko, tmp);
@@ -2284,8 +2306,29 @@ void html_error(enum html_error_t errorcode)
 					zz_bs, tmp);
 				if (!stat(doko, &CountStat)) {
 #ifdef READ_KAKO
+					char *p;
+					zz_soko[0] = '\0';
+#ifdef USE_PATH
+#ifdef ALWAYS_PATH
+					path_depth = 3;
+#endif
+					if (path_depth)
+						sprintf(zz_soko, CGINAME "/%s/temp/%s/", zz_bs, tmp);
+#endif
+					strcpy(zz_ky,"temp/");
+					strcat(zz_ky,tmp);
+#ifdef READ_KAKO_THROUGH
+					p = create_link(atoi(zz_st), atoi(zz_to), atoi(zz_ls), is_nofirst(), 0);
+#else
+					p = create_link(0, 0, 0, 0, 0);
+#endif
+					if (*p == '\"')
+						++p;		/* "はもっと前につける */
+					else
+						strcat(p,"\"");	/* path形式の最後にも"を */
+					if (p[0]=='.'&&p[1]=='/') p += 2;	/* "./"は邪魔 */
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
-						zz_cgi_path, zz_bs, "temp/", tmp, tmp);
+						zz_cgi_path, zz_soko, p, tmp);
 #else
 					pPrintf(pStdout, R2CH_HTML_ERROR_5_TEMP,
 						tmp);

@@ -171,6 +171,9 @@ dat落ち、過去ログのdatをread.cgiで読む
 read.cgi/tech/temp/nnnn/
 read.cgi/tech/kako/nnnn/
 
+▲READ_KAKO_THROUGH
+過去ログに誘導するときに範囲指定を継承する
+
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
 
