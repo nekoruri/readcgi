@@ -41,7 +41,9 @@ dat:
 strip: read.cgi
 	strip -v $^ $>
 
-dist: $(SRCS)
+dist: read.tgz
+
+read.tgz: $(SRCS)
 	tar cf - $(SRCS) zlib/*.[ch] zlib/configure zlib/Makefile.in \
 	| gzip -9 > read.tgz
 
