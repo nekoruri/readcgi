@@ -7,6 +7,8 @@ tag:
 　USE_CSS追加
 　「名前」も削除(CUT_NAME_STRING)
 　PUT_ETAG追加
+　他レスへのリンク指定 &gt;&gt; を >> に短縮置換
+　他レスへのリンクが PATH_INFO時常に範囲指定になっていたのを整理
 
 
 tag YAKIN20010915: 実験サーバ ex.2ch.net にて ver 5.21として採用。
