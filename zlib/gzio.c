@@ -14,8 +14,61 @@
 #define TO_MEMORY
 
 #ifdef TO_MEMORY
+/*
+ * if gzip to memory, use gzdopen(0,"w");
+ * only one flow can compressed to memory
+ * get compressed data by gz_getdata() after gzclose();
+ * you must free memory received from gz_getdata();
+ */
+
+/* need more memory @2ch */
+#define Z_PRINTF_BUFSIZE 10240
+
 #define fwrite gzipped_fwrite
-extern int gzipped_fwrite(char *buf, int n, int m, FILE *dummy);
+
+static char *outbuf;
+static int outlen = 0;
+static int outalloc = 0;
+
+/****************************************************************/
+/* receive gzipped data to outbuf				*/
+/****************************************************************/
+int gzipped_fwrite(char *buf, int n, int m, FILE *fp)
+{
+	int l;
+
+	if (fp != stdout) return fwrite(buf,n,m,fp);
+	l = n*m;
+	if (outlen+l > outalloc) {
+		outalloc = outlen + l + 40960;  /* +40960 for perfomance */
+		if (outlen == 0) {
+			outbuf = malloc(outalloc);
+		} else {
+			if (outbuf == NULL) return m;  /* already error */
+			outbuf = realloc(outbuf, outalloc);
+		}
+	}
+	if (outbuf != NULL) {
+		memcpy(outbuf+outlen, buf, l);
+	}
+	outlen += l;
+	return m;
+}
+
+/****************************************************************/
+/* send gzipped data to client && clear variable for next time  */
+/* return length, and data is in *buf				*/
+/* if (length!=0 && *buf==NULL) then malloc eroor		*/
+/* must free(*buf); by caller					*/
+/****************************************************************/
+int gz_getdata(char **buf)
+{
+	int l = outlen;
+	*buf = outbuf;
+	outlen = outalloc = 0;
+	outbuf = NULL;
+	return l;
+}
 #endif
 
 struct internal_state {int dummy;}; /* for buggy compilers */
@@ -161,7 +214,7 @@ local gzFile gz_open (path, mode, fd)
 
     errno = 0;
 #ifdef TO_MEMORY
-    if ( fd == 1 ) {
+    if (fd == 0 && s->mode =='w') {
 	s->file = stdout;
     } else {
 	s->file = fd < 0 ? F_OPEN(path, fmode) : (FILE*)fdopen(fd, fmode);

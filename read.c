@@ -128,9 +128,15 @@ int raw_lastnum, raw_lastsize; /* clientが持っているデータの番号とサイズ */
 /*  zlib対応 */
 gzFile pStdout; /*  = (gzFile) stdout; */
 zz_printf_t pPrintf = (zz_printf_t) fprintf;
-char *outbuf;
-int outlen = 0;
-int outalloc = 0;
+
+/* zlib独自改造 */
+extern int gz_getdata(char **buf);
+/*
+ * gzdopen(0,"w")でmemoryに圧縮した結果を受け取る
+ * len = gz_getdata(&data);
+ *   int   len  : 圧縮後のbyte数
+ *   char *data : 圧縮後のデータ、使用後free()すべき物
+ */
 #else
 static int pid;
 #endif
@@ -1165,21 +1171,10 @@ int dat_out_raw(void)
 	/* raw_lastnum から全部を送信する */
 	for(i = raw_lastnum; i < lineMax; i++) {
 #ifndef CUTRESLINK
-# ifdef ZLIB
-		if (gzip_flag) {
-			gzwrite(pStdout, (const voidp)BigLine[i], strlen(BigLine[i]));
-			gzputc(pStdout, '\n');
-		} else
-# endif
-			pPrintf(pStdout, "%s\n", BigLine[i]);
+		pPrintf(pStdout, "%s\n", BigLine[i]);
 #else
-# ifdef ZLIB
-		if (gzip_flag)
-			gzwrite(pStdout, (const voidp)BigLine[i], BigLine[i+1]-BigLine[i]);
-		else
-# endif
-			pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
-#endif 
+		pPrintf(pStdout, "%.*s", BigLine[i+1] - BigLine[i], BigLine[i]);
+#endif
 	}
 	return 1;
 }
@@ -1673,32 +1668,6 @@ void zz_GetEnv(void)
 	isbusytime = IsBusy2ch();
 }
 
-#ifdef ZLIB
-/****************************************************************/
-/* receive gzipped data from zlib/gzio.c                        */
-/****************************************************************/
-int gzipped_fwrite(char *buf, int n, int m, FILE *fp)
-{
-	int l = n*m;
-
-	if ( fp != stdout ) return fwrite(buf,n,m,fp);
-	if ( outlen+l > outalloc ) {
-		outalloc = outlen + l + 40960;  /* 多めに */
-		if ( outlen == 0 ) {
-			outbuf = malloc(outalloc);
-		} else {
-			if ( outbuf == NULL ) return m;  /* already error */
-			outbuf = realloc(outbuf, outalloc);
-		}
-	}
-	if ( outbuf != NULL ) {
-		memcpy(outbuf+outlen, buf, l);
-	}
-	outlen += l;
-	return m;
-}
-#endif
-
 /*----------------------------------------------------------------------
 	終了処理
 ----------------------------------------------------------------------*/
@@ -1723,12 +1692,14 @@ void atexitfunc(void)
 #endif /* EXPLICIT_RELEASE */
 #ifdef ZLIB
 	if (gzip_flag) {
-		/* gzclose()だけで十分と思う... */
-		/* gzflush(pStdout, Z_FINISH);
-		fflush(stdout); */
+		int outlen;
+		char *outbuf;
+
 		gzclose(pStdout);
+		outlen = gz_getdata(&outbuf);	/* 圧縮データを受け取る */
 
 		if ( outlen != 0 && outbuf == NULL ) {
+			/* 圧縮中にmallocエラー発生 */
 			pPrintf = (zz_printf_t) fprintf;
 			pStdout = (gzFile) stdout;
 			pPrintf(pStdout,"\n");
@@ -1743,11 +1714,12 @@ void atexitfunc(void)
 
 		fwrite(outbuf,1,outlen,stdout);
 		fflush(stdout);
+		/* free(outbuf); outbufはfreeすべき物 exitなのでほっとく */
 	}
 #elif defined(GZIP)
 	if(gzip_flag) {
 		fflush(stdout);
-		close(1);
+		close(1);		/* gzipを終了させるためcloseする */
 		waitpid(pid, NULL, 0);
 	}
 #endif
@@ -1901,9 +1873,10 @@ int main(void)
 		fflush(stdout);
 
 		/*  prepare zlib */
-		/* 引数1はzlib/gzio.cで特別扱い（2chバージョンの独自仕様）
-		   仮にstdoutを設定し、closeしない */
-		pStdout = gzdopen(1, "wb9");
+		/* 引数(0,"w")はzlib/gzio.cで特別扱い
+		   仮にstdoutを設定し、closeしない
+		  （2chバージョンの独自仕様 通常stdinに"w"しないから） */
+		pStdout = gzdopen(0, "wb9");
 
 		pPrintf = gzprintf;
 		/* gzdopen()で"wb9"を指定したので不要 */
