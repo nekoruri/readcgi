@@ -2,7 +2,7 @@
  *
  *  インデクス運用
  *
- *  $Id: datindex.c,v 1.10 2001/09/04 08:06:10 2ch Exp $ */
+ *  $Id: datindex.c,v 1.11 2001/09/08 19:53:54 2ch Exp $ */
 
 #include <assert.h>
 #include <ctype.h>
@@ -14,6 +14,8 @@
 #include <sys/mman.h>
 #include "datindex.h"
 #include "read.h"
+
+#ifdef USE_INDEX
 
 /* /board/dat/idx/XXXXXXXXXX.idx */
 #define DATINDEX_PATH "dat/idx"
@@ -571,4 +573,5 @@ time_t datindex_lastmod(DATINDEX_OBJ const *dat,
 	}
 	return lastmod;
 }
+#endif /* USE_INDEX */
 /*EOF*/
