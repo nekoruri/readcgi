@@ -8,11 +8,12 @@ tag: HEAD
   USE_PATHのURL生成をまとめ、旧形式と統合した。
     CHUNKED_ANCHOR_WITH_FORMのみ未対応
   出力系のconditionのチェック
-    RELOADLINK,PREV_NEXT_ANCHOR,CHUNK_ANCHOR,CREATE_NAME_ANCHORの
-    on/offで不都合を修正
-    SEPARATE_CHUNK_ANCHOR未チェック
+    RELOADLINK,PREV_NEXT_ANCHOR,CHUNK_ANCHOR,CREATE_NAME_ANCHOR
+    SEPARATE_ANCHORのon/offで不都合を修正
+    SEPARATE_CHUNK_ANCHORとPREV_NEXT_ANCHOR同時はいまいち
   path形式でのlxxでnofirst=trueにしていたのをやめた。
   path形式と旧形式でnofirst=の不整合を修正
+  LATEST_ANCHORのcondition削除
 
 
 tag: YAKIN20010919: 実験サーバ choco.2ch.net にて ver 5.22として採用。

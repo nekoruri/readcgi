@@ -377,7 +377,7 @@ const char *create_link(int st, int to, int ls, int nf, int sst)
 	{
 		if (url_p==NULL) {	/* 一度だけ作る keyは長めに */
 			url_p = url_expr;
-			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.20s", zz_bs, zz_ky);
+			url_p += sprintf(url_p, "\"" CGINAME "?bbs=%.20s&key=%.40s", zz_bs, zz_ky);
 		}
 		p = url_p;
 		if (ls) {
@@ -2458,11 +2458,10 @@ void html_head(int level, char const *title, int line)
 		html_thread_anchor(1, lineMax);
 #endif
 
-#if	defined(LATEST_ANCHOR) && !defined(SEPARATE_CHUNK_ANCHOR)
+		/* LATEST_ANCHORは常に */
 		pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR("%s", "%d"),
 			create_link(0,0, LATEST_NUM, 0,0),
 			LATEST_NUM);
-#endif	/* LATEST_ANCHOR */
 	} else {
 		pPrintf(pStdout, R2CH_HTML_IMODE_HEADER_1("%s", "%s", "%s"),
 			title,
@@ -2583,9 +2582,11 @@ static void html_foot(int level, int line, int stopped)
 			create_link(last_line(), 0, 0,0,0) );
 	}
 #endif
+#ifndef SEPARATE_CHUNK_ANCHOR
 	pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR("%s", "%d"),
 		create_link(0,0, LATEST_NUM, 0,0),
 		LATEST_NUM);
+#endif
 	if (isbusytime && need_tail_comment)
 		pPrintf(pStdout, R2CH_HTML_TAIL_SIMPLE("%02d:00", "%02d:00"),
 			LIMIT_PM - 12, LIMIT_AM);
@@ -2608,7 +2609,7 @@ static void html_foot(int level, int line, int stopped)
 			   処理の流れとしては望ましいが、
 			   「混雑時にCHUNK_ANCHORを非表示にする」等の場合には
 			   再修正が必要なので保留 */
-	/* LATEST_ANCHORも常に生きにする */
+			/* LATEST_ANCHORも常に生きにする */
 			pPrintf(pStdout, R2CH_HTML_LATEST_ANCHOR("%s", "%d"),
 				create_link(0,0, LATEST_NUM, 0,0),
 				LATEST_NUM);

@@ -83,9 +83,6 @@ from select形式で CHUNKED_ANCHORを表示する。
 ▲USE_CHUNK_LINK
 CHUNK_ANCHORとCREATE_NAME_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
 
-△LATEST_ANCHOR
-「最新レス LATEST_NUM」をつける
-
 ▲SAGE_IS_PLAIN
 sageレスのとき、名前を太字にしない
 (<a href="mailto:sage">の代わりに<font color=>をつける)
@@ -191,6 +188,9 @@ BadAccessの新しいバージョンを使う。
 
 ◎LASTMOD
 導入済み。ほぼ必須。
+
+△LATEST_ANCHOR
+「最新レス LATEST_NUM」をつける
 
 ---------------------------------------------------------------------
 不採用のためcode削除

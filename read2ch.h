@@ -95,7 +95,7 @@
 /* #define USE_CHUNK_LINK */
 
 /* 「最新レス LATEST_NUM」をつける */
-#define LATEST_ANCHOR
+/* #define LATEST_ANCHOR 常にON */
 #define LATEST_NUM 50
 
 /* sageレスのとき、名前を太字にしない */
