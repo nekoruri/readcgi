@@ -987,48 +987,34 @@ static int out_html(int level, int line, int lineNo)
 /*	Output raw data file					*/
 /****************************************************************/
 #ifdef RAWOUT
-#if	0
-/* BigLineをnul-terminatedではなく'\n'-terminatedにする場合 */
-int getlinelen(const char *line)
-{
-	const char *last = BigBuffer + zz_fileSize;
-	const char *end = memchr(line, '\n', last - line);
-	if (end)
-		return end + 1 - line;
-	return last - line;
-}
-#endif
-
 int dat_out_raw(void)
 {
-	int i;
-
+	const char *begin = BigLine[0];
+	const char *end = BigLine[lineMax];
 	/* もし報告された最終レス番号およびサイズが一致していなけ
 	   れば、最初の行にその旨を示す */
 	/* raw_lastsize > 0 にするとnnn.0であぼーん検出を無効にできるが
 	   サーバーで削除したものはクライアントでも削除されるべきである */
 	if(raw_lastnum > 0
-	   && raw_lastsize >= 0
-	   && !(raw_lastnum <= lineMax
-		&& (BigLine[raw_lastnum - 1]
-			+ (BigLine[raw_lastnum] - BigLine[raw_lastnum - 1])
-			/* + getlinelen(BigLine[raw_lastnum - 1]) */
-		    - BigBuffer) == raw_lastsize)) {
-		pPrintf(pStdout, "-INCR\n");
+		&& raw_lastsize >= 0
+		&& !(raw_lastnum <= lineMax
+		 && BigLine[raw_lastnum] - BigBuffer == raw_lastsize)) {
+		pPrintf(pStdout, "-INCR");
 		/* 全部を送信するように変更 */
-		raw_lastnum = 0;
 	} else {
-		pPrintf(pStdout, "+OK\n");
+		pPrintf(pStdout, "+OK");
+		/* 差分送信用に先頭を設定 */
+		begin = BigLine[raw_lastnum];
 	}
+	pPrintf(pStdout, " %d\n", end - begin);
 	/* raw_lastnum から全部を送信する */
-	for(i = raw_lastnum; i < lineMax; i++) {
 #ifdef ZLIB
-		if (gzip_flag)
-			gzwrite(pStdout, (const voidp)BigLine[i], BigLine[i+1] - BigLine[i]);
-		else
+	if (gzip_flag)
+		gzwrite(pStdout, (const voidp)begin, end - begin);
+	else
 #endif
-			fwrite(BigLine[i], 1, BigLine[i+1] - BigLine[i], pStdout);
-	}
+		fwrite(begin, 1, end - begin, pStdout);
+
 	return 1;
 }
 #endif
