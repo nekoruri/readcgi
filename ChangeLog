@@ -8,6 +8,15 @@ tag: HEAD
     ▲AUTO_KAKO 過去ログに対して透過的にアクセスする
       AUTO_KAKO_MODE AUTO_KAKOの動作制限設定
     ▲AUTO_LOGTYPE datファイルを見てログのフォーマットを自動判別する
+  mmapのMAP_SHARED使用によると思われる例外について、
+  未定義な振る舞いに依存した暫定対処を行った(これで駄目ならMAP_SHAREDをあきらめるべき)。
+  AUTO_KAKO関係、AUTO_LOGTYPE関係とその周辺を少し変えた。
+  rawmode時はget_title()等を呼ばないようにした。
+  subject.txt取得時と!busytime時はMAP_PRIVATEにした。
+  追加condition:
+    △RAWOUT_PARTIAL raw=0.0時のみst,to,lsを使用した部分取得を可能にする
+      (subject.txt取得時のみ、ls=??はto=??として扱う)
+    △Katjusha_DLL_REPLY かちゅ〜しゃgzip対応DLLのリクエストに応答する
 
 
 tag: YAKIN20010925: 実験サーバ choco.2ch.net にて ver 5.24として採用。

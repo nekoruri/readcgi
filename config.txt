@@ -63,6 +63,9 @@ mod_gzipの設定次第では、不要になる場合も。
 rawmodeでは、Accept-Encoding: (gzip|x-gzip)でないと「ブラウザが変です」
 エラーが起きるので注意。
 
+△RAWOUT_PARCIAL
+raw=0.0のリクエスト時、st=nn, to=nn, ls=nnを参照して部分取得可能にする
+
 △USE_MMAP
 fread(read)の代わりにmmapを使用する。
 負荷の低減が期待できる。
@@ -226,8 +229,13 @@ datファイルを見てログのフォーマットを自動判別する
 コスト(負荷)がかかる割に転送量減少には貢献せず、
 仮に文字化けしてもその部分だけで留まり、大きな影響はないため、OFF推奨。
 
-▲Katjusha_Beta_kisei
+△Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
+
+△Katjusha_DLL_REPLY
+かちゅ～しゃgzip対応DLLからのリクエストに応答する
+サイズのみのリクエストを受け入れ、
+あぼーんを検出した場合はエラーコードのみを返す。
 
 ×USE_CSS
 名前の緑表示をCSSを使って表示
