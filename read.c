@@ -94,7 +94,7 @@ struct tm tm_now;
 long currentTime;
 int isbusytime = 0;
 
-char const *LastChar(char const *src, char const *c);
+char const *LastChar(char const *src, char c);
 char *zz_GetString(char *dst, char const *tgt);
 char *doReplace(char *des, char const *str0, char const *str1);
 void html_error(char *mes);
@@ -1278,7 +1278,7 @@ void html_error(char *mes)
 #endif
 	
 	*tmp = '\0';
-	strcpy(tmp, LastChar(zz_ky, "/"));
+	strcpy(tmp, LastChar(zz_ky, '/'));
 	strncpy(zz_soko, tmp, 3);
 
 	*comcom = '\0';
@@ -1342,7 +1342,7 @@ int html_error999(char *mes)
 		exit(0);
 	}
 #endif
-	strcpy(tmp, LastChar(zz_ky, "/"));
+	strcpy(tmp, LastChar(zz_ky, '/'));
 	strncpy(zz_soko, tmp, 3);
 	sprintf(tmp_time, "%02d:%02d:%02d", tm_now.tm_hour, tm_now.tm_min,
 		tm_now.tm_sec);
@@ -1564,18 +1564,16 @@ int IsBusy2ch()
 /****************************************************************/
 /*	えらー							*/
 /****************************************************************/
-char const *LastChar(char const *src, char const *c)
+ /* src中の一番末尾のデリミタ文字列 c の次の文字位置を得る
+  */
+char const *LastChar(char const *src, char c)
 {
 	char const *p;
-	if (!*src)
-		return (src);
-	p = strstr(src, c);
-	if (!p)
-		return (src);
-	return LastChar(p + 1, c);
-/*
-	return p+1;
-*/
+	p = strrchr(src, c);
+
+	if (p == NULL)
+		return src;
+	return (p + 1);
 }
 /****************************************************************/
 /*	HTML HEADER						*/
@@ -1651,18 +1649,28 @@ void html_foot_im(void)
 /****************************************************************/
 char *doReplace(char *des, char const *str0, char const *str1)
 {
-	char *p, *ret = NULL;
-	char t[SIZE_BUF];
-	strcpy(t, des);
-	p = strstr(t, str0);
-	if (!p)
-		return ret;
-	*p = '\0';
-	strcpy(des, t);
-	strcat(des, str1);
-	ret = des + strlen(des);
-	strcat(des, p + strlen(str0));
-	return ret;
+	char *p; 
+
+	int str0_length; 
+	int str1_length; 
+
+	/* 置き換えるべき文字列の位置を取得 */ 
+	p = strstr(des, str0); 
+	if (p == NULL) { 
+		return NULL; 
+	} 
+
+	str0_length = strlen(str0); 
+	str1_length = strlen(str1); 
+
+	/* 後ろの部分を目的の位置まで移動 */
+	memmove( p + str1_length, p + str0_length, strlen(p + str0_length)+1 );
+
+	/* str1をはめ込む */
+	memcpy( p, str1, str1_length );
+
+	/* 部分文字列以後の文字列の位置を返す */ 
+	return p + str1_length; 
 }
 /****************************************************************/
 /*	Replace(some)						*/
