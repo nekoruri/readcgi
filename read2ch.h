@@ -149,4 +149,7 @@
    出力htmlから余分なリンク等を省く */
 #define	REFERDRES_SIMPLE /**/
 
+/* 混雑時間帯にレス本文内のURLをリンク化しないようにする */
+/* #define NO_LINK_URL_BUSY */
+
 #endif /* READ2CH_H__ */

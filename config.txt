@@ -161,6 +161,9 @@ NN4.xでgzip圧縮時にContent-LengthがあるとLast-Modifiedが無効になる問
 混雑時間帯に、>>nn形式のリンクから参照された場合に
 出力htmlから余分なリンク等を省く。
 
+▲NO_LINK_URL_BUSY
+混雑時間帯にレス本文内のURLをリンク化しないようにする
+
 ▲Katjusha_Beta_kisei
 かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
 

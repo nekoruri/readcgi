@@ -659,7 +659,7 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				   ‚à‚µ•ÏŠ·‚·‚é‚È‚çbbs.cgi */
 				break;
 			case ':':
-#if	1
+#ifndef NO_LINK_URL_BUSY
 				if (resnumber) {
 #else
 				if (resnumber && !istagcut) {
