@@ -439,3 +439,19 @@
 #define ERRORMES_NO_MEMORY "メモリの確保に失敗しました。"
 #define ERRORMES_MAINTENANCE "調整中。。。"
 #define ERRORMES_LOGOUT "なんか不調です。"
+
+/* スレインデクス用HTML */
+#define R2CH_HTML_SUBBACK_HEADER \
+	"<html><head>" \
+	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=x-sjis\">" \
+	"</head>" \
+	"<body target=\"body\">" \
+	"<font size=-1>\n"
+
+/* %.*s=(スレ文字数, スレ文字列)
+   %.*s=(タイトル文字数, タイトル文字列) */
+#define R2CH_HTML_SUBBACK_ITEM(anchor, num, title) \
+	"<a href=\"" anchor "/?ls=50\">" num ": " title "</a>\n"
+
+#define R2CH_HTML_SUBBACK_FOOTER \
+	"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></font></body></html>"

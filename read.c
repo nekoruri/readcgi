@@ -924,12 +924,7 @@ static void dat_out_subject(void)
 	if (path_depth < 2)
 		pPrintf(pStdout, "<H1>未実装だから、パスおかしいど</H1>");
 	else
-		pPrintf(pStdout,
-			"<html><head>"
-			"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=x-sjis\">"
-			"</head>"
-			"<body target=\"body\">"
-			"<font size=-1>");
+		pPrintf(pStdout, R2CH_HTML_SUBBACK_HEADER);
 
 	/* 行を読み込んで解析していく
 	   BigLine[]の情報をとりあえず信用しておくことにする */
@@ -948,14 +943,13 @@ static void dat_out_subject(void)
 			break;
 		/* path_depth == 2 */
 		pPrintf(pStdout,
-			"<a href=\"%.*s/?ls=50\">%d: %.*s</a>\n",
+			R2CH_HTML_SUBBACK_ITEM("%.*s", "%d", "%.*s"),
 			datn, p,
 			1 + i,
 			subjn, subj);
 	}
 
-	pPrintf(pStdout,
-		"<div align=right><a href=\"/tech/kako/\"><b>過去ログ倉庫はこちら</b></a></font></body></html>");
+	pPrintf(pStdout, R2CH_HTML_SUBBACK_FOOTER);
 }
 /****************************************************************/
 /*	Get file size(dat_out)					*/
