@@ -1,4 +1,4 @@
-有効なオプションの説明
+有効なオプションの説明 (read2ch.h で記述されている順)
 
 ◎Ver5.1xで導入済み
 ○Ver5.1xで導入済みだが、変更あり
@@ -24,6 +24,9 @@ PREV_NEXT_ANCHOR使用時はoff推奨
 nofirst → n など、短縮形で指示できるようにする
 稼動中。今のところ問題なし。
 
+◎TYPE_TERI
+teri タイプのログを読み込む。
+
 ▲USE_PATH
 PATH_INFOを処理することにより、
 http:://piza2.2ch.net/test/read.cgi/tech/998997848/10-20
@@ -48,6 +51,8 @@ datの(差分)取得をread.cgiで処理する。
 生datも圧縮して転送量を減らすことができる。
 CGIへのリクエストが増加する可能性があるので、負荷が大きくなる可能性あり。
 mod_gzipの設定次第では、不要になる場合も。
+rawmodeでは、Accept-Encoding: (gzip|x-gzip)でないと「ブラウザが変です」
+エラーが起きるので注意。
 
 △USE_MMAP
 fread(read)の代わりにmmapを使用する。
@@ -81,40 +86,10 @@ CHUNK_ANCHORとCREATE_NAME_ANCHOR使用時に>>nnをCHUNKごとのリンクにする
 △LATEST_ANCHOR
 「最新レス LATEST_NUM」をつける
 
-△PREV_NEXT_ANCHOR
-「1- 前50 次50」をつける
- CHUNK_ANCHOR類ははずすこと。
- RELOADLINKもはずす方が良い（次50とほぼ同じ）
- 前後の数はCHUNK_NUMで定義
-
 ▲SAGE_IS_PLAIN
 sageレスのとき、名前を太字にしない
 (<a href="mailto:sage">の代わりに<font color=>をつける)
 若干転送量が減るが、見た目が変化する。
-
-△CHECK_MOD_GZIP
-mod_gzipが導入されていたら、「掲示板に戻る」のリンク先を
-/板名/ にする。
-(OFFにすると、戻り先はaccept-encodingによって、/index.htmか/index.htmlになる)
-
-△CUT_DATE_STRING
-"投稿日："を非表示にする
-
-▲CREATE_NAME_ANCHOR
-各レスにアンカーをつける。
-CHUNK_ANCHORとの併用でキャッシュ効果が上がる可能性があるが、
-転送量を増やす結果になる可能性もある。
-これをOFFにした場合でも、CHUNK_ANCHORをOFFにしないと、
->>000 形式のリンク先が広範囲となるため、
-転送量を増やす可能性がある。
-
-▲NO_FIRST
-各種リンクに付く"&nofirst=true"を置きかえる。
-#define NO_FIRST "&n=t"
-
-△NN4_LM_WORKAROUND
-NN4.xでgzip圧縮時にContent-Lengthがあると
-Last-Modifiedが無効になる問題の対策
 
 △USE_SETTING_FILE
 板毎に設定が書いてあるファイルを使用する。
@@ -141,6 +116,59 @@ LIMIT_AM
 FORCE_304_TIME (PREVENTRELOAD有効時のみ)
 LATEST_NUM (LATEST_ANCHOR有効時のみ)
 LINKTAGCUT
+
+△CHECK_MOD_GZIP
+mod_gzipが導入されていたら、「掲示板に戻る」のリンク先を
+/板名/ にする。
+(OFFにすると、戻り先はaccept-encodingによって、/index.htmか/index.htmlになる)
+
+△CUT_DATE_STRING
+"投稿日："を非表示にする
+
+▲CREATE_NAME_ANCHOR
+各レスにアンカーをつける。
+CHUNK_ANCHORとの併用でキャッシュ効果が上がる可能性があるが、
+転送量を増やす結果になる可能性もある。
+これをOFFにした場合でも、CHUNK_ANCHORをOFFにしないと、
+>>000 形式のリンク先が広範囲となるため、
+転送量を増やす可能性がある。
+
+▲NO_FIRST
+各種リンクに付く"&nofirst=true"を置きかえる。
+#define NO_FIRST "&n=t"
+
+△CAUTION_FILESIZE
+「大きすぎます」の警告を出すまでのサイズ(KB単位)。
+MAX_FILESIZE - CAUTION_FILESIZE*1024 を超えたら警告を表示する。
+これが未定義なら、警告は出さない。
+
+×MAX_FILESIZE_BUSY [デバッグ用]
+
+△NN4_LM_WORKAROUND
+NN4.xでgzip圧縮時にContent-LengthがあるとLast-Modifiedが無効になる問
+題の対策を行う。(User-AgentによってはContent-Lengthを出力しない)
+
+×CHUNKED_ANCHOR_WITH_FORM
+select form形式で CHUNKED_ANCHORを表示する。
+「掲示板に戻る」「レスを全部」「最新レス」との統一が取れていない。
+
+？SEPARATE_CHUNK_ANCHOR
+CHUNKED_ANCHOR のリンクを上下に分けて表示する。
+
+△PREV_NEXT_ANCHOR
+「1- 前50 次50」をつける
+ CHUNK_ANCHOR類ははずすこと。
+ RELOADLINKもはずす方が良い（次50とほぼ同じ）
+ 前後の数はCHUNK_NUMで定義
+
+▲Katjusha_Beta_kisei
+かちゅーしゃによるアクセスを拒絶する。ただし rawmode でのアクセスは別。
+
+？CM_BBSPINK
+CM欄がBBSPINK用のものに置き換わる。
+
+？LOGLOGOUT
+BadAccess(); にひっかかった要求を記録する。
 
 ---------------------------------------------------------------------
 採用決定のためcondition削除
