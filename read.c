@@ -100,6 +100,7 @@ char lastmod_str[1024];
 #ifdef USE_MMAP
 static int zz_mmap_fd;
 static size_t zz_mmap_size;
+static int zz_mmap_mode = MAP_SHARED;	/* MAP_PRIVATE */
 #endif
 
 char zz_bs[1024];
@@ -123,6 +124,9 @@ int zz_dat_where;	/* 0: dat/  1: temp/  2: kako/ */
 #endif
 #ifdef	AUTO_LOGTYPE
 int zz_log_type;	/* 0: non-TYPE_TERI  1: TYPE_TERI */
+#endif
+#ifdef	Katjusha_DLL_REPLY
+int zz_katjusha_raw;
 #endif
 int nn_st, nn_to, nn_ls;
 char *BigBuffer = NULL;
@@ -353,9 +357,6 @@ char flagtable[256] = {
 typedef struct { /*  class... */
 	char **buffers; /* csvの要素 */
 	int rest; /* 残りのバッファサイズ・・厳密には判定してないので、数バイトは余裕が欲しい */
-#ifdef	AUTO_LOGTYPE
-	int isTeri;
-#endif
 } ressplitter;
 
 /* read.cgi呼び出しのLINK先作成 */
@@ -519,9 +520,6 @@ void ressplitter_init(ressplitter *This, char **toparray, char *buff, int bufsiz
 {
 	This->buffers = toparray;
 	This->rest = bufsize;
-#ifdef	AUTO_LOGTYPE
-	This->isTeri = zz_log_type;
-#endif
 	*This->buffers = buff;
 }
 
@@ -772,11 +770,11 @@ static int needspace_strict(const char *buftop, const char *bufp)
 #endif
 
 #if	defined(AUTO_LOGTYPE)
-#define		IS_TYPE_SAKI	(!This->isTeri)
+#define		IS_TYPE_TERI	(zz_log_type/* != 0 */)
 #elif	defined(TYPE_TERI)
-#define		IS_TYPE_SAKI	0
+#define		IS_TYPE_TERI	1
 #else
-#define		IS_TYPE_SAKI	1
+#define		IS_TYPE_TERI	0
 #endif
 /*
 	レスを全走査するが、コピーと変換(と削除)を同時に行う
@@ -818,7 +816,6 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				break;
 			case '<': /*  醜いが */
 				if (*(p+1) == '>') {
-					/* This->isTeri = true; */
 					p += 2;
 					goto Teri_Break;
 				}
@@ -836,7 +833,8 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				break;
 			case '&':
 				/* add_tailspace_strict(*This->buffers, bufp); */
-				if (memcmp(p+1, "amp", 3) == 0) {
+				if (p[1] == 'a' && p[2] == 'm' && p[3] == 'p') {
+				/*if (memcmp(p+1, "amp", 3) == 0) {*/
 					if (*(p + 4) != ';')
 						p += 4 - 1;
 				}
@@ -876,15 +874,16 @@ const char *ressplitter_split(ressplitter *This, const char *p, int resnumber)
 				/*	break;	*/
 #if	!defined(TYPE_TERI) || defined(AUTO_LOGTYPE)
 			case COMMA_SUBSTITUTE_FIRSTCHAR: /*  *"＠"(8197)  "｀"(814d) */
-				if (IS_TYPE_SAKI) {
-					if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {
+				if (!IS_TYPE_TERI) {
+					/*if (memcmp(p, COMMA_SUBSTITUTE, COMMA_SUBSTITUTE_LEN) == 0) {*/
+					if (p[1] == '\x97' && p[2] == '\x81' && p[3] == '\x4d') {
 						ch = ',';
 						p += 4 - 1;
 					}
 				}
 				break;
 			case ',':
-				if (IS_TYPE_SAKI) {
+				if (!IS_TYPE_TERI) {
 					p++;
 					goto Break;
 				}
@@ -914,7 +913,7 @@ Break:
 	
 	/* 区切り直後の空白を削除 */
 	if (*p == ' ') {
-		if (IS_TYPE_SAKI) {
+		if (!IS_TYPE_TERI) {
 			if (!(*(p+1) == ','))
 				++p;
 		} else {
@@ -1001,7 +1000,7 @@ static int isthreadstopped()
 /****************************************************************/
 int BadAccess(void)
 {
-	char *agent_kick[] = {
+	static char *agent_kick[] = {
 #ifdef	Katjusha_Beta_kisei
 		"Katjusha",
 #endif
@@ -1014,8 +1013,13 @@ int BadAccess(void)
 	if ( is_head() )
 		return 0;
 #if defined(GZIP) && defined(RAWOUT)
-	if ( rawmode )
+	if ( rawmode ) {
+#if	0	/*#ifdef	Katjusha_DLL_REPLY*/
+		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
+			&& strstr(zz_http_user_agent, "Katjusha"));
+#endif
 		return !gzip_flag;
+	}
 #endif
 	if (!*zz_http_user_agent && !*zz_http_language)
 		return 1;
@@ -1202,15 +1206,42 @@ int dat_out_raw(void)
 {
 	const char *begin = BigLine[0];
 	const char *end = BigLine[lineMax];
-#ifdef	AUTO_KAKO
-	int where = zz_dat_where;
-	static char *messages[] = {
-		"",
-		" Stopped",
-		" Found at temp/",
-		" Found at kako/",
-		/* 正確な位置を知らせる必要はないはず */
-	};
+	char statusline[512];
+	char *vp = statusline;
+#ifdef	RAWOUT_PARTIAL
+	int first = 0, last = 0;
+#endif
+
+#ifdef	Katjusha_DLL_REPLY
+	if (zz_katjusha_raw) {
+		if (BigBuffer[raw_lastsize-1] != '\n') {
+			html_error(ERROR_ABORNED);
+			return 0;
+		}
+		begin = BigBuffer + raw_lastsize;
+		vp += sprintf(vp, "+OK");
+	} else
+#endif
+#ifdef	RAWOUT_PARTIAL
+	if (raw_lastnum == 0 && raw_lastsize == 0
+		&& (nn_st || nn_to || nn_ls > 1)) {
+		/* nn_xxはnofirstの関係等で変化しているかもしれないので再算出 */
+		int st = atoi(zz_st), to = atoi(zz_to), ls = atoi(zz_ls);
+		
+		first = 1, last = lineMax;
+		if (ls > 1)		/* for Ver5.22 bug */
+			st = lineMax - ls + 1;
+		if (0 < st && st <= lineMax)
+			first = st;
+		if (0 < to && to <= lineMax)
+			last = to;
+		if (first > last)
+			last = first;
+		
+		begin = BigLine[first-1];
+		end = BigLine[last];
+		vp += sprintf(vp, "+PARTIAL");
+	} else
 #endif
 	/* もし報告された最終レス番号およびサイズが一致していなけ
 	   れば、最初の行にその旨を示す */
@@ -1220,20 +1251,37 @@ int dat_out_raw(void)
 		&& raw_lastsize >= 0
 		&& !(raw_lastnum <= lineMax
 		 && BigLine[raw_lastnum] - BigBuffer == raw_lastsize)) {
-		pPrintf(pStdout, "-INCR");
+		vp += sprintf(vp, "-INCR");
 		/* 全部を送信するように変更 */
 	} else {
-		pPrintf(pStdout, "+OK");
+		vp += sprintf(vp, "+OK");
 		/* 差分送信用に先頭を設定 */
 		begin = BigLine[raw_lastnum];
 	}
-#ifdef	AUTO_KAKO
-	if (where || isthreadstopped())
-		where++;
-	pPrintf(pStdout, " %d/%dK%s\n", end - begin, MAX_FILESIZE / 1024, messages[where]);
-#else
-	pPrintf(pStdout, " %d/%dK\n", end - begin, MAX_FILESIZE / 1024);
+	vp += sprintf(vp, " %d/%dK", end - begin, MAX_FILESIZE / 1024);
+#ifdef	RAWOUT_PARTIAL
+	if (first && last) {
+		vp += sprintf(vp, "\t""Range:%u-%u/%u",
+			begin - BigLine[0], end - BigLine[0] - 1, BigLine[lineMax] - BigLine[0]);
+		vp += sprintf(vp, "\t""Res:%u-%u/%u", first, last, lineMax);
+	}
 #endif
+#ifdef	AUTO_KAKO
+	{
+		static char *messages[] = {
+			"",
+			"\t""Status:Stopped",
+			"\t""Location:temp/",
+			"\t""Location:kako/",
+			/* 正確な位置を知らせる必要はないはず */
+		};
+		int where = zz_dat_where;
+		if (where || isthreadstopped())
+			where++;
+		vp += sprintf(vp, "%s", messages[where]);
+	}
+#endif
+	pPrintf(pStdout, "%s\n", statusline);
 	/* raw_lastnum から全部を送信する */
 #ifdef ZLIB
 	if (gzip_flag)
@@ -1263,30 +1311,28 @@ int dat_out(int level)
 		/* 過去ログはFORMもRELOADLINKも非表示にするため */
 	}
 #endif
-#ifdef	AUTO_KAKO
-	if (zz_dat_where)
-		threadStopped = 1;
-#endif
 	for (line = 0; line < lineMax; line++) { 
 		int lineNo = line + 1; 
 		if (!isprinted(lineNo)) 
 			continue; 
 		if (out_html(level, line, lineNo)) { 
 			line++; 
-			break; /* 非0が返るのは、エラー時とimodeのMaxに達した時 */ 
+			break; /* 非0が返るのは、エラー時とRES_NORMAL/RES_IMODEに達した時 */ 
 		} 
 		if (lineNo==1 && is_imode() && nn_st<=1 && nn_ls==0) 
 			++out_resN; 
 	} 
-	out_html1(level); /* レスが１つも表示されていない時にレス１を表示する */ 
+	out_html1(level); /* レスが１つも表示されていない時にヘッダを表示する */ 
 
 	if (isthreadstopped())
 		threadStopped=1;
 	if ( !is_imode() )
 		pPrintf(pStdout, R2CH_HTML_PREFOOTER);
 #ifdef	AUTO_KAKO
-	if (zz_dat_where)
+	if (zz_dat_where) {
 		pPrintf(pStdout, R2CH_HTML_CAUTION_KAKO);
+		threadStopped = 1;
+	}
 #endif
 #ifdef RELOADLINK
 	if (
@@ -1317,7 +1363,9 @@ int dat_read(char const *fname,
 	if (BigBuffer)
 		return 0;
 #endif
+#ifdef USE_INDEX	/* USE_DIGEST */
 	zz_fileSize = getFileSize(fname);
+#endif
 
 	if (zz_fileSize > MAX_FILESIZE)
 		html_error(ERROR_TOO_HUGE);
@@ -1337,10 +1385,12 @@ int dat_read(char const *fname,
 		return 0;
 	}
 #ifdef USE_MMAP
+	if (!isbusytime)
+		zz_mmap_mode = MAP_PRIVATE;
 	BigBuffer = mmap(NULL,
-			 zz_mmap_size = zz_fileSize + 1,
+			 zz_mmap_size = zz_fileSize + (zz_mmap_mode == MAP_SHARED),
 			 PROT_READ,
-			 MAP_SHARED,	/* MAP_PRIVATE */
+			 zz_mmap_mode,
 			 zz_mmap_fd = in,
 			 0);
 	if (BigBuffer == MAP_FAILED)
@@ -1352,12 +1402,16 @@ int dat_read(char const *fname,
 
 	read(in, BigBuffer, zz_fileSize);
 	close(in);
-	BigBuffer[zz_fileSize] = '\0';
 #endif
 
 	lineMax = getLineMax();
-	check_logtype();
-	get_title();
+#ifdef	RAWOUT
+	if (!rawmode)
+#endif
+	{
+		check_logtype();
+		get_title();
+	}
 /*
 html_error(ERROR_MAINTENANCE);
 */
@@ -1399,7 +1453,6 @@ int getLineMax(void)
 	BigLine[line] = BigBuffer + zz_fileSize;
 	return line;
 }
-
 /****************************************************************/
 /*	Get file size						*/
 /****************************************************************/
@@ -1787,6 +1840,15 @@ void zz_GetEnv(void)
 		}
 	}
 #endif
+#ifdef GZIP
+	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
+		gzip_flag = compress_x_gzip;
+	} else if (zz_http_encoding && strstr(zz_http_encoding, "gzip")) {
+		gzip_flag = compress_gzip;
+	} else {
+		gzip_flag = compress_none;
+	}
+#endif
 #ifdef	USE_SETTING_FILE
 	readSettingFile(zz_bs);
 #endif
@@ -2110,6 +2172,8 @@ static int find_tempdir(char *doko, const char *key, const char *ext)
 
 static void create_fname(char *fname, const char *bbs, const char *key)
 {
+	/* プログラムミスによるオーバーフローの可能性を消しておく */
+	zz_bs[60] = zz_ky[60] = '\0';
 #ifdef READ_KAKO
 	if (read_kako[0] == 'k') {
 		find_kakodir(fname, key, "dat");
@@ -2119,7 +2183,7 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 # endif
 	} else
 #endif
-		sprintf(fname, DAT_DIR "%.256s.dat", zz_bs, zz_ky);
+		sprintf(fname, DAT_DIR "%.256s.dat", bbs, key);
 
 #ifdef	AUTO_KAKO
 	if (zz_ky[0] && access(fname, 00) != 0) {
@@ -2144,7 +2208,7 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 		if (zz_dat_where)
 			strcpy(fname, buff);
 	}
-#endif
+#endif	/* AUTO_KAKO */
 
 #ifdef DEBUG
 	sprintf(fname, "998695422.dat");
@@ -2167,6 +2231,13 @@ static void create_fname(char *fname, const char *bbs, const char *key)
 #endif
 	) {
 		sprintf(fname, "../%.256s/subject.txt", zz_bs);
+#ifdef	USE_MMAP
+		zz_mmap_mode = MAP_PRIVATE;
+#endif
+#ifdef	RAWOUT_PARTIAL
+		if (zz_ls[0] && !zz_to[0])
+			strcpy(zz_to, zz_ls), zz_ls[0] = zz_st[0] = '\0';
+#endif
 	}
 #endif
 }
@@ -2298,28 +2369,29 @@ int main(void)
 	}
 #endif
 
-#ifdef GZIP
-	if (zz_http_encoding && strstr(zz_http_encoding, "x-gzip")) {
-		gzip_flag = compress_x_gzip;
-	} else if (zz_http_encoding && strstr(zz_http_encoding, "gzip")) {
-		gzip_flag = compress_gzip;
-	} else {
-		gzip_flag = compress_none;
-	}
-#ifndef ZLIB
-	switch ( gzip_flag ) {
-	case compress_x_gzip:
-		puts("Content-Encoding: x-gzip");
-		break;
-	case compress_gzip:
-		puts("Content-Encoding: gzip");
-		break;
+#if	defined(GZIP) && defined(RAWOUT) && defined(Katjusha_DLL_REPLY)
+	/* BadAccess中で設定すると、早目のファイルサイズ判定が出来ないので */
+	if (rawmode && gzip_flag != compress_none)
+		zz_katjusha_raw = (zz_rw[0] == '.' && raw_lastsize > 0
+			&& strstr(zz_http_user_agent, "Katjusha"));
+	if (zz_katjusha_raw && zz_fileSize) {
+		/* ここまでで既にzz_fileSizeは(ファイルが見つかれば)設定されている */
+		if (zz_fileSize == raw_lastsize) {
+			puts("Status: 304 Not Modified\n");
+			return 0;
+		}
+		if (zz_fileSize < raw_lastsize) {
+			/* ここでhtml_error()を呼ぶと非圧縮のテキストを返すが、構わないはず。
+			   Content-EncodingもLastModifiedも出力しないが、必要ないと思う。
+			   wsockspyのソースをちらっと見た限り、copy_bodyは
+			   Content-Encodingの有無に限らず-ERR等のヘッダを判定していると思うので。
+			   zz_katjusha_raw関係はできるだけ近い場所にまとめたい。*/
+			putchar('\n');
+			html_error(ERROR_ABORNED);
+			return 0;
+		}
 	}
 #endif
-#endif
-	zz_init_parent_link();
-	zz_init_cgi_path();
-
 	/*  終了処理登録 */
 	atexit(atexitfunc);
 #ifdef	PUT_ETAG
@@ -2334,6 +2406,21 @@ int main(void)
 		printf("ETag: %s\n", etag);
 	}
 #endif
+
+/* ここまでで、304 を返す可能性がある処理はおしまい */
+
+#if	defined(GZIP) && !defined(ZLIB)
+	switch ( gzip_flag ) {
+	case compress_x_gzip:
+		puts("Content-Encoding: x-gzip");
+		break;
+	case compress_gzip:
+		puts("Content-Encoding: gzip");
+		break;
+	}
+#endif
+	zz_init_parent_link();
+	zz_init_cgi_path();
 
 /*  Get Last-Modified Date */
 	if (zz_fileLastmod != -1)	/* getFileLastmod のエラー時は-1が返る */
@@ -2518,6 +2605,11 @@ void html_error(enum html_error_t errorcode)
 	case ERROR_LOGOUT:
 		mes = ERRORMES_LOGOUT;
 		break;
+#ifdef	Katjusha_DLL_REPLY
+	case ERROR_ABORNED:
+		mes = ERRORMES_ABORNED;
+		break;
+#endif
 	default:
 		mes = "";
 	}

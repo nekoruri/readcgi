@@ -552,6 +552,9 @@
 #define ERRORMES_NO_MEMORY "メモリの確保に失敗しました。"
 #define ERRORMES_MAINTENANCE "調整中。。。"
 #define ERRORMES_LOGOUT "なんか不調です。"
+#ifdef	Katjusha_DLL_REPLY
+#define	ERRORMES_ABORNED	"どこかであぼーんがあったみたいです。"
+#endif
 
 /* 非TERIタイプで','が置換されて格納される文字列 */
 #define COMMA_SUBSTITUTE "\x81\x97\x81\x4d" /* "＠｀" */

@@ -17,6 +17,9 @@ enum html_error_t {
 	ERROR_NO_MEMORY,
 	ERROR_MAINTENANCE,
 	ERROR_LOGOUT,
+#ifdef	Katjusha_DLL_REPLY
+	ERROR_ABORNED,
+#endif
 };
 
 #ifdef ZLIB
