@@ -358,19 +358,19 @@
 
 /* ブラウザで見たとき: %s=スレ名 %s=板 */
 /* </title> の前の空白は削除しないこと */
-#define R2CH_SIMPLE_HTML_HEADER_1(title) \
+#define R2CH_SIMPLE_HTML_HEADER_1(title, cookie_script) \
 	"<html>" \
 	"<head>" \
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=Shift_JIS\">" \
 	R2CH_HTML_CSS_TYPE \
 	"<title>" title " </title>" \
-	R2CH_HTML_COOKIE_SCRIPT \
+	cookie_script \
 	R2CH_HTML_CSS_DEFINE \
 	"</head>" \
 	"<body bgcolor=#efefef text=black link=blue alink=red vlink=#660099>"
 
 #define R2CH_HTML_HEADER_1(title, board) \
-	R2CH_SIMPLE_HTML_HEADER_1(title) \
+	R2CH_SIMPLE_HTML_HEADER_1(title, R2CH_HTML_COOKIE_SCRIPT) \
 	"<a href=\"" board "\">■掲示板に戻る■</a>"
 
 #define R2CH_HTML_RETURN_BOARD(board) \

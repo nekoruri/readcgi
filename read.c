@@ -1722,10 +1722,10 @@ int can_simplehtml(void)
 	sprintf(buff, "/%.50s/", zz_bs);
 	p = strstr(ref, buff);
 	if (p) {
-		int n = strlen(buff);
-		if (*(p + n) == '\0')
+		p += strlen(buff);
+		if (*p == '\0')
 			return true;
-		if (strncmp(p + n, indexname, sizeof(indexname)-1) == 0)
+		if (strncmp(p, indexname, sizeof(indexname)-1) == 0)
 			return true;
 	}
 	p = strstr(ref, cginame);
@@ -1755,7 +1755,7 @@ int out_simplehtml(void)
 	splitting_copy(s, p, BigLine[0], sizeof(p) - 20, 0);
 	if (!*p)
 		return 1;
-	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s"), s[4]);
+	pPrintf(pStdout, R2CH_SIMPLE_HTML_HEADER_1("%s", ""), s[4]);
 	pPrintf(pStdout, R2CH_HTML_HEADER_2, s[4]);
 	
 	out_resN++;	/* ÉwÉbÉ_èoóÕÇó}é~ */
