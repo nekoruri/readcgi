@@ -6,7 +6,7 @@ DEFS          = -DHAVE_READ2CH_H
 # 		-DTYPE_TERI -DCOOKIE -DPREVENTRELOAD
 CFLAGS        = -I$(zlibdir) -g -O2 -Wall -funsigned-char
 LIBS          = 
-OBJS          = datindex.o digest.o read.o util_date.o $(zlibdir)/libz.a
+OBJS          = digest.o read.o util_date.o $(zlibdir)/libz.a
 SRCS          = datindex.c digest.c read.c util_date.c \
 		r2chhtml.h read2ch.h datindex.h digest.h read.h util_date.h \
 		Makefile
@@ -65,7 +65,8 @@ $(zlibdir)/libz.a: $(zlibdir)/gzio.c
 	$(CC) -c $< $(DEFS) $(CFLAGS) -o $@
 
 # dependencies
-datindex.o: datindex.c datindex.h
+datindex.o: datindex.c datindex.h read.h read2ch.h
 digest.o: digest.c digest.h read.h read2ch.h r2chhtml.h
-read.o: read.c read2ch.h digest.h read.h r2chhtml.h util_date.h
+read.o: read.c read2ch.h datindex.h digest.h read.h r2chhtml.h \
+ util_date.h
 util_date.o: util_date.c util_date.h
