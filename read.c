@@ -1361,7 +1361,7 @@ int getLineMax(void)
 		これにより、レスの長さはポインタの差ですむ。
 		(dat_out_rawでstrlenしている部分への対応)
 	*/
-	BigLine[line+1] = BigBuffer + zz_fileSize;
+	BigLine[line] = BigBuffer + zz_fileSize;
 #endif
 	return line;
 }
