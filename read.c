@@ -66,6 +66,9 @@ char const *zz_http_language;
 char const *zz_http_encoding;
 int gzip_flag;
 #endif
+#ifdef CHECK_MOD_GZIP
+char const *zz_server_software;
+#endif
 
 #ifdef LASTMOD
 char const *zz_http_if_modified_since;
@@ -1720,6 +1723,9 @@ void zz_GetEnv(void)
 #ifdef GZIP
 	zz_http_encoding = getenv("HTTP_ACCEPT_ENCODING");
 #endif
+#ifdef CHECK_MOD_GZIP
+	zz_server_software = getenv("SERVER_SOFTWARE");
+#endif
 #ifdef LASTMOD
 	zz_http_if_modified_since = getenv("HTTP_IF_MODIFIED_SINCE");
 #endif
@@ -2363,7 +2369,9 @@ void html_head(int level, char const *title, int line)
 #ifdef CHUNK_ANCHOR
 	int i;
 #endif
+#ifdef USE_INDEX2CGI
 	char fname[1024];
+#endif
 
 	if (level) {
 		pPrintf(pStdout,
@@ -2379,15 +2387,32 @@ void html_head(int level, char const *title, int line)
 				R2CH_HTML_HEADER_1("%s", "../"),
 				title);
 		else {
+#ifdef USE_INDEX2CGI
 			sprintf(fname, "../%.256s/index2.cgi", zz_bs);
 			if (access(fname, S_IXUSR) == -1)
+#endif
+#ifdef CHECK_MOD_GZIP
+				if ( strstr(zz_server_software,"mod_gzip/") != NULL ) {
+					pPrintf(pStdout,
+						R2CH_HTML_HEADER_1("%s", "/%s/"),
+						title, zz_bs);
+				} else
+#endif
+#ifdef GZIP
 				pPrintf(pStdout,
-					R2CH_HTML_HEADER_1("%s", "/%s/index2.htm%s"),
+					R2CH_HTML_HEADER_1("%s", "/%s/index.htm%s"),
 					title, zz_bs, gzip_flag ? "" : "l");
+#else
+				pPrintf(pStdout,
+					R2CH_HTML_HEADER_1("%s", "/%s/index.htm"),
+					title, zz_bs);
+#endif
+#ifdef USE_INDEX2CGI
 			else
 				pPrintf(pStdout,
 					R2CH_HTML_HEADER_1("%s", "/%s/index2.cgi"),
 					title, zz_bs);
+#endif
 		}
 #ifdef ALL_ANCHOR
 		if (path_depth)

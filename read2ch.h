@@ -103,4 +103,10 @@
 #define	USE_SETTING_FILE
 #define	SETTING_FILE_NAME	"SETTING_R.TXT"
 
+/* if index2.cgi exists, return link use index2.cgi */
+/* #define USE_INDEX2CGI */
+
+/* check server use mod_gzip? */
+#define CHECK_MOD_GZIP
+
 #endif /* READ2CH_H__ */
