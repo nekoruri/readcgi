@@ -69,7 +69,7 @@
  * “Še“úƒ‰ƒxƒ‹
  */
 #ifdef CUT_DATE_STRING
-#define R2CH_HTML_DATE ""
+#define R2CH_HTML_DATE "F"
 #else
 #define R2CH_HTML_DATE "“Še“úF"
 #endif
