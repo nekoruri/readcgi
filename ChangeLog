@@ -1,5 +1,7 @@
 tag: HEAD
 
+  IEで問題が出たため、文字コードE0hの文字をSJIS1バイト目と判定するようにした。
+
 
 tag: YAKIN20011012: 実験サーバ choco.2ch.net にて ver 5.25として採用。
 
